@@ -5,6 +5,7 @@ const customMenu = document.getElementById('custom-menu');
 const menuSleep = document.getElementById('menu-sleep');
 const menuClose = document.getElementById('menu-close');
 const menuHistory = document.getElementById('menu-history');
+const menuClear = document.getElementById('menu-clear');
 const menuTodo = document.getElementById('menu-todo');
 const menuFeed = document.getElementById('menu-feed');
 const menuPet = document.getElementById('menu-pet');
@@ -66,11 +67,20 @@ function saveChatHistory(role, message) {
   try {
     fs.writeFileSync(historyPath, JSON.stringify(history, null, 2), 'utf8');
   } catch (e) {
-    console.error('Failed to write history:', e);
+    console.error('Failed to save history:', e);
   }
 }
 
-// 核心狀態存儲機制
+function clearChatHistory() {
+  const historyPath = path.join(__dirname, '../chat_history.json');
+  try {
+    fs.writeFileSync(historyPath, JSON.stringify([], null, 2), 'utf8');
+  } catch (e) {
+    console.error('Failed to clear history:', e);
+  }
+}
+
+// 寵物狀態管理存儲機制
 const statePath = path.join(__dirname, '../pet_state.json');
 let petState = {
   hunger: 100,
@@ -196,7 +206,7 @@ chatInput.addEventListener('keydown', async (e) => {
     const text = chatInput.value;
     if (text.startsWith('/')) {
       e.preventDefault(); // 防止失去焦點
-      const commands = ['/help', '/md5', '/base64', '/uuid', '/calc', '/pomodoro', '/todo'];
+      const commands = ['/help', '/md5', '/base64', '/uuid', '/calc', '/pomodoro', '/todo', '/clear'];
       const match = commands.find(c => c.startsWith(text));
       if (match) {
         chatInput.value = match + ' ';
@@ -239,7 +249,8 @@ chatInput.addEventListener('keydown', async (e) => {
                 '<b>/uuid</b> : 產生隨機 UUID<br>' +
                 '<b>/calc [算式]</b> : 幫你算數學 (例如 1+1)<br>' +
                 '<b>/pomodoro [分鐘]</b> : 啟動番茄鐘 (預設25分)<br>' +
-                '<b>/todo [事項]</b> : 新增待辦事項';
+                '<b>/todo [事項]</b> : 新增待辦事項<br>' +
+                '<b>/clear</b> : 清除歷史對話紀錄';
       } else if (cmd === '/md5') {
         // 如果前後有雙引號，則去除
         if (argStr.startsWith('"') && argStr.endsWith('"')) {
@@ -296,6 +307,9 @@ chatInput.addEventListener('keydown', async (e) => {
           renderTodos();
           reply = `記下來啦！✍️<br>「${argStr}」<br>已經加到待辦清單囉！`;
         }
+      } else if (cmd === '/clear') {
+        clearChatHistory();
+        reply = '咻！💨 已經幫你把歷史紀錄清得乾乾淨淨啦！';
       } else {
         reply = '這是什麼奇怪的指令呀？Wiki Wiki 聽不懂 (歪頭)<br>試試看 /help 吧！';
       }
@@ -428,6 +442,13 @@ menuSleep.addEventListener('click', () => {
 menuHistory.addEventListener('click', () => {
   customMenu.style.display = 'none';
   ipcRenderer.send('open-history');
+});
+
+menuClear.addEventListener('click', () => {
+  customMenu.style.display = 'none';
+  clearChatHistory();
+  chatBubble.style.display = 'block';
+  chatContent.innerHTML = `${namePrefix}咻！💨 已經幫你把歷史紀錄清空囉！`;
 });
 
 menuClose.addEventListener('click', () => {
