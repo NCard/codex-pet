@@ -1,0 +1,80 @@
+body, html {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: transparent; /* Makes Electron window transparent */
+}
+
+.pet-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  height: 100%;
+  position: relative;
+}
+
+#kiwi-img {
+  --flip: 1;
+  width: 180px;
+  height: auto;
+  user-select: none;
+  -webkit-user-drag: none; /* 防止圖片被原生拖曳 */
+  cursor: grab;
+
+  /* 待機呼吸動畫 */
+  animation: breathe 3s infinite ease-in-out;
+  transform: scaleX(var(--flip));
+}
+
+#kiwi-img:active {
+  cursor: grabbing;
+}
+
+.chat-bubble {
+  position: absolute;
+  top: 10px;
+  background: white;
+  border: 2px solid #ccc;
+  border-radius: 15px;
+  padding: 10px;
+  font-family: 'Microsoft JhengHei', sans-serif;
+  font-size: 14px;
+  box-shadow: 0px 4px 6px rgba(0,0,0,0.1);
+  -webkit-app-region: no-drag; /* 讓對話框不可拖曳視窗 */
+  z-index: 10;
+  text-align: center;
+  max-width: 200px;
+}
+
+.chat-bubble::after {
+  content: '';
+  position: absolute;
+  bottom: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 10px 10px 0;
+  border-style: solid;
+  border-color: white transparent transparent transparent;
+  display: block;
+  width: 0;
+}
+
+@keyframes breathe {
+  0%, 100% { transform: scaleX(var(--flip)) scaleY(1); }
+  50% { transform: scaleX(var(--flip)) scaleY(1.03) translateY(-3px); }
+}
+
+@keyframes walk {
+  0% { transform: scaleX(var(--flip)) translateY(0) rotate(0deg); }
+  25% { transform: scaleX(var(--flip)) translateY(-5px) rotate(5deg); }
+  50% { transform: scaleX(var(--flip)) translateY(0) rotate(0deg); }
+  75% { transform: scaleX(var(--flip)) translateY(-5px) rotate(-5deg); }
+  100% { transform: scaleX(var(--flip)) translateY(0) rotate(0deg); }
+}
+
+.walking {
+  animation: walk 0.5s infinite linear !important;
+}
