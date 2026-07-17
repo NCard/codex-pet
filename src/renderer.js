@@ -37,6 +37,26 @@ function saveChatHistory(role, message) {
 // 初始化 Gemini API 客戶端
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
+// 對話框自動隱藏計時器
+let chatTimeout;
+
+function startChatTimeout() {
+  clearTimeout(chatTimeout);
+  chatTimeout = setTimeout(() => {
+    chatBubble.style.display = 'none';
+  }, 8000);
+}
+
+// 滑鼠游標進入泡泡範圍時，取消計時 (不消失)
+chatBubble.addEventListener('mouseenter', () => {
+  clearTimeout(chatTimeout);
+});
+
+// 滑鼠游標離開泡泡範圍時，重新開始 8 秒倒數
+chatBubble.addEventListener('mouseleave', () => {
+  startChatTimeout();
+});
+
 // 設定名稱前綴的 HTML
 const namePrefix = '<span style="color: #c97a2e; font-weight: 900;">Wiki Wiki：</span>';
 
@@ -129,10 +149,8 @@ chatInput.addEventListener('keydown', async (e) => {
       }
     }
     
-    // 8秒後隱藏泡泡
-    setTimeout(() => {
-      chatBubble.style.display = 'none';
-    }, 8000);
+    // 收尾動作：啟動 8 秒自動隱藏倒數
+    startChatTimeout();
   }
 });
 
