@@ -1,9 +1,16 @@
 const { app, BrowserWindow, ipcMain, Menu } = require('electron');
 const path = require('path');
 
-// 啟用熱重載 (Hot Reload)
 try {
-  require('electron-reloader')(module);
+  require('electron-reloader')(module, {
+    ignore: [
+      /chat_history\.json/,
+      /task\.md/,
+      /implementation_plan\.md/,
+      /walkthrough\.md/,
+      /\.system_generated/
+    ]
+  });
 } catch (_) {}
 
 function createWindow() {

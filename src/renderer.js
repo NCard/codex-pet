@@ -197,6 +197,11 @@ menuSleep.addEventListener('click', () => {
   customMenu.style.display = 'none';
 });
 
+menuHistory.addEventListener('click', () => {
+  customMenu.style.display = 'none';
+  ipcRenderer.send('open-history');
+});
+
 menuClose.addEventListener('click', () => {
   window.close();
 });
