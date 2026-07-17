@@ -58,5 +58,18 @@ function loadHistory() {
 // 載入歷史紀錄
 loadHistory();
 
+document.getElementById('clear-history-btn').addEventListener('click', () => {
+  if (confirm('確定要清空所有的對話紀錄嗎？這項操作無法復原喔！')) {
+    try {
+      const encryptedStr = cryptoUtils.encryptData("[]");
+      fs.writeFileSync(historyPath, encryptedStr, 'utf8');
+      loadHistory();
+    } catch (e) {
+      console.error('Failed to clear history:', e);
+      alert('清空失敗了 😢');
+    }
+  }
+});
+
 // 也可以設定一個定時器，每幾秒重新整理一次，讓它即時更新
 setInterval(loadHistory, 3000);
