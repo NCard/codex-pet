@@ -9,6 +9,7 @@ const menuHistory = document.getElementById('menu-history');
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
+const os = require('os');
 const { ipcRenderer } = require('electron');
 require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 const { GoogleGenAI } = require('@google/genai');
@@ -34,6 +35,37 @@ function saveChatHistory(role, message) {
     console.error('Failed to write history:', e);
   }
 }
+
+// 核心狀態存儲機制
+const statePath = path.join(__dirname, '../pet_state.json');
+let petState = {
+  hunger: 100,
+  mood: 100,
+  outfit: null,
+  todos: []
+};
+
+function loadPetState() {
+  try {
+    if (fs.existsSync(statePath)) {
+      const data = fs.readFileSync(statePath, 'utf8');
+      petState = { ...petState, ...JSON.parse(data) };
+    }
+  } catch (e) {
+    console.error('載入寵物狀態失敗:', e);
+  }
+}
+
+function savePetState() {
+  try {
+    fs.writeFileSync(statePath, JSON.stringify(petState, null, 2), 'utf8');
+  } catch (e) {
+    console.error('儲存寵物狀態失敗:', e);
+  }
+}
+
+// 啟動時載入狀態
+loadPetState();
 
 // 初始化 Gemini API 客戶端
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
