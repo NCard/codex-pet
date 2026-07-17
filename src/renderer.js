@@ -12,6 +12,9 @@ const { GoogleGenAI } = require('@google/genai');
 // 初始化 Gemini API 客戶端
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
+// 設定名稱前綴的 HTML
+const namePrefix = '<span style="color: #c97a2e; font-weight: 900;">Wiki Wiki：</span>';
+
 let isDragging = false;
 let mouseOffsetX, mouseOffsetY;
 let dragStartX, dragStartY;
@@ -71,21 +74,28 @@ chatInput.addEventListener('keydown', async (e) => {
     chatInput.style.display = 'none';
     chatInput.value = '';
     chatBubble.style.display = 'block';
-    chatBubble.innerText = "奇異鳥思考中... 🤔";
+    chatBubble.innerHTML = `${namePrefix}思考中... 🤔`;
     
     try {
       const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash',
-        contents: `你現在是一隻生活在電腦桌面上的可愛奇異鳥小助手，請用簡短、活潑、賣萌的語氣回答問題（因為畫面很小，回答請盡量在 50 字以內，可以加上顏文字）。使用者說：${text}`
+        contents: `你現在是一隻生活在電腦桌面上的可愛奇異鳥小助手，你的名字叫做「Wiki Wiki」，請用簡短、活潑、賣萌的語氣回答問題（因為畫面很小，回答請盡量在 50 字以內，可以加上顏文字）。使用者說：${text}`
       });
-      chatBubble.innerText = response.text;
+      // 避免 AI 回答包含 HTML 標籤破壞畫面
+      const safeText = response.text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      chatBubble.innerHTML = `${namePrefix}${safeText}`;
       
       // 收到回答後開心地跳躍
       kiwi.classList.add('jumping');
       setTimeout(() => { kiwi.classList.remove('jumping'); }, 500);
     } catch (err) {
-      chatBubble.innerText = "嗚嗚，我的腦袋當機了... (API 錯誤)";
       console.error(err);
+      // 判斷是否為額度用盡的錯誤 (429)
+      if (err.status === 429 || (err.message && err.message.includes('429'))) {
+        chatBubble.innerHTML = `${namePrefix}嗚嗚，主人的 API 額度好像用完了 😭 沒飯吃了，快去申請新的鑰匙餵我！`;
+      } else {
+        chatBubble.innerHTML = `${namePrefix}咕啾？我的小腦袋打結了，網路連線好像怪怪的 😵‍💫`;
+      }
     }
     
     // 8秒後隱藏泡泡
