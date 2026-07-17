@@ -281,8 +281,9 @@ setInterval(() => {
 
 // 每隔一段時間隨機走動
 setInterval(() => {
-  // 睡覺中或移動中就不走動
+  // 睡覺中、移動中、或是有對話框/輸入框時，暫停走動
   if (isMoving || kiwi.classList.contains('sleeping')) return;
+  if (chatBubble.style.display === 'block' || chatInput.style.display === 'block') return;
 
   // 40% 機率決定走動
   if (Math.random() < 0.4) {
