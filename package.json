@@ -1,5 +1,6 @@
 {
-  "name": "codex-pet",
+  "name": "ai-pet",
+  "productName": "AI PET",
   "version": "1.0.0",
   "main": "src/main.js",
   "scripts": {
