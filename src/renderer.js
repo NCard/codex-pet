@@ -57,6 +57,26 @@ chatBubble.addEventListener('mouseleave', () => {
   startChatTimeout();
 });
 
+// 輸入框自動隱藏計時器
+let inputTimeout;
+
+function startInputTimeout() {
+  clearTimeout(inputTimeout);
+  inputTimeout = setTimeout(() => {
+    chatInput.style.display = 'none';
+  }, 5000);
+}
+
+chatInput.addEventListener('mouseenter', () => {
+  clearTimeout(inputTimeout);
+});
+
+chatInput.addEventListener('mouseleave', () => {
+  if (chatInput.style.display === 'block') {
+    startInputTimeout();
+  }
+});
+
 // 設定名稱前綴的 HTML
 const namePrefix = '<span style="color: #c97a2e; font-weight: 900;">Wiki Wiki：</span>';
 
@@ -107,6 +127,9 @@ kiwi.addEventListener('click', (e) => {
   chatInput.style.display = 'block';
   chatBubble.style.display = 'none';
   chatInput.focus();
+  
+  // 啟動 5 秒不理他就自動關閉的計時器
+  startInputTimeout();
 });
 
 // 監聽輸入框的 Enter 鍵事件，呼叫 Gemini
@@ -114,6 +137,9 @@ chatInput.addEventListener('keydown', async (e) => {
   if (e.key === 'Enter') {
     const text = chatInput.value.trim();
     if (!text) return;
+    
+    // 取消輸入框的自動隱藏計時
+    clearTimeout(inputTimeout);
     
     // 隱藏輸入框，顯示思考中
     chatInput.style.display = 'none';
