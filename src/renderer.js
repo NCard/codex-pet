@@ -173,9 +173,9 @@ let dragStartX, dragStartY;
 kiwi.addEventListener('mousedown', (e) => {
   if (e.button !== 0) return; // 只回應左鍵
   isDragging = true;
-  // 記錄游標在視窗內的相對位置
-  mouseOffsetX = e.screenX - window.screenX;
-  mouseOffsetY = e.screenY - window.screenY;
+  // 記錄游標在視窗內的相對位置 (避免使用 window.screenX，因在 RDP 或多螢幕時常有座標回報錯誤的 Bug)
+  mouseOffsetX = e.clientX;
+  mouseOffsetY = e.clientY;
   // 記錄初始座標用來判斷是點擊還是拖曳
   dragStartX = e.screenX;
   dragStartY = e.screenY;
