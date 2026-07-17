@@ -4,10 +4,35 @@ const chatInput = document.getElementById('chat-input');
 const customMenu = document.getElementById('custom-menu');
 const menuSleep = document.getElementById('menu-sleep');
 const menuClose = document.getElementById('menu-close');
+const menuHistory = document.getElementById('menu-history');
 
 const path = require('path');
+const fs = require('fs');
+const { ipcRenderer } = require('electron');
 require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 const { GoogleGenAI } = require('@google/genai');
+
+function saveChatHistory(role, message) {
+  const historyPath = path.join(__dirname, '../chat_history.json');
+  let history = [];
+  try {
+    if (fs.existsSync(historyPath)) {
+      history = JSON.parse(fs.readFileSync(historyPath, 'utf8'));
+    }
+  } catch (e) {
+    console.error('Failed to read history:', e);
+  }
+  history.push({
+    role,
+    message,
+    timestamp: new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' })
+  });
+  try {
+    fs.writeFileSync(historyPath, JSON.stringify(history, null, 2), 'utf8');
+  } catch (e) {
+    console.error('Failed to write history:', e);
+  }
+}
 
 // 初始化 Gemini API 客戶端
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
@@ -76,6 +101,9 @@ chatInput.addEventListener('keydown', async (e) => {
     chatBubble.style.display = 'block';
     chatBubble.innerHTML = `${namePrefix}思考中... 🤔`;
     
+    // 儲存使用者對話
+    saveChatHistory('user', text);
+    
     try {
       const response = await ai.models.generateContent({
         model: 'gemini-3.5-flash',
@@ -84,6 +112,9 @@ chatInput.addEventListener('keydown', async (e) => {
       // 避免 AI 回答包含 HTML 標籤破壞畫面
       const safeText = response.text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
       chatBubble.innerHTML = `${namePrefix}${safeText}`;
+      
+      // 儲存奇異鳥回答
+      saveChatHistory('kiwi', response.text);
       
       // 收到回答後開心地跳躍
       kiwi.classList.add('jumping');

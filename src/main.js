@@ -42,6 +42,21 @@ app.whenReady().then(() => {
     menu.popup({ window: BrowserWindow.fromWebContents(event.sender) });
   });
 
+  ipcMain.on('open-history', () => {
+    const historyWin = new BrowserWindow({
+      width: 600,
+      height: 800,
+      title: 'Wiki Wiki 歷史對話紀錄',
+      webPreferences: {
+        nodeIntegration: true,
+        contextIsolation: false
+      }
+    });
+    // hide menu bar
+    historyWin.setMenu(null);
+    historyWin.loadFile(path.join(__dirname, 'history.html'));
+  });
+
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
