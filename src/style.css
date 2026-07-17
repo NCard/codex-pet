@@ -216,8 +216,8 @@ body, html {
 }
 .sleeping {
   animation: sleep-breathe 4s infinite ease-in-out !important;
-  /* 轉 90 度並保持翻轉 */
-  transform: scaleX(var(--flip)) rotate(90deg) !important;
+  /* 轉 -90 度並保持翻轉，讓寵物仰躺 */
+  transform: scaleX(var(--flip)) rotate(-90deg) !important;
 }
 .shock {
   /* 被抓起來時縮小 */
@@ -226,6 +226,6 @@ body, html {
 }
 
 @keyframes sleep-breathe {
-  0%, 100% { transform: scaleX(var(--flip)) rotate(90deg) scale(1); }
-  50% { transform: scaleX(var(--flip)) rotate(90deg) scale(1.05) translateY(-5px); }
+  0%, 100% { transform: scaleX(var(--flip)) rotate(-90deg) scale(1); }
+  50% { transform: scaleX(var(--flip)) rotate(-90deg) scale(1.05) translateY(-5px); }
 }
