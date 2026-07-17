@@ -164,6 +164,17 @@ window.addEventListener('keydown', (e) => {
 // 設定名稱前綴的 HTML
 const namePrefix = '<span style="color: #c97a2e; font-weight: 900;">Wiki Wiki：</span>';
 
+let bubbleTimeout = null;
+function showTempBubble(text, duration = 5000) {
+  chatBubble.style.display = 'block';
+  chatContent.innerHTML = `${namePrefix}${text}`;
+  
+  if (bubbleTimeout) clearTimeout(bubbleTimeout);
+  bubbleTimeout = setTimeout(() => {
+    chatBubble.style.display = 'none';
+  }, duration);
+}
+
 let isDragging = false;
 let mouseOffsetX, mouseOffsetY;
 let dragStartX, dragStartY;
@@ -408,8 +419,7 @@ menuFeed.addEventListener('click', () => {
   customMenu.style.display = 'none';
   petState.hunger = Math.min(100, petState.hunger + 30);
   savePetState();
-  chatBubble.style.display = 'block';
-  chatContent.innerHTML = `${namePrefix}嚼嚼嚼... 好好吃！🍎 飽足感 UP！`;
+  showTempBubble('好飽好飽！嗝～🍎');
   kiwi.classList.add('jumping');
   setTimeout(() => { kiwi.classList.remove('jumping'); }, 500);
 });
@@ -418,8 +428,7 @@ menuPet.addEventListener('click', () => {
   customMenu.style.display = 'none';
   petState.mood = Math.min(100, petState.mood + 20);
   savePetState();
-  chatBubble.style.display = 'block';
-  chatContent.innerHTML = `${namePrefix}咕啾～好舒服～(⁎˃ᴗ˂⁎) 心情變好了！`;
+  showTempBubble('咕啾～好舒服～(⁎˃ᴗ˂⁎) 心情變好了！');
   // 顯示愛心特效
   kiwiAccessory.innerText = '❤️';
   kiwiAccessory.style.display = 'block';
@@ -452,8 +461,12 @@ menuSleep.addEventListener('click', () => {
   const zzz = document.getElementById('kiwi-zzz');
   if (zzz) zzz.style.display = 'block';
   document.getElementById('kiwi-img').src = '../assets/images/kiwi_sleep.png';
-  chatBubble.style.display = 'block';
-  chatContent.innerHTML = `${namePrefix}晚安... Zzz...`;
+  
+  showTempBubble('晚安... Zzz...');
+
+  // 延遲解除忽略喚醒，避免點擊選單後滑鼠微動立刻喚醒
+  ignoreWakeup = true;
+  setTimeout(() => { ignoreWakeup = false; }, 1000);
 });
 
 menuHistory.addEventListener('click', () => {
@@ -472,10 +485,13 @@ let y = window.screenY;
 
 let isMoving = false;
 let idleTime = 0; // 閒置計時器
+let ignoreWakeup = false;
 
 // 重置閒置狀態
 function resetIdle() {
   idleTime = 0;
+  if (ignoreWakeup) return;
+
   if (kiwi.classList.contains('sleeping')) {
     kiwi.classList.remove('sleeping');
     const zzz = document.getElementById('kiwi-zzz');
