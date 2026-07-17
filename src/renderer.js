@@ -1,0 +1,224 @@
+const kiwi = document.getElementById('kiwi-img');
+const chatBubble = document.getElementById('chat-bubble');
+const chatInput = document.getElementById('chat-input');
+const customMenu = document.getElementById('custom-menu');
+const menuSleep = document.getElementById('menu-sleep');
+const menuClose = document.getElementById('menu-close');
+
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
+const { GoogleGenAI } = require('@google/genai');
+
+// 初始化 Gemini API 客戶端
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+
+let isDragging = false;
+let mouseOffsetX, mouseOffsetY;
+let dragStartX, dragStartY;
+
+// 記錄滑鼠按下時的位置，準備拖曳
+kiwi.addEventListener('mousedown', (e) => {
+  if (e.button !== 0) return; // 只回應左鍵
+  isDragging = true;
+  // 記錄游標在視窗內的相對位置
+  mouseOffsetX = e.screenX - window.screenX;
+  mouseOffsetY = e.screenY - window.screenY;
+  // 記錄初始座標用來判斷是點擊還是拖曳
+  dragStartX = e.screenX;
+  dragStartY = e.screenY;
+  
+  // 被抓起來時觸發驚嚇動作
+  kiwi.classList.add('shock');
+});
+
+// 拖曳視窗
+window.addEventListener('mousemove', (e) => {
+  if (isDragging) {
+    x = e.screenX - mouseOffsetX;
+    y = e.screenY - mouseOffsetY;
+    window.moveTo(x, y);
+  }
+});
+
+// 放開滑鼠結束拖曳
+window.addEventListener('mouseup', () => {
+  isDragging = false;
+  kiwi.classList.remove('shock'); // 恢復正常
+});
+
+// 點擊奇異鳥顯示輸入框
+kiwi.addEventListener('click', (e) => {
+  // 如果移動距離超過 5 像素，判定為拖曳，不顯示對話框
+  if (Math.abs(e.screenX - dragStartX) > 5 || Math.abs(e.screenY - dragStartY) > 5) return;
+
+  // 點擊時開心地跳躍
+  kiwi.classList.add('jumping');
+  setTimeout(() => { kiwi.classList.remove('jumping'); }, 500);
+
+  // 顯示輸入框並自動 Focus
+  chatInput.style.display = 'block';
+  chatBubble.style.display = 'none';
+  chatInput.focus();
+});
+
+// 監聽輸入框的 Enter 鍵事件，呼叫 Gemini
+chatInput.addEventListener('keydown', async (e) => {
+  if (e.key === 'Enter') {
+    const text = chatInput.value.trim();
+    if (!text) return;
+    
+    // 隱藏輸入框，顯示思考中
+    chatInput.style.display = 'none';
+    chatInput.value = '';
+    chatBubble.style.display = 'block';
+    chatBubble.innerText = "奇異鳥思考中... 🤔";
+    
+    try {
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: `你現在是一隻生活在電腦桌面上的可愛奇異鳥小助手，請用簡短、活潑、賣萌的語氣回答問題（因為畫面很小，回答請盡量在 50 字以內，可以加上顏文字）。使用者說：${text}`
+      });
+      chatBubble.innerText = response.text;
+      
+      // 收到回答後開心地跳躍
+      kiwi.classList.add('jumping');
+      setTimeout(() => { kiwi.classList.remove('jumping'); }, 500);
+    } catch (err) {
+      chatBubble.innerText = "嗚嗚，我的腦袋當機了... (API 錯誤)";
+      console.error(err);
+    }
+    
+    // 8秒後隱藏泡泡
+    setTimeout(() => {
+      chatBubble.style.display = 'none';
+    }, 8000);
+  }
+});
+
+// 右鍵點擊奇異鳥，顯示自訂右鍵選單
+kiwi.addEventListener('contextmenu', (e) => {
+  e.preventDefault();
+  
+  // 先顯示選單，才能取得實際寬高
+  customMenu.style.display = 'flex';
+  
+  let menuWidth = customMenu.offsetWidth;
+  let menuHeight = customMenu.offsetHeight;
+  
+  let left = e.clientX + 10;
+  let top = e.clientY - 10;
+  
+  // 防止選單超出 250x250 的視窗邊界而被切掉
+  if (left + menuWidth > 250) {
+    left = e.clientX - menuWidth - 10;
+  }
+  if (top + menuHeight > 250) {
+    top = e.clientY - menuHeight - 10;
+  }
+  
+  customMenu.style.left = left + 'px';
+  customMenu.style.top = top + 'px';
+});
+
+// 點擊其他地方關閉選單
+window.addEventListener('click', (e) => {
+  if (e.target.className !== 'menu-item') {
+    customMenu.style.display = 'none';
+  }
+});
+
+// 綁定選單功能
+menuSleep.addEventListener('click', () => {
+  kiwi.classList.add('sleeping');
+  idleTime = 60; // 假裝已經閒置很久
+  customMenu.style.display = 'none';
+});
+
+menuClose.addEventListener('click', () => {
+  window.close();
+});
+
+// 簡單的隨機移動邏輯 (在桌面範圍內隨機移動視窗)
+// 這裡展示如何透過 renderer 控制 window 的位置
+let x = window.screenX;
+let y = window.screenY;
+
+let isMoving = false;
+let idleTime = 0; // 閒置計時器
+
+// 重置閒置狀態
+function resetIdle() {
+  idleTime = 0;
+  if (kiwi.classList.contains('sleeping')) {
+    kiwi.classList.remove('sleeping');
+  }
+}
+window.addEventListener('mousemove', resetIdle);
+window.addEventListener('mousedown', resetIdle);
+window.addEventListener('keydown', resetIdle);
+
+// 閒置檢查計時器 (每秒執行)
+setInterval(() => {
+  idleTime++;
+  // 如果 60 秒沒有互動，就睡覺
+  if (idleTime > 60 && !isDragging && !isMoving) {
+    kiwi.classList.add('sleeping');
+  }
+}, 1000);
+
+// 每隔一段時間隨機走動
+setInterval(() => {
+  // 睡覺中或移動中就不走動
+  if (isMoving || kiwi.classList.contains('sleeping')) return;
+
+  // 40% 機率決定走動
+  if (Math.random() < 0.4) {
+    isMoving = true;
+    
+    // 拖曳後視窗位置會改變，必須在每次移動前重新抓取當前真實位置
+    x = window.screenX;
+    y = window.screenY;
+    
+    // 決定移動距離 (可以走稍微遠一點點)
+    const moveX = (Math.random() - 0.5) * 300;
+    const moveY = (Math.random() - 0.5) * 100;
+    
+    let targetX = x + moveX;
+    let targetY = y + moveY;
+    
+    // 防止跑出螢幕外
+    targetX = Math.max(0, Math.min(targetX, screen.availWidth - 250));
+    targetY = Math.max(0, Math.min(targetY, screen.availHeight - 250));
+
+    // 翻轉圖片方向 (利用 CSS 變數)
+    // 註：如果圖片預設朝左，而往左走卻翻轉了，請將 1 與 -1 互換！
+    const direction = (targetX < x) ? -1 : 1; 
+    kiwi.style.setProperty('--flip', direction);
+
+    // 加上走路動畫 class (身體晃動)
+    kiwi.classList.add('walking');
+
+    // 平滑移動邏輯：將距離切分成多個小步 (類似 60 fps 動畫)
+    const steps = 60; 
+    let currentStep = 0;
+    
+    const stepX = (targetX - x) / steps;
+    const stepY = (targetY - y) / steps;
+
+    const moveInterval = setInterval(() => {
+      x += stepX;
+      y += stepY;
+      window.moveTo(Math.round(x), Math.round(y)); // 更新視窗位置
+      currentStep++;
+
+      // 到達目的地時停止
+      if (currentStep >= steps) {
+        clearInterval(moveInterval);
+        x = targetX;
+        y = targetY;
+        kiwi.classList.remove('walking');
+        isMoving = false;
+      }
+    }, 16); // 每 16 毫秒走一步，約 60fps
+  }
+}, 3000);

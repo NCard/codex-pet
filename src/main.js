@@ -1,4 +1,4 @@
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, ipcMain, Menu } = require('electron');
 const path = require('path');
 
 // 啟用熱重載 (Hot Reload)
@@ -20,11 +20,27 @@ function createWindow() {
     }
   });
 
-  mainWindow.loadFile('index.html');
+  mainWindow.loadFile(path.join(__dirname, 'index.html'));
 }
 
 app.whenReady().then(() => {
   createWindow();
+
+  ipcMain.on('show-context-menu', (event) => {
+    const template = [
+      {
+        label: '睡覺 (Sleep)',
+        click: () => { event.sender.send('force-sleep'); }
+      },
+      { type: 'separator' },
+      {
+        label: '關閉奇異鳥 (Exit)',
+        click: () => { app.quit(); }
+      }
+    ];
+    const menu = Menu.buildFromTemplate(template);
+    menu.popup({ window: BrowserWindow.fromWebContents(event.sender) });
+  });
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
