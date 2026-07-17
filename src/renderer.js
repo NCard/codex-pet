@@ -5,7 +5,6 @@ const customMenu = document.getElementById('custom-menu');
 const menuSleep = document.getElementById('menu-sleep');
 const menuClose = document.getElementById('menu-close');
 const menuHistory = document.getElementById('menu-history');
-const menuClear = document.getElementById('menu-clear');
 const menuTodo = document.getElementById('menu-todo');
 const menuFeed = document.getElementById('menu-feed');
 const menuPet = document.getElementById('menu-pet');
@@ -456,13 +455,6 @@ menuSleep.addEventListener('click', () => {
 menuHistory.addEventListener('click', () => {
   customMenu.style.display = 'none';
   ipcRenderer.send('open-history');
-});
-
-menuClear.addEventListener('click', () => {
-  customMenu.style.display = 'none';
-  clearChatHistory();
-  chatBubble.style.display = 'block';
-  chatContent.innerHTML = `${namePrefix}咻！💨 已經幫你把歷史紀錄清空囉！`;
 });
 
 menuClose.addEventListener('click', () => {
