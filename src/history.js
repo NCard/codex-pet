@@ -72,4 +72,15 @@ document.getElementById('clear-history-btn').addEventListener('click', () => {
 });
 
 // 也可以設定一個定時器，每幾秒重新整理一次，讓它即時更新
-setInterval(loadHistory, 3000);
+setInterval(() => {
+  // 記錄是否已經在最底部，如果在最底部，重載後繼續保持在最底部
+  const isAtBottom = (window.innerHeight + window.scrollY) >= document.body.offsetHeight - 10;
+  loadHistory();
+  if (isAtBottom) {
+    window.scrollTo(0, document.body.scrollHeight);
+  }
+}, 3000);
+
+document.getElementById('scroll-bottom-btn').addEventListener('click', () => {
+  window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+});
