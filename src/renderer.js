@@ -125,10 +125,16 @@ chatClose.addEventListener('click', () => {
   chatBubble.style.display = 'none';
 });
 
-// 按下 ESC 也可以隱藏泡泡 (全域監聽)
+// 按下 ESC 也可以隱藏各種浮動面板 (全域監聽)
 window.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape' && chatBubble.style.display === 'block') {
-    chatBubble.style.display = 'none';
+  if (e.key === 'Escape') {
+    if (customMenu.style.display !== 'none') {
+      customMenu.style.display = 'none';
+    } else if (chatBubble.style.display === 'block') {
+      chatBubble.style.display = 'none';
+    } else if (todoPanel.style.display === 'block') {
+      todoPanel.style.display = 'none';
+    }
   }
 });
 
