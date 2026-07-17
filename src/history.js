@@ -47,16 +47,16 @@ function loadHistory() {
       historyContainer.appendChild(msgDiv);
     });
     
-    // 捲動到最底
-    window.scrollTo(0, document.body.scrollHeight);
+    // 如果是初次載入，我們可以在外部呼叫時決定是否要捲動
   } catch (err) {
     console.error(err);
     historyContainer.innerHTML = '<div style="text-align: center; color: red;">讀取歷史紀錄失敗 😢</div>';
   }
 }
 
-// 載入歷史紀錄
+// 初次載入歷史紀錄並捲動到最底部
 loadHistory();
+window.scrollTo(0, document.body.scrollHeight);
 
 document.getElementById('clear-history-btn').addEventListener('click', () => {
   if (confirm('確定要清空所有的對話紀錄嗎？這項操作無法復原喔！')) {
