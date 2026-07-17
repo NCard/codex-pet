@@ -47,6 +47,13 @@ chatClose.addEventListener('click', () => {
   chatBubble.style.display = 'none';
 });
 
+// 按下 ESC 也可以隱藏泡泡 (全域監聽)
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && chatBubble.style.display === 'block') {
+    chatBubble.style.display = 'none';
+  }
+});
+
 // 設定名稱前綴的 HTML
 const namePrefix = '<span style="color: #c97a2e; font-weight: 900;">Wiki Wiki：</span>';
 
