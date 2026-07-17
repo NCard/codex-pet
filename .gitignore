@@ -1,3 +1,5 @@
 node_modules/
 dist/
 .env
+pet_state.json
+chat_history.json
