@@ -447,9 +447,12 @@ menuOutfit.addEventListener('click', () => {
 });
 
 menuSleep.addEventListener('click', () => {
-  kiwi.classList.add('sleeping');
-  idleTime = 60; // 假裝已經閒置很久
   customMenu.style.display = 'none';
+  kiwi.classList.add('sleeping');
+  const zzz = document.getElementById('kiwi-zzz');
+  if (zzz) zzz.style.display = 'block';
+  chatBubble.style.display = 'block';
+  chatContent.innerHTML = `${namePrefix}晚安... Zzz...`;
 });
 
 menuHistory.addEventListener('click', () => {
@@ -474,6 +477,8 @@ function resetIdle() {
   idleTime = 0;
   if (kiwi.classList.contains('sleeping')) {
     kiwi.classList.remove('sleeping');
+    const zzz = document.getElementById('kiwi-zzz');
+    if (zzz) zzz.style.display = 'none';
   }
 }
 window.addEventListener('mousemove', resetIdle);
@@ -484,8 +489,10 @@ window.addEventListener('keydown', resetIdle);
 setInterval(() => {
   idleTime++;
   // 如果 60 秒沒有互動，就睡覺
-  if (idleTime > 60 && !isDragging && !isMoving) {
+  if (idleTime > 60 && !kiwi.classList.contains('sleeping') && !isWorking && !isDragging && !isMoving) {
     kiwi.classList.add('sleeping');
+    const zzz = document.getElementById('kiwi-zzz');
+    if (zzz) zzz.style.display = 'block';
   }
 }, 1000);
 
