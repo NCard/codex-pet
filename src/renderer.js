@@ -280,9 +280,15 @@ setInterval(() => {
     let targetX = x + moveX;
     let targetY = y + moveY;
     
-    // 防止跑出螢幕外
-    targetX = Math.max(0, Math.min(targetX, screen.availWidth - 250));
-    targetY = Math.max(0, Math.min(targetY, screen.availHeight - 250));
+    // 取得當前視窗所在螢幕的邊界 (支援多螢幕)
+    const minX = window.screen.availLeft || 0;
+    const minY = window.screen.availTop || 0;
+    const maxX = minX + window.screen.availWidth - 250;
+    const maxY = minY + window.screen.availHeight - 250;
+    
+    // 防止跑出當前螢幕外
+    targetX = Math.max(minX, Math.min(targetX, maxX));
+    targetY = Math.max(minY, Math.min(targetY, maxY));
 
     // 翻轉圖片方向 (利用 CSS 變數)
     // 註：如果圖片預設朝左，而往左走卻翻轉了，請將 1 與 -1 互換！
