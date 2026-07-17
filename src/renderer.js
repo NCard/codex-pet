@@ -144,7 +144,7 @@ chatInput.addEventListener('keydown', async (e) => {
     const text = chatInput.value;
     if (text.startsWith('/')) {
       e.preventDefault(); // 防止失去焦點
-      const commands = ['/help', '/md5'];
+      const commands = ['/help', '/md5', '/base64', '/uuid', '/calc'];
       const match = commands.find(c => c.startsWith(text));
       if (match) {
         chatInput.value = match + ' ';
@@ -180,7 +180,12 @@ chatInput.addEventListener('keydown', async (e) => {
       
       let reply = '';
       if (cmd === '/help') {
-        reply = 'Wiki Wiki 指令模式喵！<br><b>/help</b> : 顯示這個說明<br><b>/md5 [字串]</b> : 轉成 md5 32碼小寫（字串可用雙引號包起來）';
+        reply = 'Wiki Wiki 指令模式喵！<br>' +
+                '<b>/help</b> : 顯示這個說明<br>' +
+                '<b>/md5 [字串]</b> : 轉成 md5 32碼<br>' +
+                '<b>/base64 [encode/decode] [字串]</b> : base64 轉換<br>' +
+                '<b>/uuid</b> : 產生隨機 UUID<br>' +
+                '<b>/calc [算式]</b> : 幫你算數學 (例如 1+1)';
       } else if (cmd === '/md5') {
         // 如果前後有雙引號，則去除
         if (argStr.startsWith('"') && argStr.endsWith('"')) {
@@ -190,7 +195,28 @@ chatInput.addEventListener('keydown', async (e) => {
           reply = '喵？沒有給我要轉換的字串喔！請用 /md5 "字串"';
         } else {
           const hash = crypto.createHash('md5').update(argStr).digest('hex');
-          reply = `嗶嗶！Wiki Wiki 用力一啄！(•ө•)♡<br><code>${hash}</code><br>主人，轉換好囉，啾～`;
+          reply = `嗶嗶！Wiki Wiki 用力一啄！(•ө•)♡<br><code>${hash}</code>`;
+        }
+      } else if (cmd === '/base64') {
+        const subCmd = argStr.split(' ')[0];
+        const textToConvert = argStr.substring(subCmd.length).trim();
+        if (subCmd === 'encode') {
+          reply = `Base64 編碼：<br><code>${Buffer.from(textToConvert).toString('base64')}</code>`;
+        } else if (subCmd === 'decode') {
+          reply = `Base64 解碼：<br><code>${Buffer.from(textToConvert, 'base64').toString('utf8')}</code>`;
+        } else {
+          reply = '喵？請輸入 `/base64 encode 字串` 或 `/base64 decode 字串`';
+        }
+      } else if (cmd === '/uuid') {
+        reply = `送你一個熱騰騰的 UUID：<br><code>${crypto.randomUUID()}</code>`;
+      } else if (cmd === '/calc') {
+        try {
+          // 簡易安全替換，避免注入
+          const safeMath = argStr.replace(/[^0-9+\-*/().]/g, '');
+          const result = new Function(`return ${safeMath}`)();
+          reply = `Wiki Wiki 算出來了！<br><code>${argStr} = ${result}</code>`;
+        } catch (e) {
+          reply = '數學太難了，Wiki Wiki 腦袋打結惹 😵‍💫';
         }
       } else {
         reply = '這是什麼奇怪的指令呀？Wiki Wiki 聽不懂 (歪頭)<br>試試看 /help 吧！';
