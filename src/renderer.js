@@ -8,11 +8,15 @@ const menuHistory = document.getElementById('menu-history');
 const menuTodo = document.getElementById('menu-todo');
 const menuFeed = document.getElementById('menu-feed');
 const menuPet = document.getElementById('menu-pet');
+const menuOutfit = document.getElementById('menu-outfit');
 
 // 待辦事項面板元素
 const todoPanel = document.getElementById('todo-panel');
 const todoList = document.getElementById('todo-list');
 const todoClose = document.getElementById('todo-close');
+
+const kiwiOutfit = document.getElementById('kiwi-outfit');
+const outfits = ['', '🎩', '🕶️', '🎀', '👑'];
 
 function renderTodos() {
   todoList.innerHTML = '';
@@ -98,6 +102,11 @@ function savePetState() {
 loadPetState();
 // 初始化待辦事項 UI
 renderTodos();
+// 初始化裝扮
+if (petState.outfit) {
+  kiwiOutfit.innerText = petState.outfit;
+  kiwiOutfit.style.display = 'block';
+}
 
 // 番茄鐘狀態
 let pomodoroTimer = null;
@@ -381,7 +390,25 @@ menuPet.addEventListener('click', () => {
   // 顯示愛心特效
   kiwiAccessory.innerText = '❤️';
   kiwiAccessory.style.display = 'block';
-  setTimeout(() => { kiwiAccessory.style.display = 'none'; }, 2000);
+  setTimeout(() => { if(!isWorking) kiwiAccessory.style.display = 'none'; }, 2000);
+  kiwi.classList.add('jumping');
+  setTimeout(() => { kiwi.classList.remove('jumping'); }, 500);
+});
+
+menuOutfit.addEventListener('click', () => {
+  customMenu.style.display = 'none';
+  let currentIndex = outfits.indexOf(petState.outfit || '');
+  currentIndex = (currentIndex + 1) % outfits.length;
+  petState.outfit = outfits[currentIndex];
+  savePetState();
+  
+  if (petState.outfit) {
+    kiwiOutfit.innerText = petState.outfit;
+    kiwiOutfit.style.display = 'block';
+  } else {
+    kiwiOutfit.style.display = 'none';
+  }
+  
   kiwi.classList.add('jumping');
   setTimeout(() => { kiwi.classList.remove('jumping'); }, 500);
 });
@@ -492,3 +519,36 @@ setInterval(() => {
     }, 16); // 每 16 毫秒走一步，約 60fps
   }
 }, 3000);
+
+// CPU 監控與狀態隨時間遞減
+let lastCpu = os.cpus();
+setInterval(() => {
+  const currentCpu = os.cpus();
+  let idle = 0, total = 0;
+  for (let i = 0; i < currentCpu.length; i++) {
+    for (let type in currentCpu[i].times) {
+      total += currentCpu[i].times[type] - lastCpu[i].times[type];
+      if (type === 'idle') idle += currentCpu[i].times[type] - lastCpu[i].times[type];
+    }
+  }
+  const usage = total === 0 ? 0 : 100 - ~~(100 * idle / total);
+  lastCpu = currentCpu;
+
+  // 隨時間降低飢餓與心情 (不會小於 0)
+  petState.hunger = Math.max(0, petState.hunger - 1);
+  petState.mood = Math.max(0, petState.mood - 1);
+
+  if (usage > 70) {
+    if (!isWorking && kiwiAccessory.style.display === 'none') {
+      kiwiAccessory.innerText = '💦';
+      kiwiAccessory.style.display = 'block';
+    }
+  } else {
+    if (!isWorking && kiwiAccessory.innerText === '💦') {
+      kiwiAccessory.style.display = 'none';
+    }
+  }
+  
+  // 定期自動存檔
+  if (Math.random() < 0.2) savePetState();
+}, 10000);
