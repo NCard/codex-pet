@@ -157,6 +157,10 @@ kiwi.addEventListener('contextmenu', (e) => {
     top = e.clientY - menuHeight - 10;
   }
   
+  // 終極防線：確保絕對不會掉出左邊和上面的邊界 (小於 0)
+  if (left < 5) left = 5;
+  if (top < 5) top = 5;
+  
   customMenu.style.left = left + 'px';
   customMenu.style.top = top + 'px';
 });
