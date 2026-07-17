@@ -1,0 +1,29 @@
+{
+  "name": "codex-pet",
+  "version": "1.0.0",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder --win",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "Kiwi Desktop Pet",
+  "build": {
+    "appId": "com.codexpet.kiwi",
+    "win": {
+      "target": "nsis",
+      "icon": "kiwi.png"
+    }
+  },
+  "dependencies": {
+    "@google/genai": "^2.12.0"
+  },
+  "devDependencies": {
+    "electron": "^41.7.1",
+    "electron-reloader": "^1.2.3"
+  }
+}
