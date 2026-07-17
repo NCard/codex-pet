@@ -37,16 +37,25 @@ body, html {
 .chat-bubble {
   position: absolute;
   top: 10px;
-  background: white;
-  border: 2px solid #ccc;
+  width: 170px;
+  word-break: break-all;
+  overflow-wrap: break-word;
+  background: 
+    url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><text y='20' font-size='20'>🌸</text></svg>") top 5px right 5px no-repeat,
+    url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><text y='20' font-size='20'>🌿</text></svg>") bottom 5px left 5px no-repeat,
+    linear-gradient(135deg, #e1f5fe 0%, #81d4fa 100%);
+  background-size: 20px 20px, 24px 24px, 100% 100%;
+  background-attachment: scroll, scroll, scroll;
+  border: 2px solid #29b6f6;
   border-radius: 15px;
-  padding: 10px;
+  padding: 12px 25px 12px 28px;
+  color: #0277bd;
   font-family: 'Microsoft JhengHei', sans-serif;
   font-size: 14px;
-  box-shadow: 0px 4px 6px rgba(0,0,0,0.1);
+  box-shadow: 0px 4px 8px rgba(3, 169, 244, 0.3);
   -webkit-app-region: no-drag; /* 讓對話框不可拖曳視窗 */
   z-index: 10;
-  max-height: 100px;
+  max-height: 120px;
   overflow-y: auto;
 }
 
@@ -56,13 +65,18 @@ body, html {
   width: 180px;
   padding: 8px;
   border-radius: 15px;
-  border: 2px solid #ccc;
+  border: 2px solid #29b6f6;
+  background: #e1f5fe;
+  color: #0277bd;
   outline: none;
   font-family: 'Microsoft JhengHei', sans-serif;
   font-size: 14px;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 6px rgba(3, 169, 244, 0.2);
   z-index: 20;
   -webkit-app-region: no-drag;
+}
+#chat-input::placeholder {
+  color: #4fc3f7;
 }
 
 #custom-menu {
