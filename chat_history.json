@@ -83,5 +83,25 @@
     "role": "kiwi",
     "message": "Wiki Wiki 指令模式喵！<br><b>/help</b> : 顯示這個說明<br><b>/md5 [字串]</b> : 轉成 md5 32碼小寫（字串可用雙引號包起來）",
     "timestamp": "2026/7/17 下午5:06:10"
+  },
+  {
+    "role": "user",
+    "message": "/help",
+    "timestamp": "2026/7/17 下午5:13:45"
+  },
+  {
+    "role": "kiwi",
+    "message": "Wiki Wiki 指令模式喵！<br><b>/help</b> : 顯示這個說明<br><b>/md5 [字串]</b> : 轉成 md5 32碼<br><b>/base64 [encode/decode] [字串]</b> : base64 轉換<br><b>/uuid</b> : 產生隨機 UUID<br><b>/calc [算式]</b> : 幫你算數學 (例如 1+1)<br><b>/pomodoro [分鐘]</b> : 啟動番茄鐘 (預設25分)",
+    "timestamp": "2026/7/17 下午5:13:45"
+  },
+  {
+    "role": "user",
+    "message": "/pomodoro 10",
+    "timestamp": "2026/7/17 下午5:14:11"
+  },
+  {
+    "role": "kiwi",
+    "message": "番茄鐘啟動！Wiki Wiki 會陪你專注 10 分鐘！加油！(๑•̀ㅂ•́)و✧",
+    "timestamp": "2026/7/17 下午5:14:11"
   }
 ]

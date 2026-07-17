@@ -119,17 +119,83 @@ body, html {
   width: 0;
 }
 
+/* 動畫 keyframes */
 @keyframes breathe {
-  0%, 100% { transform: scaleX(var(--flip)) scaleY(1); }
-  50% { transform: scaleX(var(--flip)) scaleY(1.03) translateY(-3px); }
+  0% { transform: scaleX(var(--flip)) scale(1); }
+  50% { transform: scaleX(var(--flip)) scale(1.05) translateY(-5px); }
+  100% { transform: scaleX(var(--flip)) scale(1); }
+}
+
+@keyframes shock {
+  0% { transform: scaleX(var(--flip)) scale(1); }
+  20% { transform: scaleX(var(--flip)) scale(1.2) rotate(15deg); }
+  40% { transform: scaleX(var(--flip)) scale(1.2) rotate(-15deg); }
+  60% { transform: scaleX(var(--flip)) scale(1.2) rotate(15deg); }
+  80% { transform: scaleX(var(--flip)) scale(1.2) rotate(-15deg); }
+  100% { transform: scaleX(var(--flip)) scale(1); }
+}
+
+@keyframes jump {
+  0% { transform: scaleX(var(--flip)) translateY(0); }
+  50% { transform: scaleX(var(--flip)) translateY(-20px); }
+  100% { transform: scaleX(var(--flip)) translateY(0); }
 }
 
 @keyframes walk {
-  0% { transform: scaleX(var(--flip)) translateY(0) rotate(0deg); }
-  25% { transform: scaleX(var(--flip)) translateY(-5px) rotate(5deg); }
-  50% { transform: scaleX(var(--flip)) translateY(0) rotate(0deg); }
-  75% { transform: scaleX(var(--flip)) translateY(-5px) rotate(-5deg); }
-  100% { transform: scaleX(var(--flip)) translateY(0) rotate(0deg); }
+  0% { transform: scaleX(var(--flip)) rotate(0deg); }
+  25% { transform: scaleX(var(--flip)) rotate(5deg) translateY(-2px); }
+  50% { transform: scaleX(var(--flip)) rotate(0deg); }
+  75% { transform: scaleX(var(--flip)) rotate(-5deg) translateY(-2px); }
+  100% { transform: scaleX(var(--flip)) rotate(0deg); }
+}
+
+@keyframes float {
+  0% { transform: translateX(-50%) translateY(0); }
+  50% { transform: translateX(-50%) translateY(-5px); }
+  100% { transform: translateX(-50%) translateY(0); }
+}
+
+#todo-panel {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 200px;
+  background: rgba(255, 255, 255, 0.95);
+  border: 2px solid #81d4fa;
+  border-radius: 10px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  padding: 10px;
+  font-family: 'Microsoft JhengHei', sans-serif;
+  z-index: 500;
+  -webkit-app-region: no-drag;
+}
+.todo-header {
+  font-weight: bold;
+  color: #0277bd;
+  border-bottom: 2px dashed #b3e5fc;
+  padding-bottom: 5px;
+  margin-bottom: 5px;
+}
+#todo-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 120px;
+  overflow-y: auto;
+}
+#todo-list li {
+  font-size: 13px;
+  padding: 4px 0;
+  border-bottom: 1px solid #e1f5fe;
+  cursor: pointer;
+  color: #333;
+}
+#todo-list li:hover {
+  background: #f1f8e9;
+}
+#todo-list li.completed {
+  text-decoration: line-through;
+  color: #999;
 }
 
 .walking {
@@ -149,14 +215,6 @@ body, html {
   /* 被抓起來時縮小 */
   transform: scaleX(var(--flip)) scale(0.8) translateY(-10px) !important;
   transition: transform 0.1s ease;
-}
-
-@keyframes jump {
-  0%   { transform: scaleX(var(--flip)) scaleY(1) translateY(0); }
-  20%  { transform: scaleX(var(--flip)) scaleY(0.8) translateY(10px); } /* 蹲下 */
-  50%  { transform: scaleX(var(--flip)) scaleY(1.1) translateY(-40px); } /* 起跳 */
-  80%  { transform: scaleX(var(--flip)) scaleY(0.9) translateY(5px); } /* 落地緩衝 */
-  100% { transform: scaleX(var(--flip)) scaleY(1) translateY(0); }
 }
 
 @keyframes sleep-breathe {

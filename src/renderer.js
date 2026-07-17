@@ -5,6 +5,36 @@ const customMenu = document.getElementById('custom-menu');
 const menuSleep = document.getElementById('menu-sleep');
 const menuClose = document.getElementById('menu-close');
 const menuHistory = document.getElementById('menu-history');
+const menuTodo = document.getElementById('menu-todo');
+const menuFeed = document.getElementById('menu-feed');
+const menuPet = document.getElementById('menu-pet');
+
+// 待辦事項面板元素
+const todoPanel = document.getElementById('todo-panel');
+const todoList = document.getElementById('todo-list');
+const todoClose = document.getElementById('todo-close');
+
+function renderTodos() {
+  todoList.innerHTML = '';
+  petState.todos.forEach((todo, index) => {
+    const li = document.createElement('li');
+    li.textContent = todo.text;
+    if (todo.done) li.classList.add('completed');
+    li.addEventListener('click', () => {
+      todo.done = !todo.done;
+      savePetState();
+      renderTodos();
+    });
+    todoList.appendChild(li);
+  });
+}
+
+// 啟動時渲染待辦事項
+// (會放在 loadPetState() 之後呼叫，見下方)
+
+todoClose.addEventListener('click', () => {
+  todoPanel.style.display = 'none';
+});
 
 const path = require('path');
 const fs = require('fs');
@@ -66,6 +96,8 @@ function savePetState() {
 
 // 啟動時載入狀態
 loadPetState();
+// 初始化待辦事項 UI
+renderTodos();
 
 // 番茄鐘狀態
 let pomodoroTimer = null;
@@ -149,7 +181,7 @@ chatInput.addEventListener('keydown', async (e) => {
     const text = chatInput.value;
     if (text.startsWith('/')) {
       e.preventDefault(); // 防止失去焦點
-      const commands = ['/help', '/md5', '/base64', '/uuid', '/calc', '/pomodoro'];
+      const commands = ['/help', '/md5', '/base64', '/uuid', '/calc', '/pomodoro', '/todo'];
       const match = commands.find(c => c.startsWith(text));
       if (match) {
         chatInput.value = match + ' ';
@@ -191,7 +223,8 @@ chatInput.addEventListener('keydown', async (e) => {
                 '<b>/base64 [encode/decode] [字串]</b> : base64 轉換<br>' +
                 '<b>/uuid</b> : 產生隨機 UUID<br>' +
                 '<b>/calc [算式]</b> : 幫你算數學 (例如 1+1)<br>' +
-                '<b>/pomodoro [分鐘]</b> : 啟動番茄鐘 (預設25分)';
+                '<b>/pomodoro [分鐘]</b> : 啟動番茄鐘 (預設25分)<br>' +
+                '<b>/todo [事項]</b> : 新增待辦事項';
       } else if (cmd === '/md5') {
         // 如果前後有雙引號，則去除
         if (argStr.startsWith('"') && argStr.endsWith('"')) {
@@ -239,6 +272,15 @@ chatInput.addEventListener('keydown', async (e) => {
           chatBubble.style.display = 'block';
           chatContent.innerHTML = `${namePrefix}嗶嗶嗶！${mins} 分鐘到啦！快起來喝口水、伸展一下筋骨吧！🐦💦`;
         }, mins * 60 * 1000);
+      } else if (cmd === '/todo') {
+        if (!argStr) {
+          reply = '喵？請告訴我要記下什麼待辦事項喔！例如 `/todo 買牛奶`';
+        } else {
+          petState.todos.push({ text: argStr, done: false });
+          savePetState();
+          renderTodos();
+          reply = `記下來啦！✍️<br>「${argStr}」<br>已經加到待辦清單囉！`;
+        }
       } else {
         reply = '這是什麼奇怪的指令呀？Wiki Wiki 聽不懂 (歪頭)<br>試試看 /help 吧！';
       }
@@ -315,6 +357,35 @@ window.addEventListener('click', (e) => {
 });
 
 // 綁定選單功能
+menuTodo.addEventListener('click', () => {
+  customMenu.style.display = 'none';
+  todoPanel.style.display = todoPanel.style.display === 'none' ? 'block' : 'none';
+});
+
+menuFeed.addEventListener('click', () => {
+  customMenu.style.display = 'none';
+  petState.hunger = Math.min(100, petState.hunger + 30);
+  savePetState();
+  chatBubble.style.display = 'block';
+  chatContent.innerHTML = `${namePrefix}嚼嚼嚼... 好好吃！🍎 飽足感 UP！`;
+  kiwi.classList.add('jumping');
+  setTimeout(() => { kiwi.classList.remove('jumping'); }, 500);
+});
+
+menuPet.addEventListener('click', () => {
+  customMenu.style.display = 'none';
+  petState.mood = Math.min(100, petState.mood + 20);
+  savePetState();
+  chatBubble.style.display = 'block';
+  chatContent.innerHTML = `${namePrefix}咕啾～好舒服～(⁎˃ᴗ˂⁎) 心情變好了！`;
+  // 顯示愛心特效
+  kiwiAccessory.innerText = '❤️';
+  kiwiAccessory.style.display = 'block';
+  setTimeout(() => { kiwiAccessory.style.display = 'none'; }, 2000);
+  kiwi.classList.add('jumping');
+  setTimeout(() => { kiwi.classList.remove('jumping'); }, 500);
+});
+
 menuSleep.addEventListener('click', () => {
   kiwi.classList.add('sleeping');
   idleTime = 60; // 假裝已經閒置很久
