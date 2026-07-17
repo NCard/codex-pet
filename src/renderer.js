@@ -451,6 +451,7 @@ menuSleep.addEventListener('click', () => {
   kiwi.classList.add('sleeping');
   const zzz = document.getElementById('kiwi-zzz');
   if (zzz) zzz.style.display = 'block';
+  document.getElementById('kiwi-img').src = '../assets/images/kiwi_sleep.png';
   chatBubble.style.display = 'block';
   chatContent.innerHTML = `${namePrefix}晚安... Zzz...`;
 });
@@ -479,6 +480,7 @@ function resetIdle() {
     kiwi.classList.remove('sleeping');
     const zzz = document.getElementById('kiwi-zzz');
     if (zzz) zzz.style.display = 'none';
+    document.getElementById('kiwi-img').src = '../assets/images/kiwi.png';
   }
 }
 window.addEventListener('mousemove', resetIdle);
@@ -493,6 +495,7 @@ setInterval(() => {
     kiwi.classList.add('sleeping');
     const zzz = document.getElementById('kiwi-zzz');
     if (zzz) zzz.style.display = 'block';
+    document.getElementById('kiwi-img').src = '../assets/images/kiwi_sleep.png';
   }
 }, 1000);
 
