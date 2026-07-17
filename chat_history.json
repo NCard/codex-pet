@@ -53,5 +53,35 @@
     "role": "kiwi",
     "message": "嗶嗶！(•⌔•) 轉換好囉：\n`74b87337454200d4d33f80c4663dc5e5`\n啾～⭐",
     "timestamp": "2026/7/17 下午5:00:20"
+  },
+  {
+    "role": "user",
+    "message": "/help",
+    "timestamp": "2026/7/17 下午5:03:08"
+  },
+  {
+    "role": "kiwi",
+    "message": "Wiki Wiki 指令模式喵！<br><b>/help</b> : 顯示這個說明<br><b>/md5 [字串]</b> : 轉成 md5 32碼小寫（字串可用雙引號包起來）",
+    "timestamp": "2026/7/17 下午5:03:08"
+  },
+  {
+    "role": "user",
+    "message": "/md5 啦啦啦",
+    "timestamp": "2026/7/17 下午5:03:24"
+  },
+  {
+    "role": "kiwi",
+    "message": "嗶嗶！Wiki Wiki 用力一啄！(•ө•)♡<br><code>ba38cdf2888bffa1dd58284e5beb0896</code><br>主人，轉換好囉，啾～",
+    "timestamp": "2026/7/17 下午5:03:24"
+  },
+  {
+    "role": "user",
+    "message": "/help",
+    "timestamp": "2026/7/17 下午5:06:10"
+  },
+  {
+    "role": "kiwi",
+    "message": "Wiki Wiki 指令模式喵！<br><b>/help</b> : 顯示這個說明<br><b>/md5 [字串]</b> : 轉成 md5 32碼小寫（字串可用雙引號包起來）",
+    "timestamp": "2026/7/17 下午5:06:10"
   }
 ]

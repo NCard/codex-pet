@@ -67,8 +67,13 @@ function savePetState() {
 // 啟動時載入狀態
 loadPetState();
 
+// 番茄鐘狀態
+let pomodoroTimer = null;
+let isWorking = false;
+
 // 初始化 Gemini API 客戶端
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+const kiwiAccessory = document.getElementById('kiwi-accessory');
 
 // 取得對話泡泡內部元素
 const chatContent = document.getElementById('chat-content');
@@ -144,7 +149,7 @@ chatInput.addEventListener('keydown', async (e) => {
     const text = chatInput.value;
     if (text.startsWith('/')) {
       e.preventDefault(); // 防止失去焦點
-      const commands = ['/help', '/md5', '/base64', '/uuid', '/calc'];
+      const commands = ['/help', '/md5', '/base64', '/uuid', '/calc', '/pomodoro'];
       const match = commands.find(c => c.startsWith(text));
       if (match) {
         chatInput.value = match + ' ';
@@ -185,7 +190,8 @@ chatInput.addEventListener('keydown', async (e) => {
                 '<b>/md5 [字串]</b> : 轉成 md5 32碼<br>' +
                 '<b>/base64 [encode/decode] [字串]</b> : base64 轉換<br>' +
                 '<b>/uuid</b> : 產生隨機 UUID<br>' +
-                '<b>/calc [算式]</b> : 幫你算數學 (例如 1+1)';
+                '<b>/calc [算式]</b> : 幫你算數學 (例如 1+1)<br>' +
+                '<b>/pomodoro [分鐘]</b> : 啟動番茄鐘 (預設25分)';
       } else if (cmd === '/md5') {
         // 如果前後有雙引號，則去除
         if (argStr.startsWith('"') && argStr.endsWith('"')) {
@@ -218,6 +224,21 @@ chatInput.addEventListener('keydown', async (e) => {
         } catch (e) {
           reply = '數學太難了，Wiki Wiki 腦袋打結惹 😵‍💫';
         }
+      } else if (cmd === '/pomodoro') {
+        let mins = parseInt(argStr) || 25;
+        reply = `番茄鐘啟動！Wiki Wiki 會陪你專注 ${mins} 分鐘！加油！(๑•̀ㅂ•́)و✧`;
+        
+        isWorking = true;
+        kiwiAccessory.innerText = '⏳';
+        kiwiAccessory.style.display = 'block';
+        clearTimeout(pomodoroTimer);
+        
+        pomodoroTimer = setTimeout(() => {
+          isWorking = false;
+          kiwiAccessory.style.display = 'none';
+          chatBubble.style.display = 'block';
+          chatContent.innerHTML = `${namePrefix}嗶嗶嗶！${mins} 分鐘到啦！快起來喝口水、伸展一下筋骨吧！🐦💦`;
+        }, mins * 60 * 1000);
       } else {
         reply = '這是什麼奇怪的指令呀？Wiki Wiki 聽不懂 (歪頭)<br>試試看 /help 吧！';
       }
@@ -339,8 +360,8 @@ setInterval(() => {
 
 // 每隔一段時間隨機走動
 setInterval(() => {
-  // 睡覺中、移動中、或是有對話框/輸入框時，暫停走動
-  if (isMoving || kiwi.classList.contains('sleeping')) return;
+  // 睡覺中、移動中、專注中、或是有對話框/輸入框時，暫停走動
+  if (isMoving || kiwi.classList.contains('sleeping') || isWorking) return;
   if (chatBubble.style.display === 'block' || chatInput.style.display === 'block') return;
 
   // 40% 機率決定走動

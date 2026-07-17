@@ -19,7 +19,10 @@
       <div class="menu-item" id="menu-sleep">💤 睡覺 (Sleep)</div>
       <div class="menu-item" id="menu-close">❌ 關閉 (Exit)</div>
     </div>
-    <img src="../assets/images/kiwi.png" alt="kiwi pet" id="kiwi-img">
+    <div id="kiwi-wrapper" style="position: relative; display: inline-block;">
+      <div id="kiwi-accessory" style="display: none; position: absolute; top: -30px; left: 50%; transform: translateX(-50%); font-size: 40px; pointer-events: none; animation: breathe 3s infinite ease-in-out;">⏳</div>
+      <img src="../assets/images/kiwi.png" alt="kiwi pet" id="kiwi-img">
+    </div>
   </div>
   <script src="renderer.js"></script>
 </body>
