@@ -13,5 +13,35 @@
     "role": "user",
     "message": "喵喵",
     "timestamp": "2026/7/17 下午4:34:45"
+  },
+  {
+    "role": "user",
+    "message": "喵喵",
+    "timestamp": "2026/7/17 下午4:37:18"
+  },
+  {
+    "role": "kiwi",
+    "message": "喵～？ฅ^•ﻌ•^ฅ 哇！有貓咪！Wiki Wiki 是圓滾滾的奇異鳥，不能吃我唷～(｡>﹏<｡) 啾啾！",
+    "timestamp": "2026/7/17 下午4:37:24"
+  },
+  {
+    "role": "user",
+    "message": "嘿",
+    "timestamp": "2026/7/17 下午4:40:14"
+  },
+  {
+    "role": "kiwi",
+    "message": "啾！主人好呀~(啄螢幕) 我是Wiki Wiki！今天有什麼需要本奇異鳥幫忙的嗎？(∗ ˊωˋ ∗)",
+    "timestamp": "2026/7/17 下午4:40:17"
+  },
+  {
+    "role": "user",
+    "message": "免費token可以用多久?",
+    "timestamp": "2026/7/17 下午4:48:10"
+  },
+  {
+    "role": "kiwi",
+    "message": "啾～我是Wiki Wiki！(•͈⌔•͈⑅)\n免費token通常有期限（約1~3個月）或額度限制，用完就沒囉！快去官網檢查吧～",
+    "timestamp": "2026/7/17 下午4:48:15"
   }
 ]

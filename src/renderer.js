@@ -37,44 +37,13 @@ function saveChatHistory(role, message) {
 // 初始化 Gemini API 客戶端
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-// 對話框自動隱藏計時器
-let chatTimeout;
+// 取得對話泡泡內部元素
+const chatContent = document.getElementById('chat-content');
+const chatClose = document.getElementById('chat-close');
 
-function startChatTimeout() {
-  clearTimeout(chatTimeout);
-  chatTimeout = setTimeout(() => {
-    chatBubble.style.display = 'none';
-  }, 8000);
-}
-
-// 滑鼠游標進入泡泡範圍時，取消計時 (不消失)
-chatBubble.addEventListener('mouseenter', () => {
-  clearTimeout(chatTimeout);
-});
-
-// 滑鼠游標離開泡泡範圍時，重新開始 8 秒倒數
-chatBubble.addEventListener('mouseleave', () => {
-  startChatTimeout();
-});
-
-// 輸入框自動隱藏計時器
-let inputTimeout;
-
-function startInputTimeout() {
-  clearTimeout(inputTimeout);
-  inputTimeout = setTimeout(() => {
-    chatInput.style.display = 'none';
-  }, 5000);
-}
-
-chatInput.addEventListener('mouseenter', () => {
-  clearTimeout(inputTimeout);
-});
-
-chatInput.addEventListener('mouseleave', () => {
-  if (chatInput.style.display === 'block') {
-    startInputTimeout();
-  }
+// 點擊關閉按鈕隱藏泡泡
+chatClose.addEventListener('click', () => {
+  chatBubble.style.display = 'none';
 });
 
 // 設定名稱前綴的 HTML
@@ -127,25 +96,25 @@ kiwi.addEventListener('click', (e) => {
   chatInput.style.display = 'block';
   chatBubble.style.display = 'none';
   chatInput.focus();
-  
-  // 啟動 5 秒不理他就自動關閉的計時器
-  startInputTimeout();
 });
 
 // 監聽輸入框的 Enter 鍵事件，呼叫 Gemini
 chatInput.addEventListener('keydown', async (e) => {
+  if (e.key === 'Escape') {
+    chatInput.style.display = 'none';
+    chatInput.value = '';
+    return;
+  }
+
   if (e.key === 'Enter') {
     const text = chatInput.value.trim();
     if (!text) return;
-    
-    // 取消輸入框的自動隱藏計時
-    clearTimeout(inputTimeout);
     
     // 隱藏輸入框，顯示思考中
     chatInput.style.display = 'none';
     chatInput.value = '';
     chatBubble.style.display = 'block';
-    chatBubble.innerHTML = `${namePrefix}思考中... 🤔`;
+    chatContent.innerHTML = `${namePrefix}思考中... 🤔`;
     
     // 儲存使用者對話
     saveChatHistory('user', text);
@@ -157,7 +126,7 @@ chatInput.addEventListener('keydown', async (e) => {
       });
       // 避免 AI 回答包含 HTML 標籤破壞畫面
       const safeText = response.text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
-      chatBubble.innerHTML = `${namePrefix}${safeText}`;
+      chatContent.innerHTML = `${namePrefix}${safeText}`;
       
       // 儲存奇異鳥回答
       saveChatHistory('kiwi', response.text);
@@ -169,14 +138,11 @@ chatInput.addEventListener('keydown', async (e) => {
       console.error(err);
       // 判斷是否為額度用盡的錯誤 (429)
       if (err.status === 429 || (err.message && err.message.includes('429'))) {
-        chatBubble.innerHTML = `${namePrefix}嗚嗚，主人的 API 額度好像用完了 😭 沒飯吃了，快去申請新的鑰匙餵我！`;
+        chatContent.innerHTML = `${namePrefix}嗚嗚，主人的 API 額度好像用完了 😭 沒飯吃了，快去申請新的鑰匙餵我！`;
       } else {
-        chatBubble.innerHTML = `${namePrefix}咕啾？我的小腦袋打結了，網路連線好像怪怪的 😵‍💫`;
+        chatContent.innerHTML = `${namePrefix}咕啾？我的小腦袋打結了，網路連線好像怪怪的 😵‍💫`;
       }
     }
-    
-    // 收尾動作：啟動 8 秒自動隱藏倒數
-    startChatTimeout();
   }
 });
 
