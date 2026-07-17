@@ -16,8 +16,16 @@
     <!-- 自訂右鍵選單 -->
     <div id="custom-menu" style="display: none;">
       <div class="menu-item" id="menu-history">📜 歷史對話 (History)</div>
+      <div class="menu-item" id="menu-todo">📋 待辦事項 (Todo)</div>
+      <div class="menu-item" id="menu-feed">🍎 餵食 (Feed)</div>
+      <div class="menu-item" id="menu-pet">✋ 摸摸 (Pet)</div>
       <div class="menu-item" id="menu-sleep">💤 睡覺 (Sleep)</div>
       <div class="menu-item" id="menu-close">❌ 關閉 (Exit)</div>
+    </div>
+    <!-- 待辦事項面板 -->
+    <div id="todo-panel" style="display: none;">
+      <div class="todo-header">📋 待辦事項 <span id="todo-close" style="float:right; cursor:pointer;">✕</span></div>
+      <ul id="todo-list"></ul>
     </div>
     <div id="kiwi-wrapper" style="position: relative; display: inline-block;">
       <div id="kiwi-accessory" style="display: none; position: absolute; top: -30px; left: 50%; transform: translateX(-50%); font-size: 40px; pointer-events: none; animation: breathe 3s infinite ease-in-out;">⏳</div>
