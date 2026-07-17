@@ -48,24 +48,37 @@ const os = require('os');
 const { ipcRenderer } = require('electron');
 require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 const { GoogleGenAI } = require('@google/genai');
+const cryptoUtils = require('./crypto_utils');
 
 function saveChatHistory(role, message) {
   const historyPath = path.join(__dirname, '../chat_history.json');
   let history = [];
   try {
     if (fs.existsSync(historyPath)) {
-      history = JSON.parse(fs.readFileSync(historyPath, 'utf8'));
+      const data = fs.readFileSync(historyPath, 'utf8');
+      if (data.trim() !== '') {
+        try {
+          const decrypted = cryptoUtils.decryptData(data);
+          history = JSON.parse(decrypted);
+        } catch (e) {
+          history = JSON.parse(data);
+        }
+      }
     }
   } catch (e) {
     console.error('Failed to read history:', e);
   }
+
   history.push({
     role,
     message,
     timestamp: new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' })
   });
+
   try {
-    fs.writeFileSync(historyPath, JSON.stringify(history, null, 2), 'utf8');
+    const jsonStr = JSON.stringify(history, null, 2);
+    const encryptedStr = cryptoUtils.encryptData(jsonStr);
+    fs.writeFileSync(historyPath, encryptedStr, 'utf8');
   } catch (e) {
     console.error('Failed to save history:', e);
   }
@@ -74,7 +87,8 @@ function saveChatHistory(role, message) {
 function clearChatHistory() {
   const historyPath = path.join(__dirname, '../chat_history.json');
   try {
-    fs.writeFileSync(historyPath, JSON.stringify([], null, 2), 'utf8');
+    const encryptedStr = cryptoUtils.encryptData("[]");
+    fs.writeFileSync(historyPath, encryptedStr, 'utf8');
   } catch (e) {
     console.error('Failed to clear history:', e);
   }

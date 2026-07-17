@@ -1,18 +1,25 @@
 const fs = require('fs');
 const path = require('path');
-
 const historyContainer = document.getElementById('history-container');
 const historyPath = path.join(__dirname, '../chat_history.json');
+const cryptoUtils = require('./crypto_utils');
 
 function loadHistory() {
   if (!fs.existsSync(historyPath)) {
     historyContainer.innerHTML = '<div style="text-align: center; color: #888;">目前還沒有任何對話喔！快去跟 Wiki Wiki 聊天吧！</div>';
     return;
   }
-
   try {
     const data = fs.readFileSync(historyPath, 'utf8');
-    const history = JSON.parse(data);
+    let history = [];
+    if (data.trim() !== '') {
+      try {
+        const decrypted = cryptoUtils.decryptData(data);
+        history = JSON.parse(decrypted);
+      } catch (e) {
+        history = JSON.parse(data);
+      }
+    }
 
     if (history.length === 0) {
       historyContainer.innerHTML = '<div style="text-align: center; color: #888;">目前還沒有任何對話喔！快去跟 Wiki Wiki 聊天吧！</div>';
