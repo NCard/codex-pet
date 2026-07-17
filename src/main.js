@@ -5,6 +5,7 @@ try {
   require('electron-reloader')(module, {
     ignore: [
       /chat_history\.json/,
+      /pet_state\.json/,
       /task\.md/,
       /implementation_plan\.md/,
       /walkthrough\.md/,
