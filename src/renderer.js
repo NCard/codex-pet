@@ -8,6 +8,7 @@ const menuHistory = document.getElementById('menu-history');
 
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 const { ipcRenderer } = require('electron');
 require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 const { GoogleGenAI } = require('@google/genai');
@@ -100,6 +101,19 @@ kiwi.addEventListener('click', (e) => {
 
 // 監聽輸入框的 Enter 鍵事件，呼叫 Gemini
 chatInput.addEventListener('keydown', async (e) => {
+  if (e.key === 'Tab') {
+    const text = chatInput.value;
+    if (text.startsWith('/')) {
+      e.preventDefault(); // 防止失去焦點
+      const commands = ['/help', '/md5'];
+      const match = commands.find(c => c.startsWith(text));
+      if (match) {
+        chatInput.value = match + ' ';
+      }
+    }
+    return;
+  }
+
   if (e.key === 'Escape') {
     chatInput.style.display = 'none';
     chatInput.value = '';
@@ -118,6 +132,38 @@ chatInput.addEventListener('keydown', async (e) => {
     
     // 儲存使用者對話
     saveChatHistory('user', text);
+    
+    // 指令模式判斷
+    if (text.startsWith('/')) {
+      const parts = text.split(' ');
+      const cmd = parts[0];
+      let argStr = parts.slice(1).join(' ').trim();
+      
+      let reply = '';
+      if (cmd === '/help') {
+        reply = 'Wiki Wiki 指令模式喵！<br><b>/help</b> : 顯示這個說明<br><b>/md5 [字串]</b> : 轉成 md5 32碼小寫（字串可用雙引號包起來）';
+      } else if (cmd === '/md5') {
+        // 如果前後有雙引號，則去除
+        if (argStr.startsWith('"') && argStr.endsWith('"')) {
+          argStr = argStr.substring(1, argStr.length - 1);
+        }
+        if (!argStr) {
+          reply = '喵？沒有給我要轉換的字串喔！請用 /md5 "字串"';
+        } else {
+          const hash = crypto.createHash('md5').update(argStr).digest('hex');
+          reply = `嗶嗶！Wiki Wiki 用力一啄！(•ө•)♡<br><code>${hash}</code><br>主人，轉換好囉，啾～`;
+        }
+      } else {
+        reply = '這是什麼奇怪的指令呀？Wiki Wiki 聽不懂 (歪頭)<br>試試看 /help 吧！';
+      }
+      
+      chatContent.innerHTML = `${namePrefix}${reply}`;
+      saveChatHistory('kiwi', reply);
+      
+      kiwi.classList.add('jumping');
+      setTimeout(() => { kiwi.classList.remove('jumping'); }, 500);
+      return;
+    }
     
     try {
       const response = await ai.models.generateContent({
