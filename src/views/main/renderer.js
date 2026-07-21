@@ -1,5 +1,5 @@
 require('../../utils/logger');
-const kiwi = document.getElementById('kiwi-img');
+const kiwi = document.getElementById('kiwi-sprite-wrapper');
 const chatBubble = document.getElementById('chat-bubble');
 const chatInput = document.getElementById('chat-input');
 const customMenu = document.getElementById('custom-menu');
@@ -562,12 +562,14 @@ menuOutfit.addEventListener('click', () => {
   isOutfitEditMode = true;
   kiwiOutfit.style.pointerEvents = 'auto';
   kiwiOutfit.style.cursor = 'grab';
+  kiwi.style.animation = 'none'; // 換裝模式暫停呼吸動畫，避免座標跳動
 });
 
 ipcRenderer.on('outfit-closed', () => {
   isOutfitEditMode = false;
   kiwiOutfit.style.pointerEvents = 'none';
   kiwiOutfit.style.cursor = 'default';
+  kiwi.style.animation = ''; // 恢復呼吸動畫
 });
 
 ipcRenderer.on('update-outfit', (event, newOutfit) => {
@@ -627,6 +629,7 @@ kiwiOutfit.addEventListener('mousedown', (e) => {
   outfitStartTop = outfitRect.top - rect.top;
   
   e.preventDefault();
+  e.stopPropagation();
 });
 
 window.addEventListener('mousemove', (e) => {

@@ -23,19 +23,21 @@ body, html {
   transform-origin: center;
 }
 
+#kiwi-sprite-wrapper {
+  /* 待機呼吸動畫 */
+  animation: breathe 3s infinite ease-in-out;
+  cursor: grab;
+}
+
+#kiwi-sprite-wrapper:active {
+  cursor: grabbing;
+}
+
 #kiwi-img {
   width: 180px;
   height: auto;
   user-select: none;
   -webkit-user-drag: none; /* 防止圖片被原生拖曳 */
-  cursor: grab;
-
-  /* 待機呼吸動畫 */
-  animation: breathe 3s infinite ease-in-out;
-}
-
-#kiwi-img:active {
-  cursor: grabbing;
 }
 
 .chat-bubble {
