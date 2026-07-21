@@ -391,7 +391,7 @@ chatInput.addEventListener('keydown', async (e) => {
       let contents = [
         { role: 'user', parts: [{ text: `你現在是一隻生活在電腦桌面上的可愛奇異鳥小助手，你的名字叫做「Wiki Wiki」。
 請用簡短、活潑、賣萌的語氣回答問題（回答請盡量在 50 字以內，可以加上顏文字）。
-【重要指示】：若使用者要求設定鬧鐘/提醒、新增待辦事項、更換服裝，或「查詢目前有哪些鬧鐘/待辦事項」，請使用系統提供的工具 (Tools)。絕對不能在回覆的文字中輸出 JSON 或假造的工具名稱！
+【重要指示】：若使用者要求設定、更換服裝，或「查詢目前有哪些鬧鐘/待辦事項」，你必須優先呼叫系統提供的工具 (Tools)。在工具回傳結果之前，請勿輸出任何回覆文字！絕對不能發明假造的工具名稱。
 使用者說：${text}` }] }
       ];
       
@@ -405,14 +405,19 @@ chatInput.addEventListener('keydown', async (e) => {
         const functionResponses = [];
         for (const call of response.functionCalls) {
            console.log("Calling tool:", call.name, call.args);
-           try {
-             const result = await mcpClient.callTool({ name: call.name, arguments: call.args });
-             functionResponses.push({
-               functionResponse: {
-                 name: call.name,
-                 response: { result: result.content }
-               }
-             });
+            try {
+              const result = await mcpClient.callTool({ name: call.name, arguments: call.args });
+              const textResult = result.content ? result.content.map(c => c.text).join('\n') : "成功";
+              
+              const fnResp = {
+                name: call.name,
+                response: { result: textResult }
+              };
+              if (call.id) fnResp.id = call.id;
+              
+              functionResponses.push({
+                functionResponse: fnResp
+              });
              
              // 即時反映本地狀態更新
              if (call.name === 'add_todo' || call.name === 'change_outfit') {
