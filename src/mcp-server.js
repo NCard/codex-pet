@@ -106,7 +106,8 @@ server.setRequestHandler("tools/call", async (request) => {
       id: Date.now().toString(),
       text: args.text,
       done: false,
-      reminderTime: args.reminderTime || ''
+      reminderTime: args.reminderTime || '',
+      snoozeInterval: 5
     };
     state.todos.push(newTodo);
     savePetState(state);
