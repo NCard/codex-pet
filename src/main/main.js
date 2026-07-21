@@ -1,5 +1,5 @@
 require('../utils/logger');
-const { app, BrowserWindow, ipcMain, Tray, Menu } = require('electron');
+const { app, BrowserWindow, ipcMain, Tray, Menu, screen } = require('electron');
 const path = require('path');
 
 try {
@@ -25,9 +25,19 @@ let todoWin = null;
 let historyWin = null;
 
 function createWindow() {
+  const primaryDisplay = screen.getPrimaryDisplay();
+  const { width: screenWidth, height: screenHeight } = primaryDisplay.workAreaSize;
+  const winWidth = 250;
+  const winHeight = 250;
+  
+  const randomX = Math.floor(Math.random() * (screenWidth - winWidth));
+  const randomY = Math.floor(Math.random() * (screenHeight - winHeight));
+
   mainWindow = new BrowserWindow({
-    width: 250,
-    height: 250,
+    width: winWidth,
+    height: winHeight,
+    x: randomX,
+    y: randomY,
     transparent: true,
     frame: false,
     alwaysOnTop: true,
