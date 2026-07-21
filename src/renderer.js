@@ -98,7 +98,7 @@ function savePetState() {
 // 啟動時載入狀態
 loadPetState();
 // 初始化待辦事項 UI
-renderTodos();
+// (已經移至獨立視窗)
 // 初始化裝扮
 if (petState.outfit) {
   kiwiOutfit.innerText = petState.outfit;
