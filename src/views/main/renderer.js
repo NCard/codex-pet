@@ -14,6 +14,7 @@ const menuOutfit = document.getElementById('menu-outfit');
 const menuSettings = document.getElementById('menu-settings');
 
 const kiwiOutfit = document.getElementById('kiwi-outfit');
+const kiwiBed = document.getElementById('kiwi-bed');
 const outfits = ['', '🎩', '🕶️', '🎀', '👑'];
 
 const path = require('path');
@@ -579,9 +580,25 @@ menuOutfit.addEventListener('click', () => {
   kiwi.style.animation = 'none'; // 換裝模式暫停呼吸動畫，避免座標跳動
 });
 
+let isSettingsEditMode = false;
+let isDraggingBed = false;
+let bedDragStartX = 0;
+let bedDragStartY = 0;
+let bedStartMarginLeft = 0;
+let bedStartMarginBottom = 0;
+
 menuSettings.addEventListener('click', () => {
   customMenu.style.display = 'none';
   ipcRenderer.send('open-settings');
+  isSettingsEditMode = true;
+  kiwiBed.style.pointerEvents = 'auto';
+  kiwiBed.style.cursor = 'grab';
+});
+
+ipcRenderer.on('settings-closed', () => {
+  isSettingsEditMode = false;
+  kiwiBed.style.pointerEvents = 'none';
+  kiwiBed.style.cursor = 'default';
 });
 
 ipcRenderer.on('outfit-closed', () => {
@@ -656,6 +673,21 @@ kiwiOutfit.addEventListener('mousedown', (e) => {
   e.stopPropagation();
 });
 
+kiwiBed.addEventListener('mousedown', (e) => {
+  if (!isSettingsEditMode) return;
+  isDraggingBed = true;
+  bedDragStartX = e.clientX;
+  bedDragStartY = e.clientY;
+  kiwiBed.style.cursor = 'grabbing';
+  
+  if (!petState.settings) petState.settings = {};
+  bedStartMarginLeft = petState.settings.bedX ?? 15;
+  bedStartMarginBottom = petState.settings.bedY ?? 0;
+  
+  e.preventDefault();
+  e.stopPropagation();
+});
+
 window.addEventListener('mousemove', (e) => {
   // 加入翻轉參數來修正拖曳方向
   const flip = parseInt(document.getElementById('kiwi-wrapper').style.getPropertyValue('--flip')) || 1;
@@ -671,6 +703,18 @@ window.addEventListener('mousemove', (e) => {
     kiwiOutfit.style.transform = `none`;
     
     ipcRenderer.send('outfit-pos-updated', { x: newLeft, y: newTop });
+  } else if (isDraggingBed) {
+    const flip = parseInt(document.getElementById('kiwi-wrapper').style.getPropertyValue('--flip')) || 1;
+    const dx = (e.clientX - bedDragStartX) * flip;
+    const dy = (e.clientY - bedDragStartY);
+    const newBedX = bedStartMarginLeft + dx;
+    const newBedY = bedStartMarginBottom - dy; // margin-bottom direction
+    
+    petState.settings.bedX = newBedX;
+    petState.settings.bedY = newBedY;
+    
+    applySettings(petState.settings);
+    ipcRenderer.send('settings-dragged', { bedX: newBedX, bedY: newBedY });
   }
 });
 
@@ -689,6 +733,10 @@ window.addEventListener('mouseup', (e) => {
     petState.outfitConfigs[petState.outfit].x = currentLeft;
     petState.outfitConfigs[petState.outfit].y = currentTop;
     petState.outfitConfigs[petState.outfit].scale = currentScale;
+    savePetState();
+  } else if (isDraggingBed) {
+    isDraggingBed = false;
+    kiwiBed.style.cursor = 'grab';
     savePetState();
   }
 });
@@ -713,6 +761,28 @@ kiwiOutfit.addEventListener('wheel', (e) => {
   savePetState();
   
   ipcRenderer.send('outfit-pos-updated', { scale: currentScale });
+});
+
+kiwiBed.addEventListener('wheel', (e) => {
+  if (!isSettingsEditMode) return;
+  e.preventDefault();
+  
+  if (!petState.settings) petState.settings = {};
+  let currentScale = petState.settings.bedScale ?? 170;
+  
+  if (e.deltaY < 0) {
+    currentScale += 5;
+  } else {
+    currentScale -= 5;
+  }
+  if (currentScale < 50) currentScale = 50;
+  if (currentScale > 300) currentScale = 300;
+  
+  petState.settings.bedScale = currentScale;
+  applySettings(petState.settings);
+  savePetState();
+  
+  ipcRenderer.send('settings-dragged', { bedScale: currentScale });
 });
 
 menuSleep.addEventListener('click', () => {

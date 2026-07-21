@@ -181,11 +181,16 @@ app.whenReady().then(() => {
     settingsWindow.loadFile(path.join(__dirname, '../views/settings/settings.html'));
     settingsWindow.on('closed', () => {
       settingsWindow = null;
+      if (mainWindow) mainWindow.webContents.send('settings-closed');
     });
   });
 
   ipcMain.on('settings-changed', (event, settingsData) => {
     if (mainWindow) mainWindow.webContents.send('update-settings', settingsData);
+  });
+  
+  ipcMain.on('settings-dragged', (event, settingsData) => {
+    if (settingsWindow) settingsWindow.webContents.send('update-settings-ui', settingsData);
   });
 
   ipcMain.on('alarms-changed', () => {

@@ -78,6 +78,13 @@ Object.keys(els).forEach(key => {
   });
 });
 
+ipcRenderer.on('update-settings-ui', (event, data) => {
+  if (data.bedX !== undefined) els.bedX.value = data.bedX;
+  if (data.bedY !== undefined) els.bedY.value = data.bedY;
+  if (data.bedScale !== undefined) els.bedScale.value = data.bedScale;
+  updateLabels();
+});
+
 document.getElementById('btn-reset').addEventListener('click', () => {
   petState.settings = { ...defaultSettings };
   initUI();
