@@ -98,6 +98,9 @@ body, html {
   gap: 5px;
   user-select: none;
   font-family: 'Microsoft JhengHei', sans-serif;
+  max-height: 190px;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 .menu-item {
   padding: 5px 10px;
