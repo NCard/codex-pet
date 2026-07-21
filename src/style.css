@@ -78,6 +78,9 @@ body, html {
   box-shadow: 0 4px 6px rgba(3, 169, 244, 0.2);
   z-index: 20;
   -webkit-app-region: no-drag;
+  resize: vertical;
+  min-height: 20px;
+  max-height: 100px;
 }
 #chat-input::placeholder {
   color: #4fc3f7;

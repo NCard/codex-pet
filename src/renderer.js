@@ -286,7 +286,8 @@ chatInput.addEventListener('keydown', async (e) => {
     return;
   }
 
-  if (e.key === 'Enter') {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault(); // 防止 textarea 換行
     const text = chatInput.value.trim();
     if (!text) return;
     
