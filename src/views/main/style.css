@@ -14,6 +14,7 @@ body, html {
   justify-content: flex-end;
   height: 100%;
   position: relative;
+  padding-bottom: 30px;
 }
 
 #kiwi-wrapper {
@@ -247,8 +248,6 @@ body, html {
 }
 .sleeping {
   animation: sleep-breathe calc(4s / var(--anim-speed, 1)) infinite ease-in-out !important;
-  /* 正著睡，不翻轉 */
-  transform: scaleX(var(--flip)) !important;
 }
 .shock {
   /* 被抓起來時縮小 */
