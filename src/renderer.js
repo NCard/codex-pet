@@ -11,35 +11,8 @@ const menuFeed = document.getElementById('menu-feed');
 const menuPet = document.getElementById('menu-pet');
 const menuOutfit = document.getElementById('menu-outfit');
 
-// 待辦事項面板元素
-const todoPanel = document.getElementById('todo-panel');
-const todoList = document.getElementById('todo-list');
-const todoClose = document.getElementById('todo-close');
-
 const kiwiOutfit = document.getElementById('kiwi-outfit');
 const outfits = ['', '🎩', '🕶️', '🎀', '👑'];
-
-function renderTodos() {
-  todoList.innerHTML = '';
-  petState.todos.forEach((todo, index) => {
-    const li = document.createElement('li');
-    li.textContent = todo.text;
-    if (todo.done) li.classList.add('completed');
-    li.addEventListener('click', () => {
-      todo.done = !todo.done;
-      savePetState();
-      renderTodos();
-    });
-    todoList.appendChild(li);
-  });
-}
-
-// 啟動時渲染待辦事項
-// (會放在 loadPetState() 之後呼叫，見下方)
-
-todoClose.addEventListener('click', () => {
-  todoPanel.style.display = 'none';
-});
 
 const path = require('path');
 const fs = require('fs');
@@ -156,8 +129,6 @@ window.addEventListener('keydown', (e) => {
       customMenu.style.display = 'none';
     } else if (chatBubble.style.display === 'block') {
       chatBubble.style.display = 'none';
-    } else if (todoPanel.style.display === 'block') {
-      todoPanel.style.display = 'none';
     }
   }
 });
@@ -360,10 +331,9 @@ chatInput.addEventListener('keydown', async (e) => {
         if (!argStr) {
           reply = '喵？請告訴我要記下什麼待辦事項喔！例如 `/todo 買牛奶`';
         } else {
-          petState.todos.push({ text: argStr, done: false });
+          petState.todos.push({ id: crypto.randomUUID(), text: argStr, done: false, reminderTime: null, snoozeInterval: 5 });
           savePetState();
-          renderTodos();
-          reply = `記下來啦！✍️<br>「${argStr}」<br>已經加到待辦清單囉！`;
+          reply = `記下來啦！✍️<br>「${argStr}」<br>已經加到待辦清單囉！(你可以右鍵打開「待辦事項」管理喔)`;
         }
       } else if (cmd === '/clear') {
         clearChatHistory();
@@ -446,7 +416,7 @@ window.addEventListener('click', (e) => {
 // 綁定選單功能
 menuTodo.addEventListener('click', () => {
   customMenu.style.display = 'none';
-  todoPanel.style.display = todoPanel.style.display === 'none' ? 'block' : 'none';
+  ipcRenderer.send('open-todo');
 });
 
 menuFeed.addEventListener('click', () => {
@@ -598,6 +568,19 @@ setInterval(() => {
       console.error('Failed to parse alarms:', e);
     }
   }
+
+  // 檢查待辦事項提醒
+  const currentHHMM = new Date().getHours().toString().padStart(2, '0') + ':' + new Date().getMinutes().toString().padStart(2, '0');
+  petState.todos.forEach(todo => {
+    if (!todo.done && todo.reminderTime === currentHHMM) {
+      const alarmKey = 'todo-' + todo.id + '-' + new Date().toDateString() + '-' + currentHHMM;
+      triggerAlarm({
+        id: todo.id,
+        message: '📋 待辦提醒：' + todo.text,
+        snoozeInterval: todo.snoozeInterval || 5
+      }, alarmKey);
+    }
+  });
 }, 5000);
 
 // 每隔一段時間隨機走動
