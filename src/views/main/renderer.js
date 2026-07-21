@@ -695,6 +695,7 @@ menuSleep.addEventListener('click', () => {
   if (zzz) zzz.style.display = 'block';
   document.getElementById('kiwi-img').src = '../../../assets/images/kiwi_sleep.png';
   document.getElementById('kiwi-bed').style.display = 'block';
+  if (kiwiOutfit) kiwiOutfit.style.display = 'none';
   
   showTempBubble('晚安... Zzz...');
 
@@ -737,6 +738,7 @@ function resetIdle() {
     if (zzz) zzz.style.display = 'none';
     document.getElementById('kiwi-img').src = '../../../assets/images/kiwi.png';
     document.getElementById('kiwi-bed').style.display = 'none';
+    if (kiwiOutfit && petState.outfit) kiwiOutfit.style.display = 'block';
   }
 }
 window.addEventListener('mousemove', resetIdle);
@@ -753,6 +755,7 @@ setInterval(() => {
     if (zzz) zzz.style.display = 'block';
     document.getElementById('kiwi-img').src = '../../../assets/images/kiwi_sleep.png';
     document.getElementById('kiwi-bed').style.display = 'block';
+    if (kiwiOutfit) kiwiOutfit.style.display = 'none';
   }
 }, 1000);
 
