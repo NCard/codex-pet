@@ -296,7 +296,7 @@ chatInput.addEventListener('keydown', async (e) => {
     chatInput.style.display = 'none';
     chatInput.value = '';
     chatBubble.style.display = 'block';
-    chatContent.innerHTML = `${namePrefix}思考中... 🤔`;
+    chatContent.innerHTML = `${namePrefix}思考中... ( •ө•)?`;
     
     // 儲存使用者對話
     saveChatHistory('user', text);
