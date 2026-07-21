@@ -283,6 +283,7 @@ chatInput.addEventListener('keydown', async (e) => {
 
   if (e.key === 'Escape') {
     chatInput.style.display = 'none';
+    chatBubble.style.display = 'none';
     chatInput.value = '';
     return;
   }
@@ -292,8 +293,9 @@ chatInput.addEventListener('keydown', async (e) => {
     const text = chatInput.value.trim();
     if (!text) return;
     
-    // 隱藏輸入框，顯示思考中
-    chatInput.style.display = 'none';
+    // 停用輸入框，顯示思考中
+    chatInput.disabled = true;
+    chatInput.placeholder = '思考中...';
     chatInput.value = '';
     chatBubble.style.display = 'block';
     chatContent.innerHTML = `${namePrefix}思考中... ( •ө•)?`;
@@ -383,6 +385,10 @@ chatInput.addEventListener('keydown', async (e) => {
       chatContent.innerHTML = `${namePrefix}${reply}`;
       saveChatHistory('kiwi', reply);
       
+      chatInput.disabled = false;
+      chatInput.placeholder = '對話... (Shift+Enter 換行)';
+      chatInput.focus();
+      
       kiwi.classList.add('jumping');
       setTimeout(() => { kiwi.classList.remove('jumping'); }, 500);
       return;
@@ -461,6 +467,11 @@ chatInput.addEventListener('keydown', async (e) => {
       // 儲存奇異鳥回答
       saveChatHistory('kiwi', response.text || "");
       
+      // 重新啟用輸入框
+      chatInput.disabled = false;
+      chatInput.placeholder = '對話... (Shift+Enter 換行)';
+      chatInput.focus();
+      
       // 收到回答後開心地跳躍
       kiwi.classList.add('jumping');
       setTimeout(() => { kiwi.classList.remove('jumping'); }, 500);
@@ -472,6 +483,9 @@ chatInput.addEventListener('keydown', async (e) => {
       } else {
         chatContent.innerHTML = `${namePrefix}咕啾？我的小腦袋打結了，網路連線好像怪怪的 😵‍💫`;
       }
+      chatInput.disabled = false;
+      chatInput.placeholder = '對話... (Shift+Enter 換行)';
+      chatInput.focus();
     }
   }
 });
