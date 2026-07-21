@@ -10,7 +10,8 @@ const defaultSettings = {
   bedY: -15,
   bedScale: 170,
   bedZ: -1,
-  animSpeed: 1.0
+  animSpeed: 1.0,
+  apiKey: ''
 };
 
 let petState = {};
@@ -31,7 +32,8 @@ const els = {
   bedY: document.getElementById('bed-y'),
   bedScale: document.getElementById('bed-scale'),
   bedZ: document.getElementById('bed-z'),
-  animSpeed: document.getElementById('anim-speed')
+  animSpeed: document.getElementById('anim-speed'),
+  apiKey: document.getElementById('setting-apiKey')
 };
 
 const vals = {
@@ -45,9 +47,10 @@ function initUI() {
   const s = petState.settings;
   els.bedX.value = s.bedX ?? defaultSettings.bedX;
   els.bedY.value = s.bedY ?? defaultSettings.bedY;
-  els.bedScale.value = s.bedScale ?? defaultSettings.bedScale;
-  els.bedZ.value = s.bedZ ?? defaultSettings.bedZ;
-  els.animSpeed.value = s.animSpeed ?? defaultSettings.animSpeed;
+  els.bedScale.value = petState.settings.bedScale ?? defaultSettings.bedScale;
+  els.bedZ.value = petState.settings.bedZ ?? defaultSettings.bedZ;
+  els.animSpeed.value = petState.settings.animSpeed ?? defaultSettings.animSpeed;
+  els.apiKey.value = petState.settings.apiKey ?? defaultSettings.apiKey;
   updateLabels();
 }
 
@@ -64,7 +67,8 @@ function saveAndBroadcast() {
     bedY: parseInt(els.bedY.value),
     bedScale: parseInt(els.bedScale.value),
     bedZ: parseInt(els.bedZ.value),
-    animSpeed: parseFloat(els.animSpeed.value)
+    animSpeed: parseFloat(els.animSpeed.value),
+    apiKey: els.apiKey.value
   };
   
   fs.writeFileSync(statePath, JSON.stringify(petState, null, 2));

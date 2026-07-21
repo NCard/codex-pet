@@ -162,7 +162,17 @@ let pomodoroTimer = null;
 let isWorking = false;
 
 // 初始化 Gemini API 客戶端
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+let ai = null;
+
+function initAI() {
+  const apiKey = (petState.settings && petState.settings.apiKey) ? petState.settings.apiKey : process.env.GEMINI_API_KEY;
+  if (apiKey) {
+    ai = new GoogleGenAI({ apiKey: apiKey });
+  } else {
+    ai = null;
+  }
+}
+initAI();
 const kiwiAccessory = document.getElementById('kiwi-accessory');
 
 // 取得對話泡泡內部元素
@@ -307,6 +317,16 @@ chatInput.addEventListener('keydown', async (e) => {
     e.preventDefault(); // 防止 textarea 換行
     const text = chatInput.value.trim();
     if (!text) return;
+    
+    // 防呆：如果沒有設定 API Key
+    if (!ai) {
+      chatInput.value = '';
+      chatInput.style.display = 'none';
+      chatBubble.innerHTML = `${namePrefix}請先至「設定面板」輸入 Gemini API Key！`;
+      chatBubble.style.display = 'block';
+      setTimeout(() => { chatBubble.style.display = 'none'; }, 3000);
+      return;
+    }
     
     // 停用輸入框，顯示思考中
     chatInput.disabled = true;
@@ -624,10 +644,16 @@ ipcRenderer.on('outfit-closed', () => {
   kiwiOutfit.style.cursor = 'default';
   kiwi.style.animation = ''; // 恢復呼吸動畫
 });
-
-ipcRenderer.on('update-settings', (event, settings) => {
-  petState.settings = settings;
-  applySettings(settings);
+// 監聽設定更新
+ipcRenderer.on('update-settings', (event, newSettings) => {
+  const oldApiKey = petState.settings?.apiKey;
+  petState.settings = newSettings;
+  applySettings(newSettings);
+  savePetState();
+  
+  if (oldApiKey !== newSettings.apiKey) {
+    initAI();
+  }
 });
 
 ipcRenderer.on('update-outfit', (event, newOutfit) => {
