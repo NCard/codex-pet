@@ -5,13 +5,11 @@ const path = require('path');
 try {
   require('electron-reloader')(module, {
     ignore: [
-      /chat_history\.json/,
-      /pet_state\.json/,
+      /data/,
       /task\.md/,
       /implementation_plan\.md/,
       /walkthrough\.md/,
       /\.system_generated/,
-      /alarms\.json/,
       /logs/,
       /app\.log/
     ]
