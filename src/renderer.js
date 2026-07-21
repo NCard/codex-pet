@@ -389,7 +389,10 @@ chatInput.addEventListener('keydown', async (e) => {
     
     try {
       let contents = [
-        { role: 'user', parts: [{ text: `你現在是一隻生活在電腦桌面上的可愛奇異鳥小助手，你的名字叫做「Wiki Wiki」，請用簡短、活潑、賣萌的語氣回答問題（因為畫面很小，回答請盡量在 50 字以內，可以加上顏文字）。使用者說：${text}` }] }
+        { role: 'user', parts: [{ text: `你現在是一隻生活在電腦桌面上的可愛奇異鳥小助手，你的名字叫做「Wiki Wiki」。
+請用簡短、活潑、賣萌的語氣回答問題（回答請盡量在 50 字以內，可以加上顏文字）。
+【重要指示】：若使用者要求設定鬧鐘/提醒、新增待辦事項、或更換服裝，請「務必呼叫對應的工具 (Function Call)」來完成動作，絕對不能只用文字回覆！
+使用者說：${text}` }] }
       ];
       
       let response = await ai.models.generateContent({
