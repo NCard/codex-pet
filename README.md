@@ -47,7 +47,7 @@
 
 ## 🚀 如何啟動
 
-1. 開啟終端機並確保位於專案資料夾 (`d:\Users\your_username\codex pet`)。
+1. 開啟終端機並確保位於專案資料夾 (例如 `cd codex-pet`)。
 2. 配置你的 `.env` 檔案（填入 `GEMINI_API_KEY`）。
 3. 執行指令：
    ```bash
