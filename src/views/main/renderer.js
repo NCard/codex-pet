@@ -591,6 +591,14 @@ menuSettings.addEventListener('click', () => {
   customMenu.style.display = 'none';
   ipcRenderer.send('open-settings');
   isSettingsEditMode = true;
+  
+  // Force sleeping appearance for bed configuration
+  kiwi.classList.add('sleeping');
+  document.getElementById('kiwi-img').src = '../../../assets/images/kiwi_sleep.png';
+  
+  // Disable pointer events on the kiwi wrapper so clicks fall through to the bed
+  kiwi.style.pointerEvents = 'none';
+  
   kiwiBed.style.display = 'block';
   kiwiBed.style.pointerEvents = 'auto';
   kiwiBed.style.cursor = 'grab';
@@ -600,8 +608,13 @@ ipcRenderer.on('settings-closed', () => {
   isSettingsEditMode = false;
   kiwiBed.style.pointerEvents = 'none';
   kiwiBed.style.cursor = 'default';
-  if (!kiwi.classList.contains('sleeping')) {
+  kiwi.style.pointerEvents = 'auto';
+  
+  // Restore non-sleeping state if it wasn't supposed to be sleeping
+  if (!petState.sleeping) {
     kiwiBed.style.display = 'none';
+    kiwi.classList.remove('sleeping');
+    document.getElementById('kiwi-img').src = '../../../assets/images/kiwi.png';
   }
 });
 

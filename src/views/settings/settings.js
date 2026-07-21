@@ -68,7 +68,7 @@ function saveAndBroadcast() {
   };
   
   fs.writeFileSync(statePath, JSON.stringify(petState, null, 2));
-  ipcRenderer.send('settings-updated', petState.settings);
+  ipcRenderer.send('settings-changed', petState.settings);
 }
 
 Object.keys(els).forEach(key => {
