@@ -1,3 +1,4 @@
+require('./logger');
 const kiwi = document.getElementById('kiwi-img');
 const chatBubble = document.getElementById('chat-bubble');
 const chatInput = document.getElementById('chat-input');

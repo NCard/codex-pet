@@ -1,4 +1,5 @@
-const { app, BrowserWindow, ipcMain, Menu } = require('electron');
+require('./logger');
+const { app, BrowserWindow, ipcMain, Tray, Menu } = require('electron');
 const path = require('path');
 
 try {
