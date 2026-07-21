@@ -12,7 +12,8 @@ try {
       /walkthrough\.md/,
       /\.system_generated/,
       /alarms\.json/,
-      /pet_state\.json/
+      /logs/,
+      /app\.log/
     ]
   });
 } catch (_) {}
