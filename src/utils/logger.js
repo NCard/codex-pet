@@ -1,7 +1,11 @@
 const fs = require('fs');
 const path = require('path');
 
-const logFilePath = path.join(__dirname, '../app.log');
+const logDir = path.join(__dirname, '../../logs');
+if (!fs.existsSync(logDir)) {
+  fs.mkdirSync(logDir, { recursive: true });
+}
+const logFilePath = path.join(logDir, 'app.log');
 
 // Format timestamp
 function getTimestamp() {
