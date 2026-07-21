@@ -844,7 +844,7 @@ let ignoreWakeup = false;
 // 重置閒置狀態
 function resetIdle() {
   idleTime = 0;
-  if (ignoreWakeup) return;
+  if (ignoreWakeup || isSettingsEditMode) return;
 
   if (kiwi.classList.contains('sleeping')) {
     kiwi.classList.remove('sleeping');
