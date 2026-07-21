@@ -94,7 +94,7 @@ server.setRequestHandler("tools/list", async () => {
       },
       {
         name: "get_alarms",
-        description: "取得所有已設定的鬧鐘清單",
+        description: "取得所有已設定的鬧鐘與提醒清單",
         inputSchema: { type: "object", properties: {} }
       },
       {
