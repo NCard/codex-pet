@@ -1,6 +1,11 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const { ipcRenderer } = require('electron');
+
+ipcRenderer.on('reload-data', () => {
+  loadAlarms();
+});
 
 const alarmsPath = path.join(__dirname, '../alarms.json');
 let alarms = [];

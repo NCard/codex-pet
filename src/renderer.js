@@ -419,6 +419,10 @@ chatInput.addEventListener('keydown', async (e) => {
                    kiwiOutfit.style.display = petState.outfit ? 'block' : 'none';
                    if (petState.outfit) applyOutfitPos();
                 }
+                ipcRenderer.send('pet-state-changed');
+             }
+             if (call.name === 'add_alarm') {
+                ipcRenderer.send('alarms-changed');
              }
            } catch (e) {
              console.error("Tool execution error:", e);

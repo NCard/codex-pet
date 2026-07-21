@@ -1,6 +1,11 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const { ipcRenderer } = require('electron');
+
+ipcRenderer.on('reload-data', () => {
+  loadTodos();
+});
 
 const statePath = path.join(__dirname, '../pet_state.json');
 let petState = { todos: [] };

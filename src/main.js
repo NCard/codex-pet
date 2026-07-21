@@ -134,6 +134,14 @@ app.whenReady().then(() => {
     if (outfitWin) outfitWin.webContents.send('outfit-pos-updated', data);
   });
 
+  ipcMain.on('alarms-changed', () => {
+    if (alarmWin) alarmWin.webContents.send('reload-data');
+  });
+
+  ipcMain.on('pet-state-changed', () => {
+    if (todoWin) todoWin.webContents.send('reload-data');
+  });
+
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
