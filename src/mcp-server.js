@@ -91,6 +91,16 @@ server.setRequestHandler("tools/list", async () => {
           type: "object",
           properties: {},
         },
+      },
+      {
+        name: "get_alarms",
+        description: "取得所有已設定的鬧鐘清單",
+        inputSchema: { type: "object", properties: {} }
+      },
+      {
+        name: "get_todos",
+        description: "取得所有待辦事項清單",
+        inputSchema: { type: "object", properties: {} }
       }
     ],
   };
@@ -144,11 +154,25 @@ server.setRequestHandler("tools/call", async (request) => {
   if (name === "get_pet_status") {
     const state = getPetState();
     return {
-      content: [{ type: "text", text: `飢餓度: ${state.hunger}, 心情: ${state.mood}` }]
+      content: [{ type: "text", text: `飢餓度: ${state.hunger}/100, 心情: ${state.mood}/100` }]
     };
   }
   
-  throw new Error("Tool not found");
+  if (name === "get_alarms") {
+    const alarms = getAlarms();
+    if (alarms.length === 0) return { content: [{ type: "text", text: "目前沒有任何鬧鐘。" }] };
+    const text = alarms.map(a => `- ${a.time}: ${a.message} (啟用狀態: ${a.enabled})`).join('\n');
+    return { content: [{ type: "text", text: `目前的鬧鐘有：\n${text}` }] };
+  }
+  
+  if (name === "get_todos") {
+    const state = getPetState();
+    if (!state.todos || state.todos.length === 0) return { content: [{ type: "text", text: "目前沒有任何待辦事項。" }] };
+    const text = state.todos.map(t => `- ${t.text} (完成狀態: ${t.done}${t.reminderTime ? ', 提醒時間: ' + t.reminderTime : ''})`).join('\n');
+    return { content: [{ type: "text", text: `目前的待辦事項有：\n${text}` }] };
+  }
+
+  throw new Error(`Unknown tool: ${name}`);
 });
 
 async function main() {
