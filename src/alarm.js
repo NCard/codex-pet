@@ -10,6 +10,7 @@ const msgInput = document.getElementById('alarm-message');
 const snoozeInput = document.getElementById('alarm-snooze');
 const addBtn = document.getElementById('add-alarm-btn');
 const alarmList = document.getElementById('alarm-list');
+let editingId = null;
 
 function loadAlarms() {
   if (fs.existsSync(alarmsPath)) {
@@ -70,6 +71,19 @@ function renderAlarms() {
       renderAlarms();
     };
     
+    const editBtn = document.createElement('button');
+    editBtn.className = 'btn-toggle';
+    editBtn.textContent = '✏️';
+    editBtn.title = '編輯';
+    editBtn.onclick = () => {
+      editingId = alarm.id;
+      timeInput.value = alarm.time;
+      msgInput.value = alarm.message;
+      snoozeInput.value = alarm.snoozeInterval || 5;
+      addBtn.textContent = '💾 儲存';
+      addBtn.style.background = '#4caf50';
+    };
+    
     const deleteBtn = document.createElement('button');
     deleteBtn.className = 'btn-delete';
     deleteBtn.textContent = '🗑️';
@@ -77,12 +91,20 @@ function renderAlarms() {
     deleteBtn.onclick = () => {
       if (confirm(`確定要刪除「${alarm.time}」的提醒嗎？`)) {
         alarms = alarms.filter(a => a.id !== alarm.id);
+        if (editingId === alarm.id) {
+          editingId = null;
+          addBtn.textContent = '➕ 新增提醒';
+          addBtn.style.background = '#ff9800';
+          timeInput.value = '';
+          msgInput.value = '';
+        }
         saveAlarms();
         renderAlarms();
       }
     };
     
     actionsDiv.appendChild(toggleBtn);
+    actionsDiv.appendChild(editBtn);
     actionsDiv.appendChild(deleteBtn);
     
     item.appendChild(timeDiv);
@@ -108,17 +130,30 @@ addBtn.onclick = () => {
     return;
   }
   
-  alarms.push({
-    id: crypto.randomUUID(),
-    time: time,
-    message: msg,
-    snoozeInterval: snooze,
-    enabled: true
-  });
+  if (editingId) {
+    const alarm = alarms.find(a => a.id === editingId);
+    if (alarm) {
+      alarm.time = time;
+      alarm.message = msg;
+      alarm.snoozeInterval = snooze;
+    }
+    editingId = null;
+    addBtn.textContent = '➕ 新增提醒';
+    addBtn.style.background = '#ff9800';
+  } else {
+    alarms.push({
+      id: crypto.randomUUID(),
+      time: time,
+      message: msg,
+      snoozeInterval: snooze,
+      enabled: true
+    });
+  }
   
   saveAlarms();
   timeInput.value = '';
   msgInput.value = '';
+  snoozeInput.value = '5';
   loadAlarms();
 };
 
