@@ -23,7 +23,13 @@
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "perMachine": false
-    }
+    },
+    "files": [
+      "**/*",
+      "!.env",
+      "!data/**/*",
+      "!logs/**/*"
+    ]
   },
   "dependencies": {
     "@google/genai": "^2.12.0",
