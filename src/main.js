@@ -16,8 +16,11 @@ try {
   });
 } catch (_) {}
 
+let mainWindow = null;
+let outfitWin = null;
+
 function createWindow() {
-  const mainWindow = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 250,
     height: 250,
     transparent: true,
@@ -93,6 +96,42 @@ app.whenReady().then(() => {
     });
     todoWin.setMenu(null);
     todoWin.loadFile(path.join(__dirname, 'todo.html'));
+  });
+
+  ipcMain.on('open-outfit', () => {
+    if (outfitWin) {
+      outfitWin.focus();
+      return;
+    }
+    outfitWin = new BrowserWindow({
+      width: 400,
+      height: 550,
+      title: 'Wiki Wiki 的衣櫥',
+      webPreferences: {
+        nodeIntegration: true,
+        contextIsolation: false
+      }
+    });
+    outfitWin.setMenu(null);
+    outfitWin.loadFile(path.join(__dirname, 'outfit.html'));
+    
+    outfitWin.on('closed', () => {
+      outfitWin = null;
+      if (mainWindow) mainWindow.webContents.send('outfit-closed');
+    });
+  });
+
+  // Relay IPC events for outfit changes
+  ipcMain.on('update-outfit', (event, data) => {
+    if (mainWindow) mainWindow.webContents.send('update-outfit', data);
+  });
+  
+  ipcMain.on('update-outfit-pos', (event, data) => {
+    if (mainWindow) mainWindow.webContents.send('update-outfit-pos', data);
+  });
+  
+  ipcMain.on('outfit-pos-updated', (event, data) => {
+    if (outfitWin) outfitWin.webContents.send('outfit-pos-updated', data);
   });
 
   app.on('activate', () => {

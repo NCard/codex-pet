@@ -101,6 +101,7 @@ loadPetState();
 // (已經移至獨立視窗)
 // 初始化裝扮
 if (petState.outfit) {
+  applyOutfitPos();
   kiwiOutfit.innerText = petState.outfit;
   kiwiOutfit.style.display = 'block';
 }
@@ -441,22 +442,135 @@ menuPet.addEventListener('click', () => {
   setTimeout(() => { kiwi.classList.remove('jumping'); }, 500);
 });
 
+let isOutfitEditMode = false;
+
 menuOutfit.addEventListener('click', () => {
   customMenu.style.display = 'none';
-  let currentIndex = outfits.indexOf(petState.outfit || '');
-  currentIndex = (currentIndex + 1) % outfits.length;
-  petState.outfit = outfits[currentIndex];
+  ipcRenderer.send('open-outfit');
+  isOutfitEditMode = true;
+  kiwiOutfit.style.pointerEvents = 'auto';
+  kiwiOutfit.style.cursor = 'grab';
+});
+
+ipcRenderer.on('outfit-closed', () => {
+  isOutfitEditMode = false;
+  kiwiOutfit.style.pointerEvents = 'none';
+  kiwiOutfit.style.cursor = 'default';
+});
+
+ipcRenderer.on('update-outfit', (event, newOutfit) => {
+  petState.outfit = newOutfit;
   savePetState();
-  
   if (petState.outfit) {
     kiwiOutfit.innerText = petState.outfit;
     kiwiOutfit.style.display = 'block';
+    applyOutfitPos();
   } else {
     kiwiOutfit.style.display = 'none';
   }
-  
   kiwi.classList.add('jumping');
   setTimeout(() => { kiwi.classList.remove('jumping'); }, 500);
+});
+
+ipcRenderer.on('update-outfit-pos', (event, { x, y, scale }) => {
+  if (!petState.outfitConfigs) petState.outfitConfigs = {};
+  if (!petState.outfitConfigs[petState.outfit]) {
+    petState.outfitConfigs[petState.outfit] = { x: 45, y: -10, scale: 60 };
+  }
+  if (x !== undefined) petState.outfitConfigs[petState.outfit].x = x;
+  if (y !== undefined) petState.outfitConfigs[petState.outfit].y = y;
+  if (scale !== undefined) petState.outfitConfigs[petState.outfit].scale = scale;
+  
+  savePetState();
+  applyOutfitPos();
+});
+
+function applyOutfitPos() {
+  if (!petState.outfit) return;
+  const config = (petState.outfitConfigs && petState.outfitConfigs[petState.outfit]) 
+                 || { x: 45, y: -10, scale: 60 };
+  kiwiOutfit.style.left = `${config.x}px`;
+  kiwiOutfit.style.top = `${config.y}px`;
+  kiwiOutfit.style.fontSize = `${config.scale}px`;
+  kiwiOutfit.style.transform = `none`;
+}
+
+// 裝扮拖曳邏輯
+let isDraggingOutfit = false;
+let outfitDragStartX = 0;
+let outfitDragStartY = 0;
+let outfitStartLeft = 0;
+let outfitStartTop = 0;
+
+kiwiOutfit.addEventListener('mousedown', (e) => {
+  if (!isOutfitEditMode) return;
+  isDraggingOutfit = true;
+  outfitDragStartX = e.clientX;
+  outfitDragStartY = e.clientY;
+  kiwiOutfit.style.cursor = 'grabbing';
+  
+  const rect = kiwiOutfit.parentElement.getBoundingClientRect();
+  const outfitRect = kiwiOutfit.getBoundingClientRect();
+  outfitStartLeft = outfitRect.left - rect.left;
+  outfitStartTop = outfitRect.top - rect.top;
+  
+  e.preventDefault();
+});
+
+window.addEventListener('mousemove', (e) => {
+  if (isDraggingOutfit) {
+    const dx = e.clientX - outfitDragStartX;
+    const dy = e.clientY - outfitDragStartY;
+    let newLeft = outfitStartLeft + dx;
+    let newTop = outfitStartTop + dy;
+    
+    kiwiOutfit.style.left = `${newLeft}px`;
+    kiwiOutfit.style.top = `${newTop}px`;
+    kiwiOutfit.style.transform = `none`;
+    
+    ipcRenderer.send('outfit-pos-updated', { x: newLeft, y: newTop });
+  }
+});
+
+window.addEventListener('mouseup', (e) => {
+  if (isDraggingOutfit) {
+    isDraggingOutfit = false;
+    kiwiOutfit.style.cursor = 'grab';
+    
+    const currentLeft = parseInt(kiwiOutfit.style.left || 0);
+    const currentTop = parseInt(kiwiOutfit.style.top || 0);
+    const currentScale = parseInt(kiwiOutfit.style.fontSize || 60);
+    
+    if (!petState.outfitConfigs) petState.outfitConfigs = {};
+    if (!petState.outfitConfigs[petState.outfit]) petState.outfitConfigs[petState.outfit] = {};
+    
+    petState.outfitConfigs[petState.outfit].x = currentLeft;
+    petState.outfitConfigs[petState.outfit].y = currentTop;
+    petState.outfitConfigs[petState.outfit].scale = currentScale;
+    savePetState();
+  }
+});
+
+kiwiOutfit.addEventListener('wheel', (e) => {
+  if (!isOutfitEditMode) return;
+  e.preventDefault();
+  let currentScale = parseInt(kiwiOutfit.style.fontSize || 60);
+  if (e.deltaY < 0) {
+    currentScale += 2;
+  } else {
+    currentScale -= 2;
+  }
+  if (currentScale < 10) currentScale = 10;
+  if (currentScale > 150) currentScale = 150;
+  
+  kiwiOutfit.style.fontSize = `${currentScale}px`;
+  
+  if (!petState.outfitConfigs) petState.outfitConfigs = {};
+  if (!petState.outfitConfigs[petState.outfit]) petState.outfitConfigs[petState.outfit] = {};
+  petState.outfitConfigs[petState.outfit].scale = currentScale;
+  savePetState();
+  
+  ipcRenderer.send('outfit-pos-updated', { scale: currentScale });
 });
 
 menuSleep.addEventListener('click', () => {

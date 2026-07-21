@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Wiki Wiki 的衣櫥</title>
+  <link rel="stylesheet" href="outfit.css">
+</head>
+<body>
+  <div class="header">
+    <h1>👗 Wiki Wiki 的衣櫥</h1>
+    <p>挑選喜歡的飾品，並拖曳微調位置！</p>
+  </div>
+  
+  <div class="wardrobe">
+    <div class="outfit-btn" data-outfit="">無</div>
+    <div class="outfit-btn" data-outfit="🎩">🎩</div>
+    <div class="outfit-btn" data-outfit="🕶️">🕶️</div>
+    <div class="outfit-btn" data-outfit="🎀">🎀</div>
+    <div class="outfit-btn" data-outfit="👑">👑</div>
+  </div>
+
+  <div class="controls-container" id="controls" style="display: none;">
+    <h3>精準微調 <span class="tip">(或直接在桌面上拖曳飾品)</span></h3>
+    <div class="control-group">
+      <label>水平位置 (左右):</label>
+      <input type="range" id="pos-x" min="-100" max="200" value="45">
+      <span class="val" id="val-x">45</span>
+    </div>
+    <div class="control-group">
+      <label>垂直高度 (上下):</label>
+      <input type="range" id="pos-y" min="-100" max="200" value="-10">
+      <span class="val" id="val-y">-10</span>
+    </div>
+    <div class="control-group">
+      <label>飾品大小 (縮放):</label>
+      <input type="range" id="scale" min="10" max="150" value="60">
+      <span class="val" id="val-scale">60</span>
+    </div>
+  </div>
+
+  <script src="outfit.js"></script>
+</body>
+</html>
