@@ -161,7 +161,8 @@ addBtn.onclick = () => {
 };
 
 textInput.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
     addBtn.click();
   }
 });

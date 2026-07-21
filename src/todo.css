@@ -41,13 +41,19 @@ body {
   align-items: center;
 }
 
-.input-group input[type="text"] {
+.input-group input[type="text"],
+.input-group textarea {
   flex: 1;
   padding: 8px;
   border: 1px solid #ccc;
   border-radius: 5px;
   font-size: 16px;
   font-family: inherit;
+}
+
+.input-group textarea {
+  resize: vertical;
+  min-height: 40px;
 }
 
 .input-group input[type="time"] {
@@ -117,6 +123,7 @@ body {
   font-size: 16px;
   color: #333;
   word-break: break-all;
+  white-space: pre-wrap;
 }
 
 .todo-item.done .todo-text {
