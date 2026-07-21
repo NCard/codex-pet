@@ -591,6 +591,7 @@ menuSettings.addEventListener('click', () => {
   customMenu.style.display = 'none';
   ipcRenderer.send('open-settings');
   isSettingsEditMode = true;
+  kiwiBed.style.display = 'block';
   kiwiBed.style.pointerEvents = 'auto';
   kiwiBed.style.cursor = 'grab';
 });
@@ -599,6 +600,9 @@ ipcRenderer.on('settings-closed', () => {
   isSettingsEditMode = false;
   kiwiBed.style.pointerEvents = 'none';
   kiwiBed.style.cursor = 'default';
+  if (!kiwi.classList.contains('sleeping')) {
+    kiwiBed.style.display = 'none';
+  }
 });
 
 ipcRenderer.on('outfit-closed', () => {
