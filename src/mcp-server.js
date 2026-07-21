@@ -93,13 +93,8 @@ server.setRequestHandler("tools/list", async () => {
         },
       },
       {
-        name: "get_alarms",
-        description: "取得所有已設定的鬧鐘與提醒清單",
-        inputSchema: { type: "object", properties: {} }
-      },
-      {
-        name: "get_todos",
-        description: "取得所有待辦事項清單",
+        name: "get_alarms_and_todos",
+        description: "取得所有已設定的鬧鐘、提醒與待辦事項清單",
         inputSchema: { type: "object", properties: {} }
       }
     ],
@@ -158,18 +153,28 @@ server.setRequestHandler("tools/call", async (request) => {
     };
   }
   
-  if (name === "get_alarms") {
+  if (name === "get_alarms_and_todos") {
+    let resultText = "";
+    
+    // Alarms
     const alarms = getAlarms();
-    if (alarms.length === 0) return { content: [{ type: "text", text: "目前沒有任何鬧鐘。" }] };
-    const text = alarms.map(a => `- ${a.time}: ${a.message} (啟用狀態: ${a.enabled})`).join('\n');
-    return { content: [{ type: "text", text: `目前的鬧鐘有：\n${text}` }] };
-  }
-  
-  if (name === "get_todos") {
+    if (alarms.length === 0) {
+      resultText += "目前沒有任何鬧鐘或提醒。\n";
+    } else {
+      const alarmsText = alarms.map(a => `- ${a.time}: ${a.message} (啟用狀態: ${a.enabled})`).join('\n');
+      resultText += `目前的鬧鐘有：\n${alarmsText}\n`;
+    }
+    
+    // Todos
     const state = getPetState();
-    if (!state.todos || state.todos.length === 0) return { content: [{ type: "text", text: "目前沒有任何待辦事項。" }] };
-    const text = state.todos.map(t => `- ${t.text} (完成狀態: ${t.done}${t.reminderTime ? ', 提醒時間: ' + t.reminderTime : ''})`).join('\n');
-    return { content: [{ type: "text", text: `目前的待辦事項有：\n${text}` }] };
+    if (!state.todos || state.todos.length === 0) {
+      resultText += "目前沒有任何待辦事項。";
+    } else {
+      const todosText = state.todos.map(t => `- ${t.text} (完成狀態: ${t.done}${t.reminderTime ? ', 提醒時間: ' + t.reminderTime : ''})`).join('\n');
+      resultText += `目前的待辦事項有：\n${todosText}`;
+    }
+    
+    return { content: [{ type: "text", text: resultText }] };
   }
 
   throw new Error(`Unknown tool: ${name}`);
