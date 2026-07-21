@@ -22,6 +22,41 @@ const { ipcRenderer } = require('electron');
 require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 const { GoogleGenAI } = require('@google/genai');
 const cryptoUtils = require('./crypto_utils');
+const { spawn } = require('child_process');
+const { Client } = require("@modelcontextprotocol/sdk/client/index.js");
+const { StdioClientTransport } = require("@modelcontextprotocol/sdk/client/stdio.js");
+
+// 初始化 MCP Client
+let mcpClient = null;
+let mcpToolsList = [];
+let geminiTools = [];
+
+async function initMCP() {
+  const mcpServerProcess = spawn(process.execPath, [path.join(__dirname, 'mcp-server.js')]);
+  const transport = new StdioClientTransport({
+    command: process.execPath,
+    args: [path.join(__dirname, 'mcp-server.js')]
+  });
+  
+  mcpClient = new Client({ name: "wiki-wiki-client", version: "1.0.0" }, { capabilities: {} });
+  await mcpClient.connect(transport);
+  
+  const toolsRes = await mcpClient.listTools();
+  mcpToolsList = toolsRes.tools;
+  
+  if (mcpToolsList.length > 0) {
+    geminiTools = [{
+      functionDeclarations: mcpToolsList.map(t => ({
+        name: t.name,
+        description: t.description,
+        parameters: t.inputSchema
+      }))
+    }];
+  }
+  console.log("MCP Client initialized, tools:", mcpToolsList.map(t => t.name));
+}
+
+initMCP().catch(console.error);
 
 function saveChatHistory(role, message) {
   const historyPath = path.join(__dirname, '../chat_history.json');
@@ -352,16 +387,65 @@ chatInput.addEventListener('keydown', async (e) => {
     }
     
     try {
-      const response = await ai.models.generateContent({
+      let contents = [
+        { role: 'user', parts: [{ text: `你現在是一隻生活在電腦桌面上的可愛奇異鳥小助手，你的名字叫做「Wiki Wiki」，請用簡短、活潑、賣萌的語氣回答問題（因為畫面很小，回答請盡量在 50 字以內，可以加上顏文字）。使用者說：${text}` }] }
+      ];
+      
+      let response = await ai.models.generateContent({
         model: 'gemini-3.5-flash',
-        contents: `你現在是一隻生活在電腦桌面上的可愛奇異鳥小助手，你的名字叫做「Wiki Wiki」，請用簡短、活潑、賣萌的語氣回答問題（因為畫面很小，回答請盡量在 50 字以內，可以加上顏文字）。使用者說：${text}`
+        contents,
+        config: { tools: geminiTools.length > 0 ? geminiTools : undefined }
       });
+      
+      if (response.functionCalls && response.functionCalls.length > 0) {
+        const functionResponses = [];
+        for (const call of response.functionCalls) {
+           console.log("Calling tool:", call.name, call.args);
+           try {
+             const result = await mcpClient.callTool({ name: call.name, arguments: call.args });
+             functionResponses.push({
+               functionResponse: {
+                 name: call.name,
+                 response: { result: result.content }
+               }
+             });
+             
+             // 即時反映本地狀態更新
+             if (call.name === 'add_todo' || call.name === 'change_outfit') {
+                loadPetState();
+                if (call.name === 'change_outfit') {
+                   kiwiOutfit.innerText = petState.outfit;
+                   kiwiOutfit.style.display = petState.outfit ? 'block' : 'none';
+                   if (petState.outfit) applyOutfitPos();
+                }
+             }
+           } catch (e) {
+             console.error("Tool execution error:", e);
+             functionResponses.push({
+               functionResponse: {
+                 name: call.name,
+                 response: { error: e.message }
+               }
+             });
+           }
+        }
+        
+        contents.push({ role: 'model', parts: response.functionCalls.map(c => ({ functionCall: c })) });
+        contents.push({ role: 'user', parts: functionResponses });
+        
+        response = await ai.models.generateContent({
+           model: 'gemini-3.5-flash',
+           contents,
+           config: { tools: geminiTools.length > 0 ? geminiTools : undefined }
+        });
+      }
+
       // 避免 AI 回答包含 HTML 標籤破壞畫面
-      const safeText = response.text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      const safeText = (response.text || "").replace(/</g, '&lt;').replace(/>/g, '&gt;');
       chatContent.innerHTML = `${namePrefix}${safeText}`;
       
       // 儲存奇異鳥回答
-      saveChatHistory('kiwi', response.text);
+      saveChatHistory('kiwi', response.text || "");
       
       // 收到回答後開心地跳躍
       kiwi.classList.add('jumping');
