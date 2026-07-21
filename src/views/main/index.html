@@ -23,7 +23,9 @@
       <div class="menu-item" id="menu-todo">📋 待辦事項 (Todo)</div>
       <div class="menu-item" id="menu-feed">🍎 餵食 (Feed)</div>
       <div class="menu-item" id="menu-pet">✋ 摸摸 (Pet)</div>
-      <div class="menu-item" id="menu-outfit">👗 換裝 (Outfit)</div>
+      <div class="menu-item" id="menu-outfit">🎩 衣櫥 (Outfit)</div>
+      <div class="menu-item" id="menu-settings">⚙️ 設定 (Settings)</div>
+      <div class="menu-separator"></div>
       <div class="menu-item" id="menu-sleep">💤 睡覺 (Sleep)</div>
       <div class="menu-item" id="menu-close">❌ 關閉 (Exit)</div>
     </div>
@@ -36,7 +38,7 @@
         <img src="../../../assets/images/kiwi.png" alt="kiwi pet" id="kiwi-img">
       </div>
       
-      <img src="../../../assets/images/bed.png" id="kiwi-bed" style="display: none; position: absolute; bottom: -10px; left: 50%; transform: translateX(-50%); margin-left: 15px; z-index: -1; width: 170px; pointer-events: none;">
+      <img src="../../../assets/images/bed.png" id="kiwi-bed" style="display: none; position: absolute; bottom: -10px; left: 50%; transform: translateX(-50%); margin-left: var(--bed-x, 15px); margin-bottom: var(--bed-y, 0px); width: var(--bed-scale, 170px); z-index: var(--bed-z, -1); pointer-events: none;">
     </div>
   </div>
   <script src="renderer.js"></script>

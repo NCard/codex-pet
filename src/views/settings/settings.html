@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Wiki Wiki 設定中心</title>
+  <link rel="stylesheet" href="settings.css">
+</head>
+<body>
+  <div class="header">⚙️ 設定中心</div>
+  
+  <div class="section">
+    <div class="section-title">🛌 床鋪自訂 (Bed)</div>
+    
+    <div class="control-group">
+      <label>X 軸偏移 <span id="val-bed-x">0px</span></label>
+      <input type="range" id="bed-x" min="-100" max="100" value="0">
+    </div>
+    
+    <div class="control-group">
+      <label>Y 軸偏移 <span id="val-bed-y">0px</span></label>
+      <input type="range" id="bed-y" min="-100" max="100" value="0">
+    </div>
+    
+    <div class="control-group">
+      <label>床鋪大小 <span id="val-bed-scale">170px</span></label>
+      <input type="range" id="bed-scale" min="100" max="300" value="170">
+    </div>
+
+    <div class="control-group">
+      <label>圖層位置</label>
+      <select id="bed-z">
+        <option value="-1">小鳥下方 (背景)</option>
+        <option value="15">小鳥上方 (前景)</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">⚡ 動畫速度 (Animation)</div>
+    
+    <div class="control-group">
+      <label>呼吸速度倍率 <span id="val-anim-speed">1.0x</span></label>
+      <input type="range" id="anim-speed" min="0.5" max="3.0" step="0.1" value="1.0">
+    </div>
+  </div>
+  
+  <button id="btn-reset">還原預設值</button>
+
+  <script src="settings.js"></script>
+</body>
+</html>

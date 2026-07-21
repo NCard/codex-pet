@@ -11,6 +11,7 @@ const menuTodo = document.getElementById('menu-todo');
 const menuFeed = document.getElementById('menu-feed');
 const menuPet = document.getElementById('menu-pet');
 const menuOutfit = document.getElementById('menu-outfit');
+const menuSettings = document.getElementById('menu-settings');
 
 const kiwiOutfit = document.getElementById('kiwi-outfit');
 const outfits = ['', '🎩', '🕶️', '🎀', '👑'];
@@ -26,6 +27,17 @@ const cryptoUtils = require('../../utils/crypto_utils');
 const { spawn } = require('child_process');
 const { Client } = require("@modelcontextprotocol/sdk/client/index.js");
 const { StdioClientTransport } = require("@modelcontextprotocol/sdk/client/stdio.js");
+
+// 載入設定檔套用 CSS 變數
+function applySettings(settings) {
+  if (!settings) return;
+  const root = document.documentElement;
+  if (settings.bedX !== undefined) root.style.setProperty('--bed-x', `${settings.bedX}px`);
+  if (settings.bedY !== undefined) root.style.setProperty('--bed-y', `${settings.bedY}px`);
+  if (settings.bedScale !== undefined) root.style.setProperty('--bed-scale', `${settings.bedScale}px`);
+  if (settings.bedZ !== undefined) root.style.setProperty('--bed-z', settings.bedZ);
+  if (settings.animSpeed !== undefined) root.style.setProperty('--anim-speed', settings.animSpeed);
+}
 
 // 初始化 MCP Client
 let mcpClient = null;
@@ -109,7 +121,8 @@ let petState = {
   hunger: 100,
   mood: 100,
   outfit: null,
-  todos: []
+  todos: [],
+  settings: {}
 };
 
 function loadPetState() {
@@ -133,6 +146,7 @@ function savePetState() {
 
 // 啟動時載入狀態
 loadPetState();
+applySettings(petState.settings);
 // 初始化待辦事項 UI
 // (已經移至獨立視窗)
 // 初始化裝扮
@@ -565,11 +579,21 @@ menuOutfit.addEventListener('click', () => {
   kiwi.style.animation = 'none'; // 換裝模式暫停呼吸動畫，避免座標跳動
 });
 
+menuSettings.addEventListener('click', () => {
+  customMenu.style.display = 'none';
+  ipcRenderer.send('open-settings');
+});
+
 ipcRenderer.on('outfit-closed', () => {
   isOutfitEditMode = false;
   kiwiOutfit.style.pointerEvents = 'none';
   kiwiOutfit.style.cursor = 'default';
   kiwi.style.animation = ''; // 恢復呼吸動畫
+});
+
+ipcRenderer.on('update-settings', (event, settings) => {
+  petState.settings = settings;
+  applySettings(settings);
 });
 
 ipcRenderer.on('update-outfit', (event, newOutfit) => {

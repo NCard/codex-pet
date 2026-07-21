@@ -25,7 +25,7 @@ body, html {
 
 #kiwi-sprite-wrapper {
   /* 待機呼吸動畫 */
-  animation: breathe 3s infinite ease-in-out;
+  animation: breathe calc(3s / var(--anim-speed, 1)) infinite ease-in-out;
   cursor: grab;
 }
 
@@ -238,15 +238,15 @@ body, html {
 }
 
 .walking {
-  animation: walk 0.5s infinite linear !important;
+  animation: walk calc(0.5s / var(--anim-speed, 1)) infinite linear !important;
 }
 
 /* 新增動作 CSS 動畫 */
 .jumping {
-  animation: jump 0.5s ease-in-out !important;
+  animation: jump calc(0.5s / var(--anim-speed, 1)) ease-in-out !important;
 }
 .sleeping {
-  animation: sleep-breathe 4s infinite ease-in-out !important;
+  animation: sleep-breathe calc(4s / var(--anim-speed, 1)) infinite ease-in-out !important;
   /* 正著睡，不翻轉 */
   transform: scaleX(var(--flip)) !important;
 }

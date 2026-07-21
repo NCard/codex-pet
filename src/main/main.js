@@ -162,6 +162,32 @@ app.whenReady().then(() => {
     if (outfitWin) outfitWin.webContents.send('outfit-pos-updated', data);
   });
 
+  let settingsWindow = null;
+  ipcMain.on('open-settings', () => {
+    if (settingsWindow) {
+      settingsWindow.focus();
+      return;
+    }
+    settingsWindow = new BrowserWindow({
+      width: 350,
+      height: 500,
+      title: 'Wiki Wiki 設定中心',
+      autoHideMenuBar: true,
+      webPreferences: {
+        nodeIntegration: true,
+        contextIsolation: false
+      }
+    });
+    settingsWindow.loadFile(path.join(__dirname, '../views/settings/settings.html'));
+    settingsWindow.on('closed', () => {
+      settingsWindow = null;
+    });
+  });
+
+  ipcMain.on('settings-changed', (event, settingsData) => {
+    if (mainWindow) mainWindow.webContents.send('update-settings', settingsData);
+  });
+
   ipcMain.on('alarms-changed', () => {
     if (alarmWin) alarmWin.webContents.send('reload-data');
   });
