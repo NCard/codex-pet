@@ -5,6 +5,7 @@ const customMenu = document.getElementById('custom-menu');
 const menuSleep = document.getElementById('menu-sleep');
 const menuClose = document.getElementById('menu-close');
 const menuHistory = document.getElementById('menu-history');
+const menuAlarm = document.getElementById('menu-alarm');
 const menuTodo = document.getElementById('menu-todo');
 const menuFeed = document.getElementById('menu-feed');
 const menuPet = document.getElementById('menu-pet');
@@ -475,6 +476,11 @@ menuHistory.addEventListener('click', () => {
   ipcRenderer.send('open-history');
 });
 
+menuAlarm.addEventListener('click', () => {
+  customMenu.style.display = 'none';
+  ipcRenderer.send('open-alarm');
+});
+
 menuClose.addEventListener('click', () => {
   window.close();
 });
@@ -517,6 +523,37 @@ setInterval(() => {
     document.getElementById('kiwi-bed').style.display = 'block';
   }
 }, 1000);
+
+let lastTriggeredAlarm = '';
+setInterval(() => {
+  const alarmsPath = path.join(__dirname, '../alarms.json');
+  if (fs.existsSync(alarmsPath)) {
+    try {
+      const data = fs.readFileSync(alarmsPath, 'utf8');
+      const alarms = JSON.parse(data);
+      const now = new Date();
+      const currentHHMM = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+      
+      alarms.forEach(alarm => {
+        if (alarm.enabled && alarm.time === currentHHMM) {
+          const alarmKey = alarm.id + '-' + now.toDateString() + '-' + currentHHMM;
+          if (lastTriggeredAlarm !== alarmKey) {
+            lastTriggeredAlarm = alarmKey;
+            // Wake up pet if sleeping
+            resetIdle();
+            // Show bubble
+            showTempBubble('⏰ ' + alarm.message, 8000);
+            // Hop to get attention
+            kiwi.classList.add('jumping');
+            setTimeout(() => { kiwi.classList.remove('jumping'); }, 500);
+          }
+        }
+      });
+    } catch (e) {
+      console.error('Failed to parse alarms:', e);
+    }
+  }
+}, 5000);
 
 // 每隔一段時間隨機走動
 setInterval(() => {
