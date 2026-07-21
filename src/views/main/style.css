@@ -191,9 +191,9 @@ body, html {
 }
 
 @keyframes floatZzz {
-  0% { transform: translateY(0) scale(1); opacity: 0.5; }
-  50% { transform: translateY(-15px) scale(1.2); opacity: 1; }
-  100% { transform: translateY(-30px) scale(1.5); opacity: 0; }
+  0% { transform: translateY(0) scale(1) scaleX(var(--flip)); opacity: 0.5; }
+  50% { transform: translateY(-10px) scale(1.2) scaleX(var(--flip)); opacity: 1; }
+  100% { transform: translateY(-20px) scale(1.5) scaleX(var(--flip)); opacity: 0; }
 }
 
 #todo-panel {
