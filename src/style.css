@@ -16,8 +16,14 @@ body, html {
   position: relative;
 }
 
-#kiwi-img {
+#kiwi-wrapper {
   --flip: 1;
+  transform: scaleX(var(--flip));
+  transition: transform 0.3s ease;
+  transform-origin: center;
+}
+
+#kiwi-img {
   width: 180px;
   height: auto;
   user-select: none;
@@ -26,8 +32,6 @@ body, html {
 
   /* 待機呼吸動畫 */
   animation: breathe 3s infinite ease-in-out;
-  transform: scaleX(var(--flip));
-  transition: transform 0.3s ease; /* 增加平滑過渡 */
 }
 
 #kiwi-img:active {
@@ -121,32 +125,32 @@ body, html {
 
 /* 動畫 keyframes */
 @keyframes breathe {
-  0% { transform: scaleX(var(--flip)) scale(1); }
-  50% { transform: scaleX(var(--flip)) scale(1.05) translateY(-5px); }
-  100% { transform: scaleX(var(--flip)) scale(1); }
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05) translateY(-5px); }
+  100% { transform: scale(1); }
 }
 
 @keyframes shock {
-  0% { transform: scaleX(var(--flip)) scale(1); }
-  20% { transform: scaleX(var(--flip)) scale(1.2) rotate(15deg); }
-  40% { transform: scaleX(var(--flip)) scale(1.2) rotate(-15deg); }
-  60% { transform: scaleX(var(--flip)) scale(1.2) rotate(15deg); }
-  80% { transform: scaleX(var(--flip)) scale(1.2) rotate(-15deg); }
-  100% { transform: scaleX(var(--flip)) scale(1); }
+  0% { transform: scale(1); }
+  20% { transform: scale(1.2) rotate(15deg); }
+  40% { transform: scale(1.2) rotate(-15deg); }
+  60% { transform: scale(1.2) rotate(15deg); }
+  80% { transform: scale(1.2) rotate(-15deg); }
+  100% { transform: scale(1); }
 }
 
 @keyframes jump {
-  0% { transform: scaleX(var(--flip)) translateY(0); }
-  50% { transform: scaleX(var(--flip)) translateY(-20px); }
-  100% { transform: scaleX(var(--flip)) translateY(0); }
+  0% { transform: translateY(0); }
+  50% { transform: translateY(-20px); }
+  100% { transform: translateY(0); }
 }
 
 @keyframes walk {
-  0% { transform: scaleX(var(--flip)) rotate(0deg); }
-  25% { transform: scaleX(var(--flip)) rotate(5deg) translateY(-2px); }
-  50% { transform: scaleX(var(--flip)) rotate(0deg); }
-  75% { transform: scaleX(var(--flip)) rotate(-5deg) translateY(-2px); }
-  100% { transform: scaleX(var(--flip)) rotate(0deg); }
+  0% { transform: rotate(0deg); }
+  25% { transform: rotate(5deg) translateY(-2px); }
+  50% { transform: rotate(0deg); }
+  75% { transform: rotate(-5deg) translateY(-2px); }
+  100% { transform: rotate(0deg); }
 }
 
 @keyframes float {
@@ -226,6 +230,6 @@ body, html {
 }
 
 @keyframes sleep-breathe {
-  0%, 100% { transform: scaleX(var(--flip)) scale(1); }
-  50% { transform: scaleX(var(--flip)) scale(1.03) translateY(-2px); }
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.03) translateY(-2px); }
 }

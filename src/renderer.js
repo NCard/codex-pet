@@ -518,9 +518,12 @@ kiwiOutfit.addEventListener('mousedown', (e) => {
 });
 
 window.addEventListener('mousemove', (e) => {
+  // 加入翻轉參數來修正拖曳方向
+  const flip = parseInt(document.getElementById('kiwi-wrapper').style.getPropertyValue('--flip')) || 1;
+
   if (isDraggingOutfit) {
-    const dx = e.clientX - outfitDragStartX;
-    const dy = e.clientY - outfitDragStartY;
+    const dx = (e.clientX - outfitDragStartX) * flip;
+    const dy = (e.clientY - outfitDragStartY);
     let newLeft = outfitStartLeft + dx;
     let newTop = outfitStartTop + dy;
     
@@ -731,7 +734,7 @@ setInterval(() => {
     // 翻轉圖片方向 (利用 CSS 變數)
     // 註：如果圖片預設朝左，而往左走卻翻轉了，請將 1 與 -1 互換！
     const direction = (targetX < x) ? -1 : 1; 
-    kiwi.style.setProperty('--flip', direction);
+    document.getElementById('kiwi-wrapper').style.setProperty('--flip', direction);
 
     // 加上走路動畫 class (身體晃動)
     kiwi.classList.add('walking');
