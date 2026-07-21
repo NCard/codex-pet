@@ -6,8 +6,8 @@ const statePath = path.join(__dirname, '../../../data/pet_state.json');
 
 // 預設設定
 const defaultSettings = {
-  bedX: 15, // 我們剛才測出 15 是一個不錯的預設視覺置中點
-  bedY: -10,
+  bedX: -4,
+  bedY: -15,
   bedScale: 170,
   bedZ: -1,
   animSpeed: 1.0

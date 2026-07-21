@@ -698,8 +698,8 @@ kiwiBed.addEventListener('mousedown', (e) => {
   kiwiBed.style.cursor = 'grabbing';
   
   if (!petState.settings) petState.settings = {};
-  bedStartMarginLeft = petState.settings.bedX ?? 15;
-  bedStartMarginBottom = petState.settings.bedY ?? 0;
+  bedStartMarginLeft = petState.settings.bedX ?? -4;
+  bedStartMarginBottom = petState.settings.bedY ?? -15;
   
   e.preventDefault();
   e.stopPropagation();
