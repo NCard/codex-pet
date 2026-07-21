@@ -1,6 +1,7 @@
 require('../utils/logger');
 const { Server } = require("@modelcontextprotocol/sdk/server/index.js");
 const { StdioServerTransport } = require("@modelcontextprotocol/sdk/server/stdio.js");
+const { ListToolsRequestSchema, CallToolRequestSchema } = require("@modelcontextprotocol/sdk/types.js");
 const fs = require('fs');
 const path = require('path');
 
@@ -47,7 +48,7 @@ function saveAlarms(alarms) {
 }
 
 // 註冊 Tools
-server.setRequestHandler("tools/list", async () => {
+server.setRequestHandler(ListToolsRequestSchema, async () => {
   return {
     tools: [
       {
@@ -103,7 +104,7 @@ server.setRequestHandler("tools/list", async () => {
 });
 
 // 處理 Tool 呼叫
-server.setRequestHandler("tools/call", async (request) => {
+server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const { name, arguments: args } = request.params;
   
   if (name === "add_todo") {
