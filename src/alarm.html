@@ -15,7 +15,11 @@
     <div class="input-group">
       <input type="time" id="alarm-time" required>
       <input type="text" id="alarm-message" placeholder="例如：下班囉！記得打卡！" required>
-      <button id="add-alarm-btn">➕ 新增</button>
+    </div>
+    <div class="input-group" style="margin-top: 10px;">
+      <label for="alarm-snooze" style="font-size: 14px; font-weight: bold; color: #555;">貪睡間隔 (分鐘):</label>
+      <input type="number" id="alarm-snooze" value="5" min="1" max="60" style="width: 60px; padding: 5px; border: 1px solid #ccc; border-radius: 5px;">
+      <button id="add-alarm-btn" style="flex: 1;">➕ 新增提醒</button>
     </div>
   </div>
 

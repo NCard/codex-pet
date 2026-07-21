@@ -7,6 +7,7 @@ let alarms = [];
 
 const timeInput = document.getElementById('alarm-time');
 const msgInput = document.getElementById('alarm-message');
+const snoozeInput = document.getElementById('alarm-snooze');
 const addBtn = document.getElementById('add-alarm-btn');
 const alarmList = document.getElementById('alarm-list');
 
@@ -54,7 +55,7 @@ function renderAlarms() {
     
     const msgDiv = document.createElement('div');
     msgDiv.className = 'alarm-msg';
-    msgDiv.textContent = alarm.message;
+    msgDiv.innerHTML = `${alarm.message}<br><span style="font-size: 12px; color: #888;">(貪睡: ${alarm.snoozeInterval || 5} 分鐘)</span>`;
     
     const actionsDiv = document.createElement('div');
     actionsDiv.className = 'alarm-actions';
@@ -95,6 +96,7 @@ function renderAlarms() {
 addBtn.onclick = () => {
   const time = timeInput.value;
   const msg = msgInput.value.trim();
+  const snooze = parseInt(snoozeInput.value, 10) || 5;
   
   if (!time) {
     alert('請選擇時間！');
@@ -110,6 +112,7 @@ addBtn.onclick = () => {
     id: crypto.randomUUID(),
     time: time,
     message: msg,
+    snoozeInterval: snooze,
     enabled: true
   });
   

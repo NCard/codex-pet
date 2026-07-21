@@ -167,6 +167,7 @@ const namePrefix = '<span style="color: #c97a2e; font-weight: 900;">Wiki Wiki：
 
 let bubbleTimeout = null;
 function showTempBubble(text, duration = 5000) {
+  if (isAlarmActive) return; // 不要覆蓋提醒氣泡
   chatBubble.style.display = 'block';
   chatContent.innerHTML = `${namePrefix}${text}`;
   
@@ -174,6 +175,38 @@ function showTempBubble(text, duration = 5000) {
   bubbleTimeout = setTimeout(() => {
     chatBubble.style.display = 'none';
   }, duration);
+}
+
+let isAlarmActive = false;
+let snoozedAlarms = [];
+
+function showAlarmBubble(alarm) {
+  isAlarmActive = true;
+  chatBubble.style.display = 'block';
+  if (bubbleTimeout) clearTimeout(bubbleTimeout);
+  
+  const snoozeMins = alarm.snoozeInterval || 5;
+  
+  chatContent.innerHTML = `
+    ${namePrefix}⏰ 提醒：<br>
+    <div style="margin: 5px 0; word-break: break-all;">${alarm.message}</div>
+    <div style="display: flex; gap: 5px; margin-top: 8px;">
+      <button id="btn-alarm-ok" style="flex:1; padding: 4px; border: none; background: #4caf50; color: white; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold;">我知道了</button>
+      <button id="btn-alarm-snooze" style="flex:1; padding: 4px; border: none; background: #ff9800; color: white; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold;">貪睡 ${snoozeMins}分</button>
+    </div>
+  `;
+  
+  document.getElementById('btn-alarm-ok').onclick = () => {
+    isAlarmActive = false;
+    chatBubble.style.display = 'none';
+  };
+  
+  document.getElementById('btn-alarm-snooze').onclick = () => {
+    isAlarmActive = false;
+    chatBubble.style.display = 'none';
+    const triggerTime = Date.now() + snoozeMins * 60000;
+    snoozedAlarms.push({ ...alarm, triggerTime });
+  };
 }
 
 let isDragging = false;
@@ -525,7 +558,28 @@ setInterval(() => {
 }, 1000);
 
 let lastTriggeredAlarm = '';
+
+function triggerAlarm(alarm, alarmKey) {
+  if (lastTriggeredAlarm !== alarmKey) {
+    lastTriggeredAlarm = alarmKey;
+    resetIdle();
+    showAlarmBubble(alarm);
+    kiwi.classList.add('jumping');
+    setTimeout(() => { kiwi.classList.remove('jumping'); }, 500);
+  }
+}
+
 setInterval(() => {
+  const nowMs = Date.now();
+  // 檢查貪睡清單
+  for (let i = snoozedAlarms.length - 1; i >= 0; i--) {
+    const sAlarm = snoozedAlarms[i];
+    if (nowMs >= sAlarm.triggerTime) {
+      snoozedAlarms.splice(i, 1);
+      triggerAlarm(sAlarm, sAlarm.id + '-snooze-' + nowMs);
+    }
+  }
+
   const alarmsPath = path.join(__dirname, '../alarms.json');
   if (fs.existsSync(alarmsPath)) {
     try {
@@ -537,16 +591,7 @@ setInterval(() => {
       alarms.forEach(alarm => {
         if (alarm.enabled && alarm.time === currentHHMM) {
           const alarmKey = alarm.id + '-' + now.toDateString() + '-' + currentHHMM;
-          if (lastTriggeredAlarm !== alarmKey) {
-            lastTriggeredAlarm = alarmKey;
-            // Wake up pet if sleeping
-            resetIdle();
-            // Show bubble
-            showTempBubble('⏰ ' + alarm.message, 8000);
-            // Hop to get attention
-            kiwi.classList.add('jumping');
-            setTimeout(() => { kiwi.classList.remove('jumping'); }, 500);
-          }
+          triggerAlarm(alarm, alarmKey);
         }
       });
     } catch (e) {
