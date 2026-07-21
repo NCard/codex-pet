@@ -10,7 +10,8 @@ try {
       /implementation_plan\.md/,
       /walkthrough\.md/,
       /\.system_generated/,
-      /alarms\.json/
+      /alarms\.json/,
+      /pet_state\.json/
     ]
   });
 } catch (_) {}
@@ -78,6 +79,20 @@ app.whenReady().then(() => {
     });
     alarmWin.setMenu(null);
     alarmWin.loadFile(path.join(__dirname, 'alarm.html'));
+  });
+
+  ipcMain.on('open-todo', () => {
+    const todoWin = new BrowserWindow({
+      width: 500,
+      height: 650,
+      title: 'Wiki Wiki 待辦事項',
+      webPreferences: {
+        nodeIntegration: true,
+        contextIsolation: false
+      }
+    });
+    todoWin.setMenu(null);
+    todoWin.loadFile(path.join(__dirname, 'todo.html'));
   });
 
   app.on('activate', () => {
