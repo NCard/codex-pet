@@ -1,4 +1,4 @@
-require('./logger');
+require('../utils/logger');
 const { Server } = require("@modelcontextprotocol/sdk/server/index.js");
 const { StdioServerTransport } = require("@modelcontextprotocol/sdk/server/stdio.js");
 const fs = require('fs');
@@ -17,8 +17,8 @@ const server = new Server(
 );
 
 // Helper functions for reading/writing states
-const petStatePath = path.join(__dirname, '../pet_state.json');
-const alarmsPath = path.join(__dirname, '../alarms.json');
+const petStatePath = path.join(__dirname, '../../pet_state.json');
+const alarmsPath = path.join(__dirname, '../../alarms.json');
 
 function getPetState() {
   if (fs.existsSync(petStatePath)) {

@@ -1,4 +1,4 @@
-require('./logger');
+require('../utils/logger');
 const { app, BrowserWindow, ipcMain, Tray, Menu } = require('electron');
 const path = require('path');
 
@@ -19,6 +19,9 @@ try {
 
 let mainWindow = null;
 let outfitWin = null;
+let alarmWin = null;
+let todoWin = null;
+let historyWin = null;
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -34,7 +37,7 @@ function createWindow() {
     }
   });
 
-  mainWindow.loadFile(path.join(__dirname, 'index.html'));
+  mainWindow.loadFile(path.join(__dirname, '../views/main/index.html'));
 }
 
 app.whenReady().then(() => {
@@ -57,7 +60,11 @@ app.whenReady().then(() => {
   });
 
   ipcMain.on('open-history', () => {
-    const historyWin = new BrowserWindow({
+    if (historyWin) {
+      historyWin.focus();
+      return;
+    }
+    historyWin = new BrowserWindow({
       width: 600,
       height: 800,
       title: 'Wiki Wiki 歷史對話紀錄',
@@ -68,11 +75,16 @@ app.whenReady().then(() => {
     });
     // hide menu bar
     historyWin.setMenu(null);
-    historyWin.loadFile(path.join(__dirname, 'history.html'));
+    historyWin.loadFile(path.join(__dirname, '../views/history/history.html'));
+    historyWin.on('closed', () => historyWin = null);
   });
 
   ipcMain.on('open-alarm', () => {
-    const alarmWin = new BrowserWindow({
+    if (alarmWin) {
+      alarmWin.focus();
+      return;
+    }
+    alarmWin = new BrowserWindow({
       width: 500,
       height: 650,
       title: 'Wiki Wiki 提醒設定',
@@ -82,11 +94,16 @@ app.whenReady().then(() => {
       }
     });
     alarmWin.setMenu(null);
-    alarmWin.loadFile(path.join(__dirname, 'alarm.html'));
+    alarmWin.loadFile(path.join(__dirname, '../views/alarm/alarm.html'));
+    alarmWin.on('closed', () => alarmWin = null);
   });
 
   ipcMain.on('open-todo', () => {
-    const todoWin = new BrowserWindow({
+    if (todoWin) {
+      todoWin.focus();
+      return;
+    }
+    todoWin = new BrowserWindow({
       width: 500,
       height: 650,
       title: 'Wiki Wiki 待辦事項',
@@ -96,7 +113,8 @@ app.whenReady().then(() => {
       }
     });
     todoWin.setMenu(null);
-    todoWin.loadFile(path.join(__dirname, 'todo.html'));
+    todoWin.loadFile(path.join(__dirname, '../views/todo/todo.html'));
+    todoWin.on('closed', () => todoWin = null);
   });
 
   ipcMain.on('open-outfit', () => {
@@ -114,7 +132,7 @@ app.whenReady().then(() => {
       }
     });
     outfitWin.setMenu(null);
-    outfitWin.loadFile(path.join(__dirname, 'outfit.html'));
+    outfitWin.loadFile(path.join(__dirname, '../views/outfit/outfit.html'));
     
     outfitWin.on('closed', () => {
       outfitWin = null;

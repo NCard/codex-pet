@@ -2,7 +2,7 @@
   "name": "ai-pet",
   "productName": "Wiki Wiki",
   "version": "1.0.0",
-  "main": "src/main.js",
+  "main": "src/main/main.js",
   "scripts": {
     "start": "electron .",
     "pack": "electron-builder --dir",

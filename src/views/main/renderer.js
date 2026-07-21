@@ -1,4 +1,4 @@
-require('./logger');
+require('../../utils/logger');
 const kiwi = document.getElementById('kiwi-img');
 const chatBubble = document.getElementById('chat-bubble');
 const chatInput = document.getElementById('chat-input');
@@ -20,9 +20,9 @@ const fs = require('fs');
 const crypto = require('crypto');
 const os = require('os');
 const { ipcRenderer } = require('electron');
-require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
+require('dotenv').config({ path: path.resolve(__dirname, '../../../.env') });
 const { GoogleGenAI } = require('@google/genai');
-const cryptoUtils = require('./crypto_utils');
+const cryptoUtils = require('../../utils/crypto_utils');
 const { spawn } = require('child_process');
 const { Client } = require("@modelcontextprotocol/sdk/client/index.js");
 const { StdioClientTransport } = require("@modelcontextprotocol/sdk/client/stdio.js");
@@ -35,7 +35,7 @@ let geminiTools = [];
 async function initMCP() {
   const transport = new StdioClientTransport({
     command: process.execPath,
-    args: [path.join(__dirname, 'mcp-server.js')],
+    args: [path.join(__dirname, '../../mcp/mcp-server.js')],
     env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' }
   });
   
@@ -60,7 +60,7 @@ async function initMCP() {
 initMCP().catch(console.error);
 
 function saveChatHistory(role, message) {
-  const historyPath = path.join(__dirname, '../chat_history.json');
+  const historyPath = path.join(__dirname, '../../../chat_history.json');
   let history = [];
   try {
     if (fs.existsSync(historyPath)) {
@@ -94,7 +94,7 @@ function saveChatHistory(role, message) {
 }
 
 function clearChatHistory() {
-  const historyPath = path.join(__dirname, '../chat_history.json');
+  const historyPath = path.join(__dirname, '../../../chat_history.json');
   try {
     const encryptedStr = cryptoUtils.encryptData("[]");
     fs.writeFileSync(historyPath, encryptedStr, 'utf8');
@@ -104,7 +104,7 @@ function clearChatHistory() {
 }
 
 // 寵物狀態管理存儲機制
-const statePath = path.join(__dirname, '../pet_state.json');
+const statePath = path.join(__dirname, '../../../pet_state.json');
 let petState = {
   hunger: 100,
   mood: 100,

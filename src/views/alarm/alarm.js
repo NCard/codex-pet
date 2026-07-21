@@ -1,4 +1,4 @@
-require('./logger');
+require('../../utils/logger');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
@@ -8,7 +8,7 @@ ipcRenderer.on('reload-data', () => {
   loadAlarms();
 });
 
-const alarmsPath = path.join(__dirname, '../alarms.json');
+const alarmsPath = path.join(__dirname, '../../../alarms.json');
 let alarms = [];
 
 const timeInput = document.getElementById('alarm-time');

@@ -1,8 +1,9 @@
+require('../../utils/logger');
 const { ipcRenderer } = require('electron');
 const fs = require('fs');
 const path = require('path');
 
-const statePath = path.join(__dirname, '../pet_state.json');
+const statePath = path.join(__dirname, '../../../pet_state.json');
 let petState = {};
 
 const outfitBtns = document.querySelectorAll('.outfit-btn');
