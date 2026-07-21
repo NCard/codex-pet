@@ -450,7 +450,7 @@ chatInput.addEventListener('keydown', async (e) => {
            }
         }
         
-        contents.push({ role: 'model', parts: response.functionCalls.map(c => ({ functionCall: c })) });
+        contents.push(response.candidates[0].content);
         contents.push({ role: 'user', parts: functionResponses });
         
         response = await ai.models.generateContent({
