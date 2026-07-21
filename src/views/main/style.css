@@ -63,6 +63,23 @@ body, html {
   overflow-y: auto;
 }
 
+/* 自訂對話框捲軸，避免遮擋角落的裝飾圖案 */
+.chat-bubble::-webkit-scrollbar {
+  width: 6px;
+}
+.chat-bubble::-webkit-scrollbar-track {
+  background: transparent;
+  margin-top: 30px; /* 避開右上角花朵 */
+  margin-bottom: 30px; /* 避開左下角草 */
+}
+.chat-bubble::-webkit-scrollbar-thumb {
+  background: rgba(3, 169, 244, 0.5);
+  border-radius: 10px;
+}
+.chat-bubble::-webkit-scrollbar-thumb:hover {
+  background: rgba(3, 169, 244, 0.8);
+}
+
 #chat-input {
   position: relative;
   width: 100%;
