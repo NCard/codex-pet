@@ -9,7 +9,8 @@ try {
       /task\.md/,
       /implementation_plan\.md/,
       /walkthrough\.md/,
-      /\.system_generated/
+      /\.system_generated/,
+      /alarms\.json/
     ]
   });
 } catch (_) {}
@@ -63,6 +64,20 @@ app.whenReady().then(() => {
     // hide menu bar
     historyWin.setMenu(null);
     historyWin.loadFile(path.join(__dirname, 'history.html'));
+  });
+
+  ipcMain.on('open-alarm', () => {
+    const alarmWin = new BrowserWindow({
+      width: 500,
+      height: 650,
+      title: 'Wiki Wiki 提醒設定',
+      webPreferences: {
+        nodeIntegration: true,
+        contextIsolation: false
+      }
+    });
+    alarmWin.setMenu(null);
+    alarmWin.loadFile(path.join(__dirname, 'alarm.html'));
   });
 
   app.on('activate', () => {

@@ -3,3 +3,4 @@ dist/
 .env
 pet_state.json
 chat_history.json
+alarms.json
