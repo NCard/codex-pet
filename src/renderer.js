@@ -32,10 +32,10 @@ let mcpToolsList = [];
 let geminiTools = [];
 
 async function initMCP() {
-  const mcpServerProcess = spawn(process.execPath, [path.join(__dirname, 'mcp-server.js')]);
   const transport = new StdioClientTransport({
     command: process.execPath,
-    args: [path.join(__dirname, 'mcp-server.js')]
+    args: [path.join(__dirname, 'mcp-server.js')],
+    env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' }
   });
   
   mcpClient = new Client({ name: "wiki-wiki-client", version: "1.0.0" }, { capabilities: {} });
