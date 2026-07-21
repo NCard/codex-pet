@@ -2,7 +2,7 @@ require('../../utils/logger');
 const fs = require('fs');
 const path = require('path');
 const historyContainer = document.getElementById('history-container');
-const historyPath = path.join(__dirname, '../../../chat_history.json');
+const historyPath = path.join(__dirname, '../../../data/chat_history.dat');
 const cryptoUtils = require('../../utils/crypto_utils');
 
 function loadHistory() {

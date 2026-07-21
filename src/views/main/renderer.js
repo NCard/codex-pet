@@ -60,7 +60,7 @@ async function initMCP() {
 initMCP().catch(console.error);
 
 function saveChatHistory(role, message) {
-  const historyPath = path.join(__dirname, '../../../chat_history.json');
+  const historyPath = path.join(__dirname, '../../../data/chat_history.dat');
   let history = [];
   try {
     if (fs.existsSync(historyPath)) {
@@ -94,7 +94,7 @@ function saveChatHistory(role, message) {
 }
 
 function clearChatHistory() {
-  const historyPath = path.join(__dirname, '../../../chat_history.json');
+  const historyPath = path.join(__dirname, '../../../data/chat_history.dat');
   try {
     const encryptedStr = cryptoUtils.encryptData("[]");
     fs.writeFileSync(historyPath, encryptedStr, 'utf8');
@@ -104,7 +104,7 @@ function clearChatHistory() {
 }
 
 // 寵物狀態管理存儲機制
-const statePath = path.join(__dirname, '../../../pet_state.json');
+const statePath = path.join(__dirname, '../../../data/pet_state.json');
 let petState = {
   hunger: 100,
   mood: 100,
@@ -779,7 +779,7 @@ setInterval(() => {
     }
   }
 
-  const alarmsPath = path.join(__dirname, '../alarms.json');
+  const alarmsPath = path.join(__dirname, '../../../data/alarms.json');
   if (fs.existsSync(alarmsPath)) {
     try {
       const data = fs.readFileSync(alarmsPath, 'utf8');

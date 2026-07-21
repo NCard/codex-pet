@@ -18,8 +18,8 @@ const server = new Server(
 );
 
 // Helper functions for reading/writing states
-const petStatePath = path.join(__dirname, '../../pet_state.json');
-const alarmsPath = path.join(__dirname, '../../alarms.json');
+const petStatePath = path.join(__dirname, '../../data/pet_state.json');
+const alarmsPath = path.join(__dirname, '../../data/alarms.json');
 
 function getPetState() {
   if (fs.existsSync(petStatePath)) {

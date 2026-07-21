@@ -8,7 +8,7 @@ ipcRenderer.on('reload-data', () => {
   loadAlarms();
 });
 
-const alarmsPath = path.join(__dirname, '../../../alarms.json');
+const alarmsPath = path.join(__dirname, '../../../data/alarms.json');
 let alarms = [];
 
 const timeInput = document.getElementById('alarm-time');
