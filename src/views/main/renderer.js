@@ -298,7 +298,7 @@ chatInput.addEventListener('keydown', async (e) => {
     chatInput.placeholder = '思考中...';
     chatInput.value = '';
     chatBubble.style.display = 'block';
-    chatContent.innerHTML = `${namePrefix}思考中... ( •ө•)?`;
+    chatContent.innerHTML = `${namePrefix}思考中... <span style="white-space: nowrap;">( •ө•)?</span>`;
     
     // 儲存使用者對話
     saveChatHistory('user', text);
