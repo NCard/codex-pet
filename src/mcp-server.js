@@ -68,9 +68,9 @@ server.setRequestHandler("tools/list", async () => {
           type: "object",
           properties: {
             time: { type: "string", description: "鬧鐘時間，格式為 HH:MM，例如 '08:00'" },
-            label: { type: "string", description: "鬧鐘標籤或提醒內容，例如 '起床'" }
+            message: { type: "string", description: "鬧鐘標籤或提醒內容，例如 '起床'" }
           },
-          required: ["time", "label"],
+          required: ["time", "message"],
         },
       },
       {
@@ -120,13 +120,14 @@ server.setRequestHandler("tools/call", async (request) => {
     const newAlarm = {
       id: Date.now().toString(),
       time: args.time,
-      label: args.label,
+      message: args.message,
+      snoozeInterval: 5,
       enabled: true
     };
     alarms.push(newAlarm);
     saveAlarms(alarms);
     return {
-      content: [{ type: "text", text: `成功設定鬧鐘: ${args.time} - ${args.label}` }]
+      content: [{ type: "text", text: `成功設定鬧鐘: ${args.time} - ${args.message}` }]
     };
   }
   
