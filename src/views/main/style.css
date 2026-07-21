@@ -59,24 +59,26 @@ body, html {
   box-shadow: 0px 4px 8px rgba(3, 169, 244, 0.3);
   -webkit-app-region: no-drag; /* 讓對話框不可拖曳視窗 */
   z-index: 10;
-  max-height: 120px;
+}
+
+#chat-content {
+  max-height: 100px;
   overflow-y: auto;
+  padding-right: 5px; /* 留點空間給捲軸 */
 }
 
 /* 自訂對話框捲軸，避免遮擋角落的裝飾圖案 */
-.chat-bubble::-webkit-scrollbar {
+#chat-content::-webkit-scrollbar {
   width: 6px;
 }
-.chat-bubble::-webkit-scrollbar-track {
+#chat-content::-webkit-scrollbar-track {
   background: transparent;
-  margin-top: 30px; /* 避開右上角花朵 */
-  margin-bottom: 30px; /* 避開左下角草 */
 }
-.chat-bubble::-webkit-scrollbar-thumb {
+#chat-content::-webkit-scrollbar-thumb {
   background: rgba(3, 169, 244, 0.5);
   border-radius: 10px;
 }
-.chat-bubble::-webkit-scrollbar-thumb:hover {
+#chat-content::-webkit-scrollbar-thumb:hover {
   background: rgba(3, 169, 244, 0.8);
 }
 
