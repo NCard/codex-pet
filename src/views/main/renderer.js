@@ -826,9 +826,17 @@ setInterval(() => {
     x = window.screenX;
     y = window.screenY;
     
-    // 決定移動距離 (可以走稍微遠一點點)
-    const moveX = (Math.random() - 0.5) * 300;
-    const moveY = (Math.random() - 0.5) * 100;
+    // 5% 機率進行遠距離散步
+    let rangeX = 300;
+    let rangeY = 100;
+    if (Math.random() < 0.05) {
+      rangeX = 1500;
+      rangeY = 500;
+    }
+    
+    // 決定移動距離
+    const moveX = (Math.random() - 0.5) * rangeX;
+    const moveY = (Math.random() - 0.5) * rangeY;
     
     let targetX = x + moveX;
     let targetY = y + moveY;
@@ -851,12 +859,16 @@ setInterval(() => {
     // 加上走路動畫 class (身體晃動)
     kiwi.classList.add('walking');
 
-    // 平滑移動邏輯：將距離切分成多個小步 (類似 60 fps 動畫)
-    const steps = 60; 
+    // 計算實際移動距離與步數，保持移動速度大約一致 (約每 16ms 移動 2.5 像素)
+    const dx = targetX - x;
+    const dy = targetY - y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    const steps = Math.max(10, Math.round(distance / 2.5));
+    
     let currentStep = 0;
     
-    const stepX = (targetX - x) / steps;
-    const stepY = (targetY - y) / steps;
+    const stepX = dx / steps;
+    const stepY = dy / steps;
 
     const moveInterval = setInterval(() => {
       x += stepX;
