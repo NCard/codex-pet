@@ -75,10 +75,18 @@ function saveAndBroadcast() {
 }
 
 Object.keys(els).forEach(key => {
+  if (key === 'apiKey') return; // 獨立處理
   els[key].addEventListener('input', () => {
     updateLabels();
     saveAndBroadcast();
   });
+});
+
+document.getElementById('btn-save-key').addEventListener('click', () => {
+  saveAndBroadcast();
+  const msg = document.getElementById('key-save-msg');
+  msg.style.display = 'block';
+  setTimeout(() => { msg.style.display = 'none'; }, 3000);
 });
 
 ipcRenderer.on('update-settings-ui', (event, data) => {

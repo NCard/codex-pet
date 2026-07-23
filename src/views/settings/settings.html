@@ -49,7 +49,11 @@
     
     <div class="control-group">
       <label>Gemini API Key</label>
-      <input type="password" id="setting-apiKey" placeholder="請填寫您的金鑰..." style="width: 100%; box-sizing: border-box; padding: 5px; margin-top: 5px; border-radius: 5px; border: 1px solid #ccc; font-family: 'Microsoft JhengHei', sans-serif;">
+      <div style="display: flex; gap: 10px; margin-top: 5px;">
+        <input type="password" id="setting-apiKey" placeholder="請填寫您的金鑰..." style="flex: 1; box-sizing: border-box; padding: 5px; border-radius: 5px; border: 1px solid #ccc; font-family: 'Microsoft JhengHei', sans-serif;">
+        <button id="btn-save-key" style="padding: 5px 15px; border-radius: 5px; border: none; background: #4CAF50; color: white; cursor: pointer;">儲存確認</button>
+      </div>
+      <div id="key-save-msg" style="font-size: 11px; color: #4CAF50; margin-top: 5px; display: none;">✅ 已儲存！可直接開始對話</div>
       <div style="font-size: 11px; color: #777; margin-top: 5px;">* 如果您是下載打包版，請務必填寫此欄位才能使用對話與待辦事項功能。</div>
     </div>
   </div>
