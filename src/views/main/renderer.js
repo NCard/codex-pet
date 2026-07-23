@@ -907,11 +907,11 @@ setInterval(() => {
   }
 }, 1000);
 
-let lastTriggeredAlarm = '';
+let triggeredAlarms = {};
 
 function triggerAlarm(alarm, alarmKey) {
-  if (lastTriggeredAlarm !== alarmKey) {
-    lastTriggeredAlarm = alarmKey;
+  if (!triggeredAlarms[alarmKey]) {
+    triggeredAlarms[alarmKey] = true;
     resetIdle();
     showAlarmBubble(alarm);
     kiwi.classList.add('jumping');
