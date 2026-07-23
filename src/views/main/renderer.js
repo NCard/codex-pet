@@ -20,7 +20,7 @@ const outfits = ['', '🎩', '🕶️', '🎀', '👑'];
 const defaultOutfitConfigs = {
   '🎩': { x: 62, y: -31, scale: 60 },
   '🕶️': { x: 76, y: 17, scale: 51 },
-  '🎀': { x: 65, y: 62, scale: 60 },
+  '🎀': { x: 78, y: 70, scale: 40 },
   '👑': { x: 59, y: -38, scale: 60 }
 };
 
@@ -587,22 +587,29 @@ menuTodo.addEventListener('click', () => {
 });
 
 menuFeed.addEventListener('click', () => {
+  if (currentAction !== 'idle' && currentAction !== 'moving') return; // 只有閒置或走動時可以餵食
+  
   customMenu.style.display = 'none';
   petState.hunger = Math.min(100, petState.hunger + 30);
   savePetState();
   
-  const img = document.getElementById('kiwi-img');
+  currentAction = 'eating'; // 進入吃飯狀態
+  
+  const character = document.getElementById('kiwi-character');
   const food = document.getElementById('kiwi-food');
   
-  img.classList.add('kiwi-pecking');
+  character.classList.add('kiwi-pecking');
   food.style.display = 'block';
   
   setTimeout(() => {
-    img.classList.remove('kiwi-pecking');
+    character.classList.remove('kiwi-pecking');
     food.style.display = 'none';
     showTempBubble('好飽好飽！嗝～🥝');
     kiwi.classList.add('jumping');
-    setTimeout(() => { kiwi.classList.remove('jumping'); }, 500);
+    setTimeout(() => { 
+      kiwi.classList.remove('jumping'); 
+      if (currentAction === 'eating') currentAction = 'idle'; // 恢復閒置
+    }, 500);
   }, 2000);
 });
 
@@ -894,7 +901,7 @@ menuClose.addEventListener('click', () => {
 let x = window.screenX;
 let y = window.screenY;
 
-let isMoving = false;
+let currentAction = 'idle'; // 'idle', 'moving', 'eating', 'sleeping'
 let idleTime = 0; // 閒置計時器
 let ignoreWakeup = false;
 
@@ -903,8 +910,9 @@ function resetIdle() {
   idleTime = 0;
   if (ignoreWakeup || isSettingsEditMode) return;
 
-  if (kiwi.classList.contains('sleeping')) {
+  if (currentAction === 'sleeping' || kiwi.classList.contains('sleeping')) {
     kiwi.classList.remove('sleeping');
+    currentAction = 'idle'; // 醒來後恢復閒置
     const zzz = document.getElementById('kiwi-zzz');
     if (zzz) zzz.style.display = 'none';
     document.getElementById('kiwi-img').src = '../../../assets/images/kiwi.png';
@@ -920,7 +928,8 @@ window.addEventListener('keydown', resetIdle);
 setInterval(() => {
   idleTime++;
   // 如果 60 秒沒有互動，就睡覺
-  if (idleTime > 60 && !kiwi.classList.contains('sleeping') && !isWorking && !isDragging && !isMoving) {
+  if (idleTime > 60 && currentAction === 'idle' && !kiwi.classList.contains('sleeping') && !isWorking && !isDragging) {
+    currentAction = 'sleeping'; // 進入睡覺狀態
     kiwi.classList.add('sleeping');
     const zzz = document.getElementById('kiwi-zzz');
     if (zzz) zzz.style.display = 'block';
@@ -999,13 +1008,13 @@ setInterval(() => {
 
 // 每隔一段時間隨機走動
 setInterval(() => {
-  // 睡覺中、移動中、專注中、或是有對話框/輸入框時，暫停走動
-  if (isMoving || kiwi.classList.contains('sleeping') || isWorking) return;
+  // 只有在 idle 狀態才能決定是否走動
+  if (currentAction !== 'idle' || kiwi.classList.contains('sleeping') || isWorking) return;
   if (chatBubble.style.display === 'block' || chatInput.style.display === 'block') return;
 
   // 40% 機率決定走動
   if (Math.random() < 0.4) {
-    isMoving = true;
+    currentAction = 'moving';
     
     // 拖曳後視窗位置會改變，必須在每次移動前重新抓取當前真實位置
     x = window.screenX;
@@ -1056,6 +1065,13 @@ setInterval(() => {
     const stepY = dy / steps;
 
     const moveInterval = setInterval(() => {
+      // 如果走到一半狀態改變了 (例如被強制餵食)，中斷移動
+      if (currentAction !== 'moving') {
+        clearInterval(moveInterval);
+        kiwi.classList.remove('walking');
+        return;
+      }
+
       x += stepX;
       y += stepY;
       window.moveTo(Math.round(x), Math.round(y)); // 更新視窗位置
@@ -1067,7 +1083,7 @@ setInterval(() => {
         x = targetX;
         y = targetY;
         kiwi.classList.remove('walking');
-        isMoving = false;
+        if (currentAction === 'moving') currentAction = 'idle'; // 恢復閒置
       }
     }, 16); // 每 16 毫秒走一步，約 60fps
   }
