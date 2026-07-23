@@ -25,8 +25,8 @@ let historyWin = null;
 function createWindow() {
   const primaryDisplay = screen.getPrimaryDisplay();
   const { width: screenWidth, height: screenHeight } = primaryDisplay.workAreaSize;
-  const winWidth = 450;
-  const winHeight = 260;
+  const winWidth = 250;
+  const winHeight = 320;
   
   const randomX = Math.floor(Math.random() * (screenWidth - winWidth));
   const randomY = Math.floor(Math.random() * (screenHeight - winHeight));

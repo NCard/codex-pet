@@ -9,10 +9,10 @@ body, html {
 
 .pet-container {
   display: flex;
-  flex-direction: row;
-  align-items: flex-end;
-  justify-content: center;
-  gap: 15px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
   height: 100%;
   position: relative;
   box-sizing: border-box;
@@ -66,25 +66,27 @@ body, html {
   z-index: 10;
 }
 
-/* 對話泡泡的尾巴 (指向右邊的奇異鳥) */
+/* 對話泡泡的尾巴 (指向下方的奇異鳥) */
 .chat-bubble::after {
   content: "";
   position: absolute;
-  bottom: 20px;
-  right: -10px;
-  border-width: 10px 0 10px 10px;
+  bottom: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 10px 10px 0 10px;
   border-style: solid;
-  border-color: transparent transparent transparent #29b6f6;
+  border-color: #29b6f6 transparent transparent transparent;
   z-index: 9;
 }
 .chat-bubble::before {
   content: "";
   position: absolute;
-  bottom: 22px;
-  right: -7px;
-  border-width: 8px 0 8px 8px;
+  bottom: -7px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 8px 8px 0 8px;
   border-style: solid;
-  border-color: transparent transparent transparent #e1f5fe;
+  border-color: #e1f5fe transparent transparent transparent;
   z-index: 11;
 }
 
