@@ -49,13 +49,59 @@ body {
   font-family: inherit;
 }
 
-.input-group input[type="text"] {
+.input-group input[type="text"],
+.input-group input[type="date"] {
   flex: 1;
   padding: 8px;
   border: 1px solid #ccc;
   border-radius: 5px;
   font-size: 14px;
   font-family: inherit;
+}
+
+.days-selector {
+  display: flex;
+  gap: 5px;
+  justify-content: space-between;
+  margin-top: 5px;
+}
+
+.day-chip {
+  cursor: pointer;
+  display: inline-block;
+}
+
+.day-chip input[type="checkbox"] {
+  display: none;
+}
+
+.day-chip span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #f0f0f0;
+  color: #888;
+  font-size: 14px;
+  font-weight: bold;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.day-chip input[type="checkbox"]:checked + span {
+  background: #ff9800;
+  color: white;
+  box-shadow: 0 3px 6px rgba(255, 152, 0, 0.3);
+  transform: translateY(-2px);
+}
+
+.day-chip:hover span {
+  background: #e0e0e0;
+}
+.day-chip input[type="checkbox"]:checked:hover + span {
+  background: #e68a00;
 }
 
 .input-group button {

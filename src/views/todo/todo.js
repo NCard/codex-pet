@@ -8,17 +8,65 @@ ipcRenderer.on('reload-data', () => {
   loadTodos();
 });
 
-const { petStatePath: statePath } = require('../../utils/paths');
+const { petStatePath: statePath, alarmsPath } = require('../../utils/paths');
 let petState = { todos: [] };
+let alarms = [];
 
 const textInput = document.getElementById('todo-text');
-const timeInput = document.getElementById('todo-time');
+const hasAlarmCheck = document.getElementById('todo-has-alarm');
+const alarmSettings = document.getElementById('todo-alarm-settings');
+const alarmRadios = document.getElementsByName('todo-alarm-type');
+const dateInput = document.getElementById('todo-alarm-date');
+const hourSelect = document.getElementById('todo-alarm-hour');
+const minuteSelect = document.getElementById('todo-alarm-minute');
 const snoozeInput = document.getElementById('todo-snooze');
+const weeklyGroup = document.getElementById('todo-weekly-group');
+const dayCheckboxes = document.querySelectorAll('.days-selector input[type="checkbox"]');
 const addBtn = document.getElementById('add-todo-btn');
 const todoList = document.getElementById('todo-list');
+
+// Toggle UI
+hasAlarmCheck.addEventListener('change', () => {
+  alarmSettings.style.display = hasAlarmCheck.checked ? 'flex' : 'none';
+});
+
+function updateTypeUI() {
+  const type = document.querySelector('input[name="todo-alarm-type"]:checked').value;
+  if (type === 'date') {
+    dateInput.style.display = 'block';
+    weeklyGroup.style.display = 'none';
+  } else {
+    dateInput.style.display = 'none';
+    weeklyGroup.style.display = 'flex';
+  }
+}
+alarmRadios.forEach(r => r.addEventListener('change', updateTypeUI));
+updateTypeUI();
+
+for(let i=0; i<24; i++) {
+  const val = i.toString().padStart(2, '0');
+  hourSelect.add(new Option(val, val));
+}
+for(let i=0; i<60; i++) {
+  const val = i.toString().padStart(2, '0');
+  minuteSelect.add(new Option(val, val));
+}
+
+const now = new Date();
+dateInput.value = now.toISOString().split('T')[0];
+hourSelect.value = now.getHours().toString().padStart(2, '0');
+minuteSelect.value = now.getMinutes().toString().padStart(2, '0');
 let editingId = null;
 
 function loadTodos() {
+  if (fs.existsSync(alarmsPath)) {
+    try {
+      alarms = JSON.parse(fs.readFileSync(alarmsPath, 'utf8'));
+    } catch(e) { alarms = []; }
+  } else {
+    alarms = [];
+  }
+
   if (fs.existsSync(statePath)) {
     try {
       const data = fs.readFileSync(statePath, 'utf8');
@@ -32,6 +80,14 @@ function loadTodos() {
     petState = { todos: [] };
   }
   renderTodos();
+}
+
+function saveAlarms() {
+  try {
+    fs.writeFileSync(alarmsPath, JSON.stringify(alarms, null, 2), 'utf8');
+  } catch (e) {
+    console.error('Failed to save alarms:', e);
+  }
 }
 
 function saveTodos() {
@@ -58,24 +114,36 @@ function renderTodos() {
     checkbox.type = 'checkbox';
     checkbox.className = 'todo-checkbox';
     checkbox.checked = todo.done;
+    const metaDiv = document.createElement('div');
+    metaDiv.className = 'todo-meta';
+    
+    // Find linked alarm
+    let linkedAlarm = null;
+    if (todo.linkedAlarmId) {
+      linkedAlarm = alarms.find(a => a.id === todo.linkedAlarmId);
+    }
+    
+    if (linkedAlarm) {
+      let typeText = '';
+      if (linkedAlarm.type === 'date') {
+        typeText = `📅 ${linkedAlarm.date} ${linkedAlarm.time}`;
+      } else {
+        if (linkedAlarm.days.length === 7) typeText = `🔁 每天 ${linkedAlarm.time}`;
+        else typeText = `🔁 每週 ${linkedAlarm.days.map(d => ['日','一','二','三','四','五','六'][d]).join(',')} ${linkedAlarm.time}`;
+      }
+      metaDiv.innerHTML = `<span style="color: ${linkedAlarm.enabled ? '#00796b' : '#aaa'};">⏰ 已綁定鬧鐘: ${typeText}</span><span style="color:#aaa;">(貪睡: ${linkedAlarm.snoozeInterval || 5}分)</span>`;
+    }
+    
+    // Checkbox triggers alarm disable
     checkbox.onchange = () => {
       todo.done = checkbox.checked;
+      if (todo.done && linkedAlarm) {
+        linkedAlarm.enabled = false;
+        saveAlarms();
+      }
       saveTodos();
       renderTodos();
     };
-    
-    const contentDiv = document.createElement('div');
-    contentDiv.className = 'todo-content';
-    
-    const textDiv = document.createElement('div');
-    textDiv.className = 'todo-text';
-    textDiv.textContent = todo.text;
-    
-    const metaDiv = document.createElement('div');
-    metaDiv.className = 'todo-meta';
-    if (todo.reminderTime) {
-      metaDiv.innerHTML = `<span>⏰ 提醒時間: ${todo.reminderTime}</span><span>(貪睡: ${todo.snoozeInterval || 5}分)</span>`;
-    }
     
     contentDiv.appendChild(textDiv);
     contentDiv.appendChild(metaDiv);
@@ -90,8 +158,34 @@ function renderTodos() {
     editBtn.onclick = () => {
       editingId = todo.id;
       textInput.value = todo.text;
-      timeInput.value = todo.reminderTime || '';
-      snoozeInput.value = todo.snoozeInterval || 5;
+      
+      const alarm = alarms.find(a => a.id === todo.linkedAlarmId);
+      if (alarm) {
+        hasAlarmCheck.checked = true;
+        alarmSettings.style.display = 'flex';
+        document.querySelector(`input[name="todo-alarm-type"][value="${alarm.type || 'weekly'}"]`).checked = true;
+        updateTypeUI();
+        
+        if (alarm.time) {
+          const [h, m] = alarm.time.split(':');
+          hourSelect.value = h;
+          minuteSelect.value = m;
+        }
+        
+        snoozeInput.value = alarm.snoozeInterval || 5;
+        if (alarm.type === 'date') {
+          dateInput.value = alarm.date || new Date().toISOString().split('T')[0];
+        } else {
+          dayCheckboxes.forEach(cb => {
+            cb.checked = (alarm.days || []).includes(parseInt(cb.value));
+          });
+        }
+      } else {
+        hasAlarmCheck.checked = false;
+        alarmSettings.style.display = 'none';
+        dayCheckboxes.forEach(cb => cb.checked = false);
+      }
+      
       addBtn.textContent = '💾 儲存';
       addBtn.style.background = '#2196F3';
     };
@@ -103,12 +197,17 @@ function renderTodos() {
     deleteBtn.onclick = () => {
       if (confirm(`確定要刪除「${todo.text}」嗎？`)) {
         petState.todos = petState.todos.filter(t => t.id !== todo.id);
+        if (todo.linkedAlarmId) {
+          alarms = alarms.filter(a => a.id !== todo.linkedAlarmId);
+          saveAlarms();
+        }
         if (editingId === todo.id) {
           editingId = null;
-          addBtn.textContent = '➕ 新增';
+          addBtn.textContent = '➕ 新增待辦';
           addBtn.style.background = '#4caf50';
           textInput.value = '';
-          timeInput.value = '';
+          hasAlarmCheck.checked = false;
+          alarmSettings.style.display = 'none';
         }
         saveTodos();
         renderTodos();
@@ -128,40 +227,113 @@ function renderTodos() {
 
 addBtn.onclick = () => {
   const text = textInput.value.trim();
-  const time = timeInput.value;
-  const snooze = parseInt(snoozeInput.value, 10) || 5;
   
   if (!text) {
     alert('請輸入待辦事項內容！');
     return;
   }
   
+  let alarmData = null;
+  if (hasAlarmCheck.checked) {
+    const type = document.querySelector('input[name="todo-alarm-type"]:checked').value;
+    const time = `${hourSelect.value}:${minuteSelect.value}`;
+    const snooze = parseInt(snoozeInput.value, 10) || 5;
+    const dateVal = dateInput.value;
+    
+    let days = [];
+    if (type === 'weekly') {
+      dayCheckboxes.forEach(cb => { if (cb.checked) days.push(parseInt(cb.value)); });
+      if (days.length === 0) {
+        alert('每週重複模式必須至少選擇一天！');
+        return;
+      }
+    } else {
+      if (!dateVal) {
+        alert('請選擇日期！');
+        return;
+      }
+    }
+    
+    if (!time) {
+      alert('請選擇時間！');
+      return;
+    }
+    
+    alarmData = {
+      type: type,
+      time: time,
+      date: dateVal,
+      days: days,
+      snoozeInterval: snooze
+    };
+  }
+  
   if (editingId) {
     const todo = petState.todos.find(t => t.id === editingId);
     if (todo) {
       todo.text = text;
-      todo.reminderTime = time || null;
-      todo.snoozeInterval = snooze;
+      
+      if (alarmData) {
+        if (todo.linkedAlarmId) {
+          const alarm = alarms.find(a => a.id === todo.linkedAlarmId);
+          if (alarm) {
+            Object.assign(alarm, alarmData);
+            alarm.message = `📋 待辦提醒：${text}`;
+            alarm.enabled = !todo.done;
+          }
+        } else {
+          const newAlarmId = crypto.randomUUID();
+          todo.linkedAlarmId = newAlarmId;
+          alarms.push({
+            id: newAlarmId,
+            linkedTodoId: todo.id,
+            message: `📋 待辦提醒：${text}`,
+            enabled: !todo.done,
+            ...alarmData
+          });
+        }
+      } else {
+        if (todo.linkedAlarmId) {
+          alarms = alarms.filter(a => a.id !== todo.linkedAlarmId);
+          delete todo.linkedAlarmId;
+        }
+      }
+      saveAlarms();
     }
     editingId = null;
-    addBtn.textContent = '➕ 新增';
+    addBtn.textContent = '➕ 新增待辦';
     addBtn.style.background = '#4caf50';
   } else {
     // 確保所有舊的 todo 也有 ID，防呆
     petState.todos.forEach(t => { if(!t.id) t.id = crypto.randomUUID(); });
     
-    petState.todos.push({
-      id: crypto.randomUUID(),
+    const newTodoId = crypto.randomUUID();
+    const newTodo = {
+      id: newTodoId,
       text: text,
-      done: false,
-      reminderTime: time || null,
-      snoozeInterval: snooze
-    });
+      done: false
+    };
+    
+    if (alarmData) {
+      const newAlarmId = crypto.randomUUID();
+      newTodo.linkedAlarmId = newAlarmId;
+      alarms.push({
+        id: newAlarmId,
+        linkedTodoId: newTodoId,
+        message: `📋 待辦提醒：${text}`,
+        enabled: true,
+        ...alarmData
+      });
+      saveAlarms();
+    }
+    
+    petState.todos.push(newTodo);
   }
   
   saveTodos();
   textInput.value = '';
-  timeInput.value = '';
+  hasAlarmCheck.checked = false;
+  alarmSettings.style.display = 'none';
   snoozeInput.value = '5';
   loadTodos();
 };

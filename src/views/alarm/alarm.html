@@ -12,8 +12,33 @@
   </div>
   
   <div class="form-container">
-    <div class="input-group">
-      <input type="time" id="alarm-time" required>
+    <div style="margin-bottom: 10px; display: flex; gap: 15px;">
+      <label><input type="radio" name="alarm-type" value="date" checked> 📅 特定日期</label>
+      <label><input type="radio" name="alarm-type" value="weekly"> 🔁 每週重複</label>
+    </div>
+    
+    <div class="input-group" id="date-group">
+      <input type="date" id="alarm-date" required>
+    </div>
+    
+    <div id="weekly-group" style="display: none; margin-bottom: 10px;">
+      <div class="days-selector">
+        <label class="day-chip"><input type="checkbox" value="0"><span>日</span></label>
+        <label class="day-chip"><input type="checkbox" value="1"><span>一</span></label>
+        <label class="day-chip"><input type="checkbox" value="2"><span>二</span></label>
+        <label class="day-chip"><input type="checkbox" value="3"><span>三</span></label>
+        <label class="day-chip"><input type="checkbox" value="4"><span>四</span></label>
+        <label class="day-chip"><input type="checkbox" value="5"><span>五</span></label>
+        <label class="day-chip"><input type="checkbox" value="6"><span>六</span></label>
+      </div>
+    </div>
+
+    <div class="input-group" style="margin-top: 10px;">
+      <div style="display: flex; align-items: center; gap: 5px;">
+        <select id="alarm-hour" style="padding: 8px; border: 1px solid #ccc; border-radius: 5px;"></select>
+        <span>:</span>
+        <select id="alarm-minute" style="padding: 8px; border: 1px solid #ccc; border-radius: 5px;"></select>
+      </div>
       <input type="text" id="alarm-message" placeholder="例如：下班囉！記得打卡！" required>
     </div>
     <div class="input-group" style="margin-top: 10px;">
