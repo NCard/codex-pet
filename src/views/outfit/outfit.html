@@ -20,7 +20,10 @@
   </div>
 
   <div class="controls-container" id="controls" style="display: none;">
-    <h3>精準微調 <span class="tip">(或直接在桌面上拖曳飾品)</span></h3>
+    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-bottom: 15px;">
+      <h3 style="margin: 0; border: none; padding: 0;">精準微調 <span class="tip">(或拖曳飾品)</span></h3>
+      <button id="btn-reset" class="reset-btn">還原預設</button>
+    </div>
     <div class="control-group">
       <label>水平位置 (左右):</label>
       <input type="range" id="pos-x" min="-100" max="200" value="45">
