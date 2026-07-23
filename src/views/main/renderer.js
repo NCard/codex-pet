@@ -264,7 +264,7 @@ window.addEventListener('mousemove', (e) => {
   if (isDragging) {
     x = e.screenX - mouseOffsetX;
     y = e.screenY - mouseOffsetY;
-    window.moveTo(x, y);
+    ipcRenderer.send('window-move', x, y);
   }
 });
 

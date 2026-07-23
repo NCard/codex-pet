@@ -60,6 +60,14 @@ ipcMain.on('set-ignore-mouse-events', (event, ignore, options) => {
   }
 });
 
+// 處理視窗拖曳 (允許超出螢幕)
+ipcMain.on('window-move', (event, x, y) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (win) {
+    win.setPosition(x, y);
+  }
+});
+
 app.whenReady().then(() => {
   createWindow();
 
