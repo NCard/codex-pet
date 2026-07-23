@@ -46,8 +46,19 @@ function createWindow() {
     }
   });
 
+  // 設置初始穿透狀態 (讓透明區域穿透)
+  mainWindow.setIgnoreMouseEvents(true, { forward: true });
+
   mainWindow.loadFile(path.join(__dirname, '../views/main/index.html'));
 }
+
+// 處理滑鼠穿透狀態切換
+ipcMain.on('set-ignore-mouse-events', (event, ignore, options) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (win) {
+    win.setIgnoreMouseEvents(ignore, options || {});
+  }
+});
 
 app.whenReady().then(() => {
   createWindow();

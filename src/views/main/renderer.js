@@ -1063,3 +1063,12 @@ setInterval(() => {
   // 定期自動存檔
   if (Math.random() < 0.2) savePetState();
 }, 10000);
+
+// 滑鼠穿透判定邏輯
+window.addEventListener('mousemove', (event) => {
+  // 判定是否在實體互動元素上 (對話泡泡、輸入框、右鍵選單、奇異鳥本體、床、關閉按鈕)
+  const isInteractive = event.target.closest('.chat-bubble, #chat-input, #custom-menu, #kiwi-sprite-wrapper, #kiwi-bed, #chat-close');
+  
+  // 如果不在互動元素上，則設定視窗穿透 (ignore = true)
+  ipcRenderer.send('set-ignore-mouse-events', !isInteractive, { forward: true });
+});
