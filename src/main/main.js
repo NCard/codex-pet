@@ -96,7 +96,7 @@ app.whenReady().then(() => {
     alarmWin = new BrowserWindow({
       width: 500,
       height: 650,
-      title: 'Wiki Wiki 提醒設定',
+      title: 'Wiki Wiki 鬧鐘排程',
       webPreferences: {
         nodeIntegration: true,
         contextIsolation: false

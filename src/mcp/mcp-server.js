@@ -95,7 +95,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       },
       {
         name: "get_alarms_and_todos",
-        description: "取得所有已設定的鬧鐘、提醒與待辦事項清單",
+        description: "取得所有已設定的鬧鐘排程與待辦事項清單",
         inputSchema: { type: "object", properties: {} }
       }
     ],
@@ -160,7 +160,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     // Alarms
     const alarms = getAlarms();
     if (alarms.length === 0) {
-      resultText += "目前沒有任何鬧鐘或提醒。\n";
+      resultText += "目前沒有任何鬧鐘排程。\n";
     } else {
       const alarmsText = alarms.map(a => `- ${a.time}: ${a.message} (啟用狀態: ${a.enabled})`).join('\n');
       resultText += `目前的鬧鐘有：\n${alarmsText}\n`;
