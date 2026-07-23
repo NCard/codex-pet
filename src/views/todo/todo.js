@@ -8,7 +8,7 @@ ipcRenderer.on('reload-data', () => {
   loadTodos();
 });
 
-const statePath = path.join(__dirname, '../../../data/pet_state.json');
+const { petStatePath: statePath } = require('../../utils/paths');
 let petState = { todos: [] };
 
 const textInput = document.getElementById('todo-text');

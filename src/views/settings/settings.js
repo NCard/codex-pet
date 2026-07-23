@@ -1,8 +1,7 @@
 const { ipcRenderer } = require('electron');
 const fs = require('fs');
 const path = require('path');
-
-const statePath = path.join(__dirname, '../../../data/pet_state.json');
+const { petStatePath: statePath } = require('../../utils/paths');
 
 // 預設設定
 const defaultSettings = {
