@@ -16,6 +16,12 @@ const menuSettings = document.getElementById('menu-settings');
 const kiwiOutfit = document.getElementById('kiwi-outfit');
 const kiwiBed = document.getElementById('kiwi-bed');
 const outfits = ['', '🎩', '🕶️', '🎀', '👑'];
+const defaultOutfitConfigs = {
+  '🎩': { x: 62, y: -31, scale: 60 },
+  '🕶️': { x: 76, y: 17, scale: 51 },
+  '🎀': { x: 65, y: 62, scale: 60 },
+  '👑': { x: 59, y: -38, scale: 60 }
+};
 
 const path = require('path');
 const { petStatePath: statePath, historyPath, alarmsPath } = require('../../utils/paths');
@@ -674,7 +680,7 @@ ipcRenderer.on('update-outfit', (event, newOutfit) => {
 ipcRenderer.on('update-outfit-pos', (event, { x, y, scale }) => {
   if (!petState.outfitConfigs) petState.outfitConfigs = {};
   if (!petState.outfitConfigs[petState.outfit]) {
-    petState.outfitConfigs[petState.outfit] = { x: 45, y: -10, scale: 60 };
+    petState.outfitConfigs[petState.outfit] = defaultOutfitConfigs[petState.outfit] || { x: 45, y: -10, scale: 60 };
   }
   if (x !== undefined) petState.outfitConfigs[petState.outfit].x = x;
   if (y !== undefined) petState.outfitConfigs[petState.outfit].y = y;
@@ -687,6 +693,7 @@ ipcRenderer.on('update-outfit-pos', (event, { x, y, scale }) => {
 function applyOutfitPos() {
   if (!petState.outfit) return;
   const config = (petState.outfitConfigs && petState.outfitConfigs[petState.outfit]) 
+                 || defaultOutfitConfigs[petState.outfit] 
                  || { x: 45, y: -10, scale: 60 };
   kiwiOutfit.style.left = `${config.x}px`;
   kiwiOutfit.style.top = `${config.y}px`;

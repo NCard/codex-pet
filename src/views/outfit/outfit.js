@@ -13,6 +13,13 @@ const valX = document.getElementById('val-x');
 const valY = document.getElementById('val-y');
 const valScale = document.getElementById('val-scale');
 
+const defaultOutfitConfigs = {
+  '🎩': { x: 62, y: -31, scale: 60 },
+  '🕶️': { x: 76, y: 17, scale: 51 },
+  '🎀': { x: 65, y: 62, scale: 60 },
+  '👑': { x: 59, y: -38, scale: 60 }
+};
+
 let currentOutfit = '';
 
 function loadState() {
@@ -40,6 +47,7 @@ function updateUI() {
   if (currentOutfit) {
     controls.style.display = 'block';
     const config = (petState.outfitConfigs && petState.outfitConfigs[currentOutfit]) 
+                   || defaultOutfitConfigs[currentOutfit]
                    || { x: 45, y: -10, scale: 60 };
     
     posX.value = config.x;
