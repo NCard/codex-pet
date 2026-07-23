@@ -41,6 +41,27 @@ body, html {
   height: auto;
   user-select: none;
   -webkit-user-drag: none; /* 防止圖片被原生拖曳 */
+  transition: filter 0.5s ease;
+}
+
+.kiwi-tired {
+  animation: weary-breathe 4s infinite ease-in-out;
+}
+
+@keyframes weary-breathe {
+  0%, 100% { transform: scale(1) translateY(0); }
+  50% { transform: scale(0.98) translateY(3px); }
+}
+
+@keyframes peck-eat {
+  0%, 100% { transform: rotate(0deg) translateY(0); }
+  25%, 75% { transform: rotate(25deg) translateY(12px) translateX(10px); }
+  50% { transform: rotate(35deg) translateY(18px) translateX(15px) scaleY(0.95); }
+}
+
+.kiwi-pecking {
+  animation: peck-eat 0.5s ease-in-out infinite;
+  transform-origin: 60% 80%;
 }
 
 .chat-bubble {

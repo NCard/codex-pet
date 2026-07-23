@@ -9,7 +9,7 @@
   <div class="pet-container" id="pet">
     <!-- 聊天區塊容器 -->
     <div id="chat-container" style="display: flex; flex-direction: column; gap: 10px; z-index: 20; width: 220px; align-items: center;">
-      <!-- 聊天輸入框 -->
+      <span id="chat-esc-hint" style="display: none; font-size: 11px; color: white; background: rgba(0, 0, 0, 0.3); padding: 3px 10px; border-radius: 12px; pointer-events: none; margin-bottom: -2px; letter-spacing: 0.5px; backdrop-filter: blur(2px);">按 ESC 退出對話</span>
       <textarea id="chat-input" placeholder="對話... (Shift+Enter 換行)" style="display: none;"></textarea>
       <div class="chat-bubble" id="chat-bubble" style="display: none; position: relative;">
         <span id="chat-close" style="position: absolute; left: 10px; top: 6px; cursor: pointer; color: #6bb2d5; font-weight: bold; font-size: 14px; z-index: 50;">✕</span>
@@ -36,6 +36,7 @@
         <div id="kiwi-accessory" style="display: none; position: absolute; top: -30px; left: 50%; transform: translateX(-50%); font-size: 40px; pointer-events: none; animation: breathe 3s infinite ease-in-out;">⏳</div>
         <div id="kiwi-outfit" style="display: none; position: absolute; top: -10px; left: 50%; transform: translateX(-50%); font-size: 60px; pointer-events: none; z-index: 5;">🎩</div>
         <img src="../../../assets/images/kiwi.png" alt="kiwi pet" id="kiwi-img">
+        <div id="kiwi-food" style="display: none; position: absolute; bottom: -2px; right: -25px; font-size: 32px; z-index: 5; pointer-events: none;">🥝</div>
       </div>
       
       <img src="../../../assets/images/bed.png" id="kiwi-bed" style="display: none; position: absolute; bottom: -10px; left: 50%; transform: translateX(-50%); margin-left: var(--bed-x, -4px); margin-bottom: var(--bed-y, -15px); width: var(--bed-scale, 170px); z-index: var(--bed-z, -1); pointer-events: none;">

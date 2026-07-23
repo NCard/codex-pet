@@ -2,6 +2,7 @@ require('../../utils/logger');
 const kiwi = document.getElementById('kiwi-sprite-wrapper');
 const chatBubble = document.getElementById('chat-bubble');
 const chatInput = document.getElementById('chat-input');
+const chatEscHint = document.getElementById('chat-esc-hint');
 const customMenu = document.getElementById('custom-menu');
 const menuSleep = document.getElementById('menu-sleep');
 const menuClose = document.getElementById('menu-close');
@@ -291,8 +292,21 @@ kiwi.addEventListener('click', (e) => {
 
   // 顯示輸入框並自動 Focus
   chatInput.style.display = 'block';
+      if(typeof chatEscHint !== 'undefined') chatEscHint.style.display = 'block';
   chatBubble.style.display = 'none';
   chatInput.focus();
+});
+
+// 全域監聽 ESC 鍵關閉對話
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    if (chatInput.style.display !== 'none' || chatBubble.style.display !== 'none') {
+      chatInput.style.display = 'none';
+      if(typeof chatEscHint !== 'undefined') chatEscHint.style.display = 'none';
+      chatBubble.style.display = 'none';
+      chatInput.value = '';
+    }
+  }
 });
 
 // 監聽輸入框的 Enter 鍵事件，呼叫 Gemini
@@ -310,13 +324,6 @@ chatInput.addEventListener('keydown', async (e) => {
     return;
   }
 
-  if (e.key === 'Escape') {
-    chatInput.style.display = 'none';
-    chatBubble.style.display = 'none';
-    chatInput.value = '';
-    return;
-  }
-
   if (e.key === 'Enter' && !e.shiftKey) {
     e.preventDefault(); // 防止 textarea 換行
     const text = chatInput.value.trim();
@@ -326,6 +333,7 @@ chatInput.addEventListener('keydown', async (e) => {
     if (!ai) {
       chatInput.value = '';
       chatInput.style.display = 'none';
+      if(typeof chatEscHint !== 'undefined') chatEscHint.style.display = 'none';
       chatBubble.innerHTML = `${namePrefix}請先至「設定面板」輸入 Gemini API Key！`;
       chatBubble.style.display = 'block';
       setTimeout(() => { chatBubble.style.display = 'none'; }, 3000);
@@ -334,6 +342,7 @@ chatInput.addEventListener('keydown', async (e) => {
     
     // 停用並隱藏輸入框，顯示思考中
     chatInput.style.display = 'none';
+      if(typeof chatEscHint !== 'undefined') chatEscHint.style.display = 'none';
     chatInput.disabled = true;
     chatInput.value = '';
     chatBubble.style.display = 'block';
@@ -425,6 +434,7 @@ chatInput.addEventListener('keydown', async (e) => {
       saveChatHistory('kiwi', reply);
       
       chatInput.style.display = 'block';
+      if(typeof chatEscHint !== 'undefined') chatEscHint.style.display = 'block';
       chatInput.disabled = false;
       chatInput.placeholder = '對話... (Shift+Enter 換行)';
       chatInput.focus();
@@ -509,6 +519,7 @@ chatInput.addEventListener('keydown', async (e) => {
       
       // 重新啟用輸入框
       chatInput.style.display = 'block';
+      if(typeof chatEscHint !== 'undefined') chatEscHint.style.display = 'block';
       chatInput.disabled = false;
       chatInput.placeholder = '對話... (Shift+Enter 換行)';
       chatInput.focus();
@@ -525,6 +536,7 @@ chatInput.addEventListener('keydown', async (e) => {
         chatContent.innerHTML = `${namePrefix}咕啾？我的小腦袋打結了，網路連線好像怪怪的 😵‍💫`;
       }
       chatInput.style.display = 'block';
+      if(typeof chatEscHint !== 'undefined') chatEscHint.style.display = 'block';
       chatInput.disabled = false;
       chatInput.placeholder = '對話... (Shift+Enter 換行)';
       chatInput.focus();
@@ -578,9 +590,20 @@ menuFeed.addEventListener('click', () => {
   customMenu.style.display = 'none';
   petState.hunger = Math.min(100, petState.hunger + 30);
   savePetState();
-  showTempBubble('好飽好飽！嗝～🍎');
-  kiwi.classList.add('jumping');
-  setTimeout(() => { kiwi.classList.remove('jumping'); }, 500);
+  
+  const img = document.getElementById('kiwi-img');
+  const food = document.getElementById('kiwi-food');
+  
+  img.classList.add('kiwi-pecking');
+  food.style.display = 'block';
+  
+  setTimeout(() => {
+    img.classList.remove('kiwi-pecking');
+    food.style.display = 'none';
+    showTempBubble('好飽好飽！嗝～🥝');
+    kiwi.classList.add('jumping');
+    setTimeout(() => { kiwi.classList.remove('jumping'); }, 500);
+  }, 2000);
 });
 
 menuPet.addEventListener('click', () => {
@@ -935,31 +958,43 @@ setInterval(() => {
       const data = fs.readFileSync(alarmsPath, 'utf8');
       const alarms = JSON.parse(data);
       const now = new Date();
-      const currentHHMM = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
-      
       alarms.forEach(alarm => {
-        if (alarm.enabled && alarm.time === currentHHMM) {
+        if (!alarm.enabled) return;
+        
+        const currentHHMM = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+        if (alarm.time !== currentHHMM) return;
+        
+        let shouldTrigger = false;
+        if (alarm.type === 'date') {
+          const todayStr = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+          if (alarm.date === todayStr) {
+            shouldTrigger = true;
+          }
+        } else {
+          // weekly or legacy
+          const currentDay = now.getDay();
+          if (!alarm.days || alarm.days.includes(currentDay)) {
+            shouldTrigger = true;
+          }
+        }
+        
+        if (shouldTrigger) {
           const alarmKey = alarm.id + '-' + now.toDateString() + '-' + currentHHMM;
           triggerAlarm(alarm, alarmKey);
+          
+          if (alarm.type === 'date') {
+            alarm.enabled = false;
+            try {
+              fs.writeFileSync(alarmsPath, JSON.stringify(alarms, null, 2), 'utf8');
+              ipcRenderer.send('reload-data'); // Optional: tell other windows to reload if they are listening
+            } catch(e) {}
+          }
         }
       });
     } catch (e) {
       console.error('Failed to parse alarms:', e);
     }
   }
-
-  // 檢查待辦事項提醒
-  const currentHHMM = new Date().getHours().toString().padStart(2, '0') + ':' + new Date().getMinutes().toString().padStart(2, '0');
-  petState.todos.forEach(todo => {
-    if (!todo.done && todo.reminderTime === currentHHMM) {
-      const alarmKey = 'todo-' + todo.id + '-' + new Date().toDateString() + '-' + currentHHMM;
-      triggerAlarm({
-        id: todo.id,
-        message: '📋 待辦提醒：' + todo.text,
-        snoozeInterval: todo.snoozeInterval || 5
-      }, alarmKey);
-    }
-  });
 }, 5000);
 
 // 每隔一段時間隨機走動
@@ -1061,15 +1096,31 @@ setInterval(() => {
       kiwiAccessory.innerText = '💦';
       kiwiAccessory.style.display = 'block';
     }
+    const img = document.getElementById('kiwi-img');
+    if (!img.src.includes('kiwi_tired.png')) {
+      img.src = '../../../assets/images/kiwi_tired.png';
+    }
+    img.classList.add('kiwi-tired');
   } else {
     if (!isWorking && kiwiAccessory.innerText === '💦') {
       kiwiAccessory.style.display = 'none';
     }
+    const img = document.getElementById('kiwi-img');
+    if (!img.src.includes('kiwi_sleep.png') && img.src.includes('kiwi_tired.png')) {
+      img.src = '../../../assets/images/kiwi.png';
+    }
+    img.classList.remove('kiwi-tired');
   }
   
   // 定期自動存檔
   if (Math.random() < 0.2) savePetState();
 }, 10000);
+
+// 強制切換一次穿透狀態，打破 Electron 內部快取，修復 Windows 熱重載失效的 Bug
+ipcRenderer.send('set-ignore-mouse-events', false);
+setTimeout(() => {
+  ipcRenderer.send('set-ignore-mouse-events', true, { forward: true });
+}, 100);
 
 // 滑鼠穿透判定邏輯
 window.addEventListener('mousemove', (event) => {

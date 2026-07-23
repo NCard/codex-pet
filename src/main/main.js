@@ -3,7 +3,8 @@ const { app, BrowserWindow, ipcMain, Tray, Menu, screen } = require('electron');
 const path = require('path');
 
 try {
-  require('electron-reloader')(module, {
+  const reloader = require('electron-reloader');
+  reloader(module, {
     ignore: [
       /data/,
       /task\.md/,
@@ -26,7 +27,7 @@ function createWindow() {
   const primaryDisplay = screen.getPrimaryDisplay();
   const { width: screenWidth, height: screenHeight } = primaryDisplay.workAreaSize;
   const winWidth = 250;
-  const winHeight = 450;
+  const winHeight = 550;
   
   const randomX = Math.floor(Math.random() * (screenWidth - winWidth));
   const randomY = Math.floor(Math.random() * (screenHeight - winHeight));
@@ -48,6 +49,16 @@ function createWindow() {
 
   // 設置初始穿透狀態 (讓透明區域穿透)
   mainWindow.setIgnoreMouseEvents(true, { forward: true });
+
+  // 修復 Windows 下熱重載 (Reload) 導致 forward: true 失效的 Bug
+  mainWindow.webContents.on('did-finish-load', () => {
+    mainWindow.setIgnoreMouseEvents(false);
+    setTimeout(() => {
+      if (mainWindow) {
+        mainWindow.setIgnoreMouseEvents(true, { forward: true });
+      }
+    }, 50);
+  });
 
   mainWindow.loadFile(path.join(__dirname, '../views/main/index.html'));
 }
