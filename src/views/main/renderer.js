@@ -326,9 +326,9 @@ chatInput.addEventListener('keydown', async (e) => {
       return;
     }
     
-    // 停用輸入框，顯示思考中
+    // 停用並隱藏輸入框，顯示思考中
+    chatInput.style.display = 'none';
     chatInput.disabled = true;
-    chatInput.placeholder = '思考中...';
     chatInput.value = '';
     chatBubble.style.display = 'block';
     chatContent.innerHTML = `${namePrefix}思考中... <span style="white-space: nowrap;">( •ө•)?</span>`;
@@ -418,6 +418,7 @@ chatInput.addEventListener('keydown', async (e) => {
       chatContent.innerHTML = `${namePrefix}${reply}`;
       saveChatHistory('kiwi', reply);
       
+      chatInput.style.display = 'block';
       chatInput.disabled = false;
       chatInput.placeholder = '對話... (Shift+Enter 換行)';
       chatInput.focus();
@@ -501,6 +502,7 @@ chatInput.addEventListener('keydown', async (e) => {
       saveChatHistory('kiwi', response.text || "");
       
       // 重新啟用輸入框
+      chatInput.style.display = 'block';
       chatInput.disabled = false;
       chatInput.placeholder = '對話... (Shift+Enter 換行)';
       chatInput.focus();
@@ -516,6 +518,7 @@ chatInput.addEventListener('keydown', async (e) => {
       } else {
         chatContent.innerHTML = `${namePrefix}咕啾？我的小腦袋打結了，網路連線好像怪怪的 😵‍💫`;
       }
+      chatInput.style.display = 'block';
       chatInput.disabled = false;
       chatInput.placeholder = '對話... (Shift+Enter 換行)';
       chatInput.focus();
