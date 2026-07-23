@@ -12,7 +12,7 @@ body, html {
   flex-direction: column;
   align-items: center;
   justify-content: flex-end;
-  gap: 10px;
+  gap: 45px;
   height: 100%;
   position: relative;
   box-sizing: border-box;
@@ -71,10 +71,10 @@ body, html {
 .chat-bubble::after {
   content: "";
   position: absolute;
-  bottom: -10px;
+  bottom: -15px;
   left: 50%;
   transform: translateX(-50%);
-  border-width: 10px 10px 0 10px;
+  border-width: 15px 10px 0 10px;
   border-style: solid;
   border-color: #29b6f6 transparent transparent transparent;
   z-index: 9;
@@ -82,10 +82,10 @@ body, html {
 .chat-bubble::before {
   content: "";
   position: absolute;
-  bottom: -7px;
+  bottom: -12px;
   left: 50%;
   transform: translateX(-50%);
-  border-width: 8px 8px 0 8px;
+  border-width: 12px 8px 0 8px;
   border-style: solid;
   border-color: #e1f5fe transparent transparent transparent;
   z-index: 11;
