@@ -8,84 +8,134 @@
 <body>
   <div class="header">⚙️ 設定中心</div>
   
-  <div class="section">
-    <div class="section-title">🛌 床鋪自訂 (Bed)</div>
-    
-    <div class="control-group">
-      <label>X 軸偏移 <span id="val-bed-x">0px</span></label>
-      <input type="range" id="bed-x" min="-100" max="100" value="0">
-    </div>
-    
-    <div class="control-group">
-      <label>Y 軸偏移 <span id="val-bed-y">0px</span></label>
-      <input type="range" id="bed-y" min="-100" max="100" value="0">
-    </div>
-    
-    <div class="control-group">
-      <label>床鋪大小 <span id="val-bed-scale">170px</span></label>
-      <input type="range" id="bed-scale" min="100" max="300" value="170">
-    </div>
-
-    <div class="control-group">
-      <label>圖層位置</label>
-      <select id="bed-z">
-        <option value="-1">小鳥下方 (背景)</option>
-        <option value="15">小鳥上方 (前景)</option>
-      </select>
-    </div>
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="tab-general">⚙️ 一般</button>
+    <button class="tab-btn" data-tab="tab-bed">🛌 床鋪</button>
+    <button class="tab-btn" data-tab="tab-about">ℹ️ 關於</button>
   </div>
 
-  <div class="section">
-    <div class="section-title">⚡ 動畫速度 (Animation)</div>
-    
-    <div class="control-group">
-      <label>呼吸速度倍率 <span id="val-anim-speed">1.0x</span></label>
-      <input type="range" id="anim-speed" min="0.5" max="3.0" step="0.1" value="1.0">
-    </div>
-  </div>
-  
-  <div class="section">
-    <div class="section-title">🧠 AI 個性設定 (Personality)</div>
-    
-    <div class="control-group">
-      <label>選擇個性</label>
-      <select id="ai-personality" style="width: 100%; padding: 4px; border-radius: 4px;">
-        <option value="default">預設模式 (親切小幫手)</option>
-        <option value="bard">吟遊詩人模式 (說話像作詩)</option>
-        <option value="grumpy">暴躁模式 (覺得麻煩但會幫忙)</option>
-        <option value="custom">自訂模式 (自己設定個性)</option>
-      </select>
-    </div>
-    
-    <div class="control-group" id="custom-personality-group" style="display: none; margin-top: 10px;">
-      <label>自訂個性描述 (限 15 字)</label>
-      <input type="text" id="custom-personality-input" maxlength="15" placeholder="例如：講話喜歡加喵" style="width: 100%; box-sizing: border-box; padding: 5px; border-radius: 5px; border: 1px solid #ccc; font-family: 'Microsoft JhengHei', sans-serif;">
-    </div>
-  </div>
-  
-  <div class="section">
-    <div class="section-title">🔗 API 設定 (API Key)</div>
-    
-    <div class="control-group">
-      <label>Gemini API Key</label>
-      <div style="display: flex; gap: 10px; margin-top: 5px;">
-        <input type="password" id="setting-apiKey" placeholder="請填寫您的金鑰..." style="flex: 1; box-sizing: border-box; padding: 5px; border-radius: 5px; border: 1px solid #ccc; font-family: 'Microsoft JhengHei', sans-serif;">
-        <button id="btn-save-key" style="padding: 5px 15px; border-radius: 5px; border: none; background: #4CAF50; color: white; cursor: pointer;">儲存確認</button>
+  <!-- 一般設定頁籤 -->
+  <div id="tab-general" class="tab-content active">
+    <div class="section">
+      <div class="section-title">🔗 API 設定 (API Key)</div>
+      <div class="control-group">
+        <label>Gemini API Key</label>
+        <div style="display: flex; gap: 10px; margin-top: 5px;">
+          <input type="password" id="setting-apiKey" placeholder="請填寫您的金鑰..." style="flex: 1; box-sizing: border-box; padding: 6px; border-radius: 5px; border: 1px solid #ccc; font-family: 'Microsoft JhengHei', sans-serif;">
+        </div>
+        <div style="font-size: 11px; color: #666; margin-top: 5px;">* 請填寫 Gemini API Key 以啟用 AI 對話與待辦事項拆解功能。</div>
       </div>
-      <div id="key-save-msg" style="font-size: 11px; color: #4CAF50; margin-top: 5px; display: none;">✅ 已儲存！可直接開始對話</div>
-      <div style="font-size: 11px; color: #777; margin-top: 5px;">* 如果您是下載打包版，請務必填寫此欄位才能使用對話與待辦事項功能。</div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">🧠 AI 個性設定 (Personality)</div>
+      <div class="control-group">
+        <label>選擇語氣與個性</label>
+        <select id="ai-personality">
+          <option value="default">預設模式 (親切小幫手)</option>
+          <option value="bard">吟遊詩人模式 (押韻與音樂感)</option>
+          <option value="grumpy">傲嬌模式 (覺得麻煩但會幫忙)</option>
+          <option value="custom">自訂模式 (自己設定個性)</option>
+        </select>
+      </div>
+      
+      <div class="control-group" id="custom-personality-group" style="display: none; margin-top: 10px;">
+        <label>自訂個性描述 (限 15 字)</label>
+        <input type="text" id="custom-personality-input" maxlength="15" placeholder="例如：講話喜歡加喵~" style="width: 100%; box-sizing: border-box; padding: 6px; border-radius: 5px; border: 1px solid #ccc;">
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">⚡ 動畫速度 (Animation)</div>
+      <div class="control-group">
+        <label>呼吸速度倍率 <span id="val-anim-speed">1.0x</span></label>
+        <input type="range" id="anim-speed" min="0.5" max="3.0" step="0.1" value="1.0">
+      </div>
     </div>
   </div>
-  
-  <div class="section">
-    <div class="section-title">🔄 系統更新 (Updates)</div>
-    <div class="control-group">
-      <button id="btn-check-update" style="padding: 8px 15px; border-radius: 5px; border: none; background: #2196F3; color: white; cursor: pointer; width: 100%; font-weight: bold;">手動檢查更新</button>
-      <div id="update-msg" style="font-size: 11px; color: #555; margin-top: 8px; text-align: center; display: none;">正在檢查新版本...</div>
+
+  <!-- 床鋪設定頁籤 -->
+  <div id="tab-bed" class="tab-content">
+    <div class="section">
+      <div class="section-title">🛌 床鋪狀態控制</div>
+      <button id="btn-toggle-bed-edit" class="bed-edit-btn">✏️ 開啟床鋪編輯模式 (小鳥坐床)</button>
+      <div id="bed-edit-tip" style="font-size: 11px; color: #e65100; margin-top: 6px; display: none;">
+        💡 編輯模式已開啟：奇異鳥已移至床上，您可以直接拖曳床鋪或調整下方數值！
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">🎛️ 位置與圖層微調</div>
+      
+      <div class="control-group">
+        <label>X 軸偏移 <span id="val-bed-x">0px</span></label>
+        <input type="range" id="bed-x" min="-100" max="100" value="0">
+      </div>
+      
+      <div class="control-group">
+        <label>Y 軸偏移 <span id="val-bed-y">0px</span></label>
+        <input type="range" id="bed-y" min="-100" max="100" value="0">
+      </div>
+      
+      <div class="control-group">
+        <label>床鋪大小 <span id="val-bed-scale">170px</span></label>
+        <input type="range" id="bed-scale" min="100" max="300" value="170">
+      </div>
+
+      <div class="control-group">
+        <label>圖層順序</label>
+        <select id="bed-z">
+          <option value="-1">小鳥下方 (背景)</option>
+          <option value="15">小鳥上方 (前景)</option>
+        </select>
+      </div>
     </div>
   </div>
-  
-  <button id="btn-reset">還原預設值</button>
+
+  <!-- 關於與更新頁籤 -->
+  <div id="tab-about" class="tab-content">
+    <div class="section about-card">
+      <img src="../../../assets/images/kiwi.png" alt="Kiwi" id="about-logo" class="about-logo">
+      <div class="about-title">Wiki Wiki</div>
+      <div class="about-version" id="about-app-version">v1.1.2</div>
+      <div class="about-desc">你的桌面陪伴 AI 小助手 🥝</div>
+
+      <div class="about-links">
+        <button id="link-github" class="about-link-btn">🐙 GitHub 專案</button>
+        <button id="link-issues" class="about-link-btn">🐞 Bug 與意見回報</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">🔄 系統更新 (System Updates)</div>
+      <div class="control-group">
+        <button id="btn-check-update" class="update-btn">手動檢查更新</button>
+        <div id="update-msg" style="font-size: 12px; color: #555; margin-top: 8px; text-align: center; display: none;">正在檢查新版本...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 底部固定儲存欄 -->
+  <div class="footer-bar">
+    <div id="dirty-status" class="dirty-status" style="visibility: hidden;">⚠️ 有未儲存變更</div>
+    <div class="footer-btns">
+      <button id="btn-reset" class="btn-secondary">還原預設</button>
+      <button id="btn-save-all" class="btn-primary">💾 儲存設定</button>
+    </div>
+  </div>
+
+  <!-- 變更確認彈窗 Modal -->
+  <div id="confirm-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-box">
+      <h3>⚠️ 尚未儲存變更</h3>
+      <p>您有修改過的設定尚未儲存，是否要儲存並套用？</p>
+      <div class="modal-btns">
+        <button id="btn-modal-save" class="btn-primary">儲存並離開</button>
+        <button id="btn-modal-discard" class="btn-secondary">捨棄變更</button>
+        <button id="btn-modal-cancel" class="btn-neutral">取消</button>
+      </div>
+    </div>
+  </div>
 
   <script src="settings.js"></script>
 </body>

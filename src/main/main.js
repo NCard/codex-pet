@@ -231,6 +231,10 @@ app.whenReady().then(() => {
     });
   });
 
+  ipcMain.on('toggle-bed-edit', (event, isEditing) => {
+    if (mainWindow) mainWindow.webContents.send('toggle-bed-edit', isEditing);
+  });
+
   ipcMain.on('settings-changed', (event, settingsData) => {
     if (mainWindow) mainWindow.webContents.send('update-settings', settingsData);
   });
