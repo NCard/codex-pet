@@ -84,6 +84,7 @@ function initUI() {
   }
   
   updateLabels();
+  updateBedEditUI();
   setDirty(false);
 }
 
@@ -180,14 +181,24 @@ btnToggleBedEdit.addEventListener('click', () => {
 });
 
 function updateBedEditUI() {
+  const bedLockTip = document.getElementById('bed-lock-tip');
+  const disabled = !isBedEditing;
+  
+  els.bedX.disabled = disabled;
+  els.bedY.disabled = disabled;
+  els.bedScale.disabled = disabled;
+  els.bedZ.disabled = disabled;
+
   if (isBedEditing) {
     btnToggleBedEdit.innerText = '⏹️ 結束床鋪編輯模式';
     btnToggleBedEdit.classList.add('active');
     bedEditTip.style.display = 'block';
+    if (bedLockTip) bedLockTip.style.display = 'none';
   } else {
     btnToggleBedEdit.innerText = '✏️ 開啟床鋪編輯模式 (小鳥坐床)';
     btnToggleBedEdit.classList.remove('active');
     bedEditTip.style.display = 'none';
+    if (bedLockTip) bedLockTip.style.display = 'block';
   }
 }
 
