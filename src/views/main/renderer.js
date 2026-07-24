@@ -921,6 +921,7 @@ kiwiBed.addEventListener('wheel', (e) => {
 
 menuSleep.addEventListener('click', () => {
   customMenu.style.display = 'none';
+  currentAction = 'sleeping';
   kiwi.classList.add('sleeping');
   const zzz = document.getElementById('kiwi-zzz');
   if (zzz) zzz.style.display = 'block';
@@ -1160,25 +1161,31 @@ setInterval(() => {
   petState.hunger = Math.max(0, petState.hunger - 1);
   petState.mood = Math.max(0, petState.mood - 1);
 
+  const isSleepingState = currentAction === 'sleeping' || kiwi.classList.contains('sleeping');
+
   if (usage > 70) {
     if (!isWorking && kiwiAccessory.style.display === 'none') {
       kiwiAccessory.innerText = '💦';
       kiwiAccessory.style.display = 'block';
     }
-    const img = document.getElementById('kiwi-img');
-    if (!img.src.includes('kiwi_tired.png')) {
-      img.src = '../../../assets/images/kiwi_tired.png';
+    if (!isSleepingState) {
+      const img = document.getElementById('kiwi-img');
+      if (!img.src.includes('kiwi_tired.png')) {
+        img.src = '../../../assets/images/kiwi_tired.png';
+      }
+      img.classList.add('kiwi-tired');
     }
-    img.classList.add('kiwi-tired');
   } else {
     if (!isWorking && kiwiAccessory.innerText === '💦') {
       kiwiAccessory.style.display = 'none';
     }
-    const img = document.getElementById('kiwi-img');
-    if (!img.src.includes('kiwi_sleep.png') && img.src.includes('kiwi_tired.png')) {
-      img.src = '../../../assets/images/kiwi.png';
+    if (!isSleepingState) {
+      const img = document.getElementById('kiwi-img');
+      if (!img.src.includes('kiwi_sleep.png') && img.src.includes('kiwi_tired.png')) {
+        img.src = '../../../assets/images/kiwi.png';
+      }
+      img.classList.remove('kiwi-tired');
     }
-    img.classList.remove('kiwi-tired');
   }
   
   // 定期自動存檔
