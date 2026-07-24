@@ -81,7 +81,7 @@ ipcMain.on('window-move', (event, x, y) => {
   if (win) {
     const targetX = Math.round(Number(x));
     const targetY = Math.round(Number(y));
-    if (!isNaN(targetX) && !isNaN(targetY)) {
+    if (Number.isFinite(targetX) && Number.isFinite(targetY) && Math.abs(targetX) < 100000 && Math.abs(targetY) < 100000) {
       win.setPosition(targetX, targetY);
     }
   }
