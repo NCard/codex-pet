@@ -1,9 +1,9 @@
 require('../../utils/logger');
 window.onerror = function(message, source, lineno, colno, error) {
-  alert('Global Error: ' + message + ' at ' + lineno + ':' + colno);
+  console.error('[Renderer Global Error]:', message, 'at', lineno + ':' + colno, error);
 };
 window.addEventListener('unhandledrejection', function(event) {
-  require('fs').appendFileSync('error_dump.log', 'Unhandled promise rejection: ' + event.reason + '\n');
+  console.error('[Renderer UnhandledRejection]:', event.reason);
 });
 const kiwi = document.getElementById('kiwi-sprite-wrapper');
 const chatBubble = document.getElementById('chat-bubble');

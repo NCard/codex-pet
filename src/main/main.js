@@ -1,4 +1,10 @@
 require('../utils/logger');
+process.on('uncaughtException', (error) => {
+  console.error('[Main UncaughtException]:', error);
+});
+process.on('unhandledRejection', (reason) => {
+  console.error('[Main UnhandledRejection]:', reason);
+});
 const { app, BrowserWindow, ipcMain, Tray, Menu, screen, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
