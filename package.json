@@ -7,7 +7,7 @@
     "start": "electron .",
     "pack": "electron-builder --dir",
     "dist": "electron-builder --win",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node --test tests/crypto_utils.test.js tests/paths.test.js tests/sanitization.test.js"
   },
   "keywords": [],
   "author": "",
