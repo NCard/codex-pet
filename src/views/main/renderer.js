@@ -237,6 +237,18 @@ function showTempBubble(text, duration = 5000) {
   }, duration);
 }
 
+ipcRenderer.on('show-update-progress', (event, { percent, speed, text }) => {
+  if (isAlarmActive) return;
+  chatBubble.style.display = 'block';
+  if (bubbleTimeout) clearTimeout(bubbleTimeout);
+  
+  if (text) {
+    chatContent.innerHTML = text;
+  } else {
+    chatContent.innerHTML = `📥 正在下載更新... <b>${percent}%</b><br><span style="font-size:11px; color:#555;">(${speed})</span>`;
+  }
+});
+
 let isAlarmActive = false;
 let snoozedAlarms = [];
 

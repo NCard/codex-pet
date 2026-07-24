@@ -313,7 +313,7 @@ autoUpdater.on('update-available', (info) => {
   }).then(result => {
     if (result.response === 0) {
       autoUpdater.downloadUpdate();
-      if (mainWindow) mainWindow.webContents.send('show-bubble', '正在下載更新中... 下載完成後將自動重啟。');
+      if (mainWindow) mainWindow.webContents.send('show-update-progress', { text: '🚀 準備下載新版本更新...' });
     } else if (result.response === 1) {
       state.snoozedVersion = version;
       state.snoozeDate = new Date().toISOString().split('T')[0];
@@ -338,7 +338,23 @@ autoUpdater.on('update-not-available', () => {
   }
 });
 
+autoUpdater.on('download-progress', (progressObj) => {
+  const percent = Math.round(progressObj.percent);
+  const speedMB = (progressObj.bytesPerSecond / 1024 / 1024).toFixed(1);
+  if (mainWindow) {
+    mainWindow.webContents.send('show-update-progress', {
+      percent,
+      speed: `${speedMB} MB/s`
+    });
+  }
+});
+
 autoUpdater.on('error', (err) => {
+  if (mainWindow) {
+    mainWindow.webContents.send('show-update-progress', {
+      text: '❌ 更新下載失敗，請稍後再試。'
+    });
+  }
   if (isManualCheck) {
     dialog.showErrorBox('檢查更新失敗', err.toString());
     if (settingsWindow) settingsWindow.webContents.send('update-check-done');
@@ -346,7 +362,20 @@ autoUpdater.on('error', (err) => {
 });
 
 autoUpdater.on('update-downloaded', () => {
-  autoUpdater.quitAndInstall();
+  if (mainWindow) {
+    mainWindow.webContents.send('show-update-progress', {
+      text: '🎉 新版本下載完成！<br>即將自動安裝並重啟...'
+    });
+  }
+  
+  dialog.showMessageBox({
+    type: 'info',
+    title: '更新完成',
+    message: '新版本下載完成！點擊「確定」將立刻關閉並安裝新版本。',
+    buttons: ['確定並安裝']
+  }).then(() => {
+    autoUpdater.quitAndInstall(false, true);
+  });
 });
 
 app.on('window-all-closed', () => {
