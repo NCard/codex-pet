@@ -19,6 +19,7 @@
   },
   "build": {
     "appId": "com.codexpet.kiwi",
+    "artifactName": "Wiki-Wiki-Setup-${version}.${ext}",
     "win": {
       "target": "nsis",
       "icon": "assets/images/kiwi.png"
