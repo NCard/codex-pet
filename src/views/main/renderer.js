@@ -1220,7 +1220,7 @@ let pettingTimeout = null;
 let isPetting = false;
 
 kiwi.addEventListener('mousemove', (e) => {
-  if (currentAction === 'sleeping' || isDragging) return;
+  if (currentAction === 'sleeping' || isDragging || isDraggingOutfit || isDraggingBed) return;
   
   const now = Date.now();
   if (now - lastPetTime > 500) {
@@ -1255,8 +1255,23 @@ kiwi.addEventListener('mousemove', (e) => {
   }
 });
 
-// 滑鼠穿透判定邏輯
+// 滑鼠穿透判定邏輯 (優化：快取狀態避免重複 IPC 造成拖曳抖動與延遲)
+let lastIgnoreState = null;
+
 window.addEventListener('mousemove', (event) => {
-  const isInteractive = event.target.closest('.chat-bubble, #chat-input, #custom-menu, #kiwi-sprite-wrapper, #kiwi-bed, #chat-close');
-  ipcRenderer.send('set-ignore-mouse-events', !isInteractive, { forward: true });
+  if (isDragging || isDraggingOutfit || isDraggingBed) {
+    if (lastIgnoreState !== false) {
+      lastIgnoreState = false;
+      ipcRenderer.send('set-ignore-mouse-events', false);
+    }
+    return;
+  }
+
+  const isInteractive = !!event.target.closest('.chat-bubble, #chat-input, #custom-menu, #kiwi-sprite-wrapper, #kiwi-bed, #chat-close');
+  const ignore = !isInteractive;
+  
+  if (lastIgnoreState !== ignore) {
+    lastIgnoreState = ignore;
+    ipcRenderer.send('set-ignore-mouse-events', ignore, { forward: true });
+  }
 });
