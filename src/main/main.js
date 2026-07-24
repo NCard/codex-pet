@@ -91,10 +91,14 @@ ipcMain.on('set-ignore-mouse-events', (event, ignore, options) => {
 ipcMain.on('window-move', (event, x, y) => {
   const win = BrowserWindow.fromWebContents(event.sender);
   if (win) {
-    const targetX = Math.round(Number(x));
-    const targetY = Math.round(Number(y));
-    if (Number.isFinite(targetX) && Number.isFinite(targetY) && Math.abs(targetX) < 100000 && Math.abs(targetY) < 100000) {
-      win.setPosition(targetX, targetY);
+    const targetX = parseInt(x, 10);
+    const targetY = parseInt(y, 10);
+    if (Number.isInteger(targetX) && Number.isInteger(targetY) && Math.abs(targetX) < 100000 && Math.abs(targetY) < 100000) {
+      try {
+        win.setPosition(targetX, targetY);
+      } catch (e) {
+        // 忽略極端螢幕邊界下的原生 C++ 警告
+      }
     }
   }
 });
