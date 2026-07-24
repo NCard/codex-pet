@@ -71,7 +71,13 @@ function createWindow() {
 ipcMain.on('set-ignore-mouse-events', (event, ignore, options) => {
   const win = BrowserWindow.fromWebContents(event.sender);
   if (win) {
-    win.setIgnoreMouseEvents(ignore, options || {});
+    const safeIgnore = Boolean(ignore);
+    const safeOptions = (options && typeof options === 'object' && !Array.isArray(options)) ? options : { forward: true };
+    try {
+      win.setIgnoreMouseEvents(safeIgnore, safeOptions);
+    } catch (e) {
+      console.error('Error setting ignore mouse events:', e);
+    }
   }
 });
 
