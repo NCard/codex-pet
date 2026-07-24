@@ -1,4 +1,10 @@
 require('../../utils/logger');
+window.onerror = function(message, source, lineno, colno, error) {
+  alert('Global Error: ' + message + ' at ' + lineno + ':' + colno);
+};
+window.addEventListener('unhandledrejection', function(event) {
+  require('fs').appendFileSync('error_dump.log', 'Unhandled promise rejection: ' + event.reason + '\n');
+});
 const kiwi = document.getElementById('kiwi-sprite-wrapper');
 const chatBubble = document.getElementById('chat-bubble');
 const chatInput = document.getElementById('chat-input');
@@ -23,6 +29,8 @@ const defaultOutfitConfigs = {
   '🎀': { x: 78, y: 70, scale: 40 },
   '👑': { x: 59, y: -38, scale: 60 }
 };
+
+let isOutfitEditMode = false;
 
 const path = require('path');
 const { petStatePath: statePath, historyPath, alarmsPath } = require('../../utils/paths');
@@ -126,7 +134,8 @@ function clearChatHistory() {
 let petState = {
   hunger: 100,
   mood: 100,
-  outfit: null,
+  outfits: [],
+  outfitConfigs: {},
   todos: [],
   settings: {}
 };
@@ -136,6 +145,20 @@ function loadPetState() {
     if (fs.existsSync(statePath)) {
       const data = fs.readFileSync(statePath, 'utf8');
       petState = { ...petState, ...JSON.parse(data) };
+      
+      // Data Migration: outfit (string) to outfits (array)
+      if (petState.outfit !== undefined) {
+        if (petState.outfit && typeof petState.outfit === 'string') {
+          if (!petState.outfits) petState.outfits = [];
+          if (!petState.outfits.includes(petState.outfit)) {
+            petState.outfits.push(petState.outfit);
+          }
+        }
+        delete petState.outfit;
+      }
+      
+      if (!petState.outfits) petState.outfits = [];
+      if (!petState.outfitConfigs) petState.outfitConfigs = {};
     }
   } catch (e) {
     console.error('載入寵物狀態失敗:', e);
@@ -155,11 +178,10 @@ loadPetState();
 applySettings(petState.settings);
 // 初始化待辦事項 UI
 // (已經移至獨立視窗)
+const outfitContainer = document.getElementById('outfit-container');
 // 初始化裝扮
-if (petState.outfit) {
+if (petState.outfits && petState.outfits.length > 0) {
   applyOutfitPos();
-  kiwiOutfit.innerText = petState.outfit;
-  kiwiOutfit.style.display = 'block';
 }
 
 // 番茄鐘狀態
@@ -445,9 +467,20 @@ chatInput.addEventListener('keydown', async (e) => {
     }
     
     try {
+      const p = petState.settings.aiPersonality || 'default';
+      const customP = petState.settings.aiCustomPrompt || '';
+      let personaText = "請用簡短、活潑、賣萌的語氣回答問題（回答請盡量在 50 字以內，可以加上顏文字）。";
+      if (p === 'bard') {
+        personaText = "請扮演西方奇幻風格的吟遊詩人。你的說話方式必須充滿「押韻」與「詩意」，像是在唱歌或朗誦詩歌一樣，充滿音樂感與節奏感，但不要使用中國古詩詞（回答請盡量在 50 字以內，一定要押韻或帶有音樂般的節奏）。";
+      } else if (p === 'grumpy') {
+        personaText = "請扮演一隻傲嬌、覺得人類很麻煩但又不得不幫忙的奇異鳥。語氣稍微慵懶、嫌麻煩，但其實內心還是關心對方的，不要有攻擊性或真的生氣，有點像傲嬌或懶散的性格（回答請盡量在 50 字以內）。";
+      } else if (p === 'custom' && customP) {
+        personaText = `請遵循以下特別個性設定來回答問題：「${customP}」（回答請盡量在 50 字以內）。`;
+      }
+
       let contents = [
-        { role: 'user', parts: [{ text: `你現在是一隻生活在電腦桌面上的可愛奇異鳥小助手，你的名字叫做「Wiki Wiki」。
-請用簡短、活潑、賣萌的語氣回答問題（回答請盡量在 50 字以內，可以加上顏文字）。
+        { role: 'user', parts: [{ text: `你現在是一隻生活在電腦桌面上的可愛奇異鳥助手，名字叫做「Wiki Wiki」。
+${personaText}
 【重要指示】：若使用者要求設定、更換服裝，或「查詢目前有哪些鬧鐘/待辦事項」，你必須優先呼叫系統提供的工具 (Tools)。在工具回傳結果之前，請勿輸出任何回覆文字！絕對不能發明假造的工具名稱。
 使用者說：${text}` }] }
       ];
@@ -479,11 +512,9 @@ chatInput.addEventListener('keydown', async (e) => {
              // 即時反映本地狀態更新
              if (call.name === 'add_todo' || call.name === 'change_outfit') {
                 loadPetState();
-                if (call.name === 'change_outfit') {
-                   kiwiOutfit.innerText = petState.outfit;
-                   kiwiOutfit.style.display = petState.outfit ? 'block' : 'none';
+                 if (call.name === 'change_outfit') {
                    if (petState.outfit) applyOutfitPos();
-                }
+                 }
                 ipcRenderer.send('pet-state-changed');
              }
              if (call.name === 'add_alarm') {
@@ -623,17 +654,19 @@ menuPet.addEventListener('click', () => {
   kiwiAccessory.style.display = 'block';
   setTimeout(() => { if(!isWorking) kiwiAccessory.style.display = 'none'; }, 2000);
   kiwi.classList.add('jumping');
-  setTimeout(() => { kiwi.classList.remove('jumping'); }, 500);
+setTimeout(() => { kiwi.classList.remove('jumping'); }, 500);
 });
-
-let isOutfitEditMode = false;
 
 menuOutfit.addEventListener('click', () => {
   customMenu.style.display = 'none';
   ipcRenderer.send('open-outfit');
   isOutfitEditMode = true;
-  kiwiOutfit.style.pointerEvents = 'auto';
-  kiwiOutfit.style.cursor = 'grab';
+  if (outfitContainer) {
+    Array.from(outfitContainer.children).forEach(child => {
+      child.style.pointerEvents = 'auto';
+      child.style.cursor = 'grab';
+    });
+  }
   kiwi.style.animation = 'none'; // 換裝模式暫停呼吸動畫，避免座標跳動
 });
 
@@ -677,8 +710,12 @@ ipcRenderer.on('settings-closed', () => {
 
 ipcRenderer.on('outfit-closed', () => {
   isOutfitEditMode = false;
-  kiwiOutfit.style.pointerEvents = 'none';
-  kiwiOutfit.style.cursor = 'default';
+  if (outfitContainer) {
+    Array.from(outfitContainer.children).forEach(child => {
+      child.style.pointerEvents = 'none';
+      child.style.cursor = 'default';
+    });
+  }
   kiwi.style.animation = ''; // 恢復呼吸動畫
 });
 // 監聽設定更新
@@ -693,66 +730,100 @@ ipcRenderer.on('update-settings', (event, newSettings) => {
   }
 });
 
-ipcRenderer.on('update-outfit', (event, newOutfit) => {
-  petState.outfit = newOutfit;
+ipcRenderer.on('update-outfit', (event, newOutfits) => {
+  petState.outfits = newOutfits || [];
   savePetState();
-  if (petState.outfit) {
-    kiwiOutfit.innerText = petState.outfit;
-    kiwiOutfit.style.display = 'block';
-    applyOutfitPos();
-  } else {
-    kiwiOutfit.style.display = 'none';
-  }
+  applyOutfitPos();
   kiwi.classList.add('jumping');
   setTimeout(() => { kiwi.classList.remove('jumping'); }, 500);
 });
 
-ipcRenderer.on('update-outfit-pos', (event, { x, y, scale }) => {
+ipcRenderer.on('update-outfit-pos', (event, { outfit, x, y, scale }) => {
   if (!petState.outfitConfigs) petState.outfitConfigs = {};
-  if (!petState.outfitConfigs[petState.outfit]) {
-    petState.outfitConfigs[petState.outfit] = defaultOutfitConfigs[petState.outfit] || { x: 45, y: -10, scale: 60 };
+  if (!petState.outfitConfigs[outfit]) {
+    petState.outfitConfigs[outfit] = defaultOutfitConfigs[outfit] || { x: 45, y: -10, scale: 60 };
   }
-  if (x !== undefined) petState.outfitConfigs[petState.outfit].x = x;
-  if (y !== undefined) petState.outfitConfigs[petState.outfit].y = y;
-  if (scale !== undefined) petState.outfitConfigs[petState.outfit].scale = scale;
+  if (x !== undefined) petState.outfitConfigs[outfit].x = x;
+  if (y !== undefined) petState.outfitConfigs[outfit].y = y;
+  if (scale !== undefined) petState.outfitConfigs[outfit].scale = scale;
   
   savePetState();
   applyOutfitPos();
 });
 
-function applyOutfitPos() {
-  if (!petState.outfit) return;
-  const config = (petState.outfitConfigs && petState.outfitConfigs[petState.outfit]) 
-                 || defaultOutfitConfigs[petState.outfit] 
-                 || { x: 45, y: -10, scale: 60 };
-  kiwiOutfit.style.left = `${config.x}px`;
-  kiwiOutfit.style.top = `${config.y}px`;
-  kiwiOutfit.style.fontSize = `${config.scale}px`;
-  kiwiOutfit.style.transform = `none`;
-}
+let activeDraggingOutfit = null;
+let activeDraggingElement = null;
 
-// 裝扮拖曳邏輯
 let isDraggingOutfit = false;
 let outfitDragStartX = 0;
 let outfitDragStartY = 0;
 let outfitStartLeft = 0;
 let outfitStartTop = 0;
 
-kiwiOutfit.addEventListener('mousedown', (e) => {
-  if (!isOutfitEditMode) return;
-  isDraggingOutfit = true;
-  outfitDragStartX = e.clientX;
-  outfitDragStartY = e.clientY;
-  kiwiOutfit.style.cursor = 'grabbing';
+function applyOutfitPos() {
+  if (!outfitContainer) return;
+  outfitContainer.innerHTML = '';
+  if (!petState.outfits) petState.outfits = [];
   
-  const rect = kiwiOutfit.parentElement.getBoundingClientRect();
-  const outfitRect = kiwiOutfit.getBoundingClientRect();
-  outfitStartLeft = outfitRect.left - rect.left;
-  outfitStartTop = outfitRect.top - rect.top;
-  
-  e.preventDefault();
-  e.stopPropagation();
-});
+  petState.outfits.forEach(outfit => {
+    const config = (petState.outfitConfigs && petState.outfitConfigs[outfit]) 
+                   || defaultOutfitConfigs[outfit] 
+                   || { x: 45, y: -10, scale: 60 };
+    
+    const div = document.createElement('div');
+    div.innerText = outfit;
+    div.style.position = 'absolute';
+    div.style.left = `${config.x}px`;
+    div.style.top = `${config.y}px`;
+    div.style.fontSize = `${config.scale}px`;
+    div.style.pointerEvents = isOutfitEditMode ? 'auto' : 'none';
+    div.style.cursor = isOutfitEditMode ? 'grab' : 'default';
+    div.style.zIndex = '5';
+    
+    div.addEventListener('mousedown', (e) => {
+      if (!isOutfitEditMode) return;
+      isDraggingOutfit = true;
+      activeDraggingOutfit = outfit;
+      activeDraggingElement = div;
+      
+      outfitDragStartX = e.clientX;
+      outfitDragStartY = e.clientY;
+      div.style.cursor = 'grabbing';
+      
+      const rect = outfitContainer.getBoundingClientRect();
+      const outfitRect = div.getBoundingClientRect();
+      outfitStartLeft = outfitRect.left - rect.left;
+      outfitStartTop = outfitRect.top - rect.top;
+      
+      e.preventDefault();
+      e.stopPropagation();
+    });
+    
+    div.addEventListener('wheel', (e) => {
+      if (!isOutfitEditMode) return;
+      e.preventDefault();
+      let currentScale = parseInt(div.style.fontSize || 60);
+      if (e.deltaY < 0) {
+        currentScale += 2;
+      } else {
+        currentScale -= 2;
+      }
+      if (currentScale < 10) currentScale = 10;
+      if (currentScale > 150) currentScale = 150;
+      
+      div.style.fontSize = `${currentScale}px`;
+      
+      if (!petState.outfitConfigs) petState.outfitConfigs = {};
+      if (!petState.outfitConfigs[outfit]) petState.outfitConfigs[outfit] = {};
+      petState.outfitConfigs[outfit].scale = currentScale;
+      savePetState();
+      
+      ipcRenderer.send('outfit-pos-updated', { outfit, scale: currentScale });
+    });
+    
+    outfitContainer.appendChild(div);
+  });
+}
 
 kiwiBed.addEventListener('mousedown', (e) => {
   if (!isSettingsEditMode) return;
@@ -773,17 +844,16 @@ window.addEventListener('mousemove', (e) => {
   // 加入翻轉參數來修正拖曳方向
   const flip = parseInt(document.getElementById('kiwi-wrapper').style.getPropertyValue('--flip')) || 1;
 
-  if (isDraggingOutfit) {
+  if (isDraggingOutfit && activeDraggingElement) {
     const dx = (e.clientX - outfitDragStartX) * flip;
     const dy = (e.clientY - outfitDragStartY);
     let newLeft = outfitStartLeft + dx;
     let newTop = outfitStartTop + dy;
     
-    kiwiOutfit.style.left = `${newLeft}px`;
-    kiwiOutfit.style.top = `${newTop}px`;
-    kiwiOutfit.style.transform = `none`;
+    activeDraggingElement.style.left = `${newLeft}px`;
+    activeDraggingElement.style.top = `${newTop}px`;
     
-    ipcRenderer.send('outfit-pos-updated', { x: newLeft, y: newTop });
+    ipcRenderer.send('outfit-pos-updated', { outfit: activeDraggingOutfit, x: newLeft, y: newTop });
   } else if (isDraggingBed) {
     const flip = parseInt(document.getElementById('kiwi-wrapper').style.getPropertyValue('--flip')) || 1;
     const dx = (e.clientX - bedDragStartX) * flip;
@@ -800,21 +870,24 @@ window.addEventListener('mousemove', (e) => {
 });
 
 window.addEventListener('mouseup', (e) => {
-  if (isDraggingOutfit) {
+  if (isDraggingOutfit && activeDraggingElement) {
     isDraggingOutfit = false;
-    kiwiOutfit.style.cursor = 'grab';
+    activeDraggingElement.style.cursor = 'grab';
     
-    const currentLeft = parseInt(kiwiOutfit.style.left || 0);
-    const currentTop = parseInt(kiwiOutfit.style.top || 0);
-    const currentScale = parseInt(kiwiOutfit.style.fontSize || 60);
+    const currentLeft = parseInt(activeDraggingElement.style.left || 0);
+    const currentTop = parseInt(activeDraggingElement.style.top || 0);
+    const currentScale = parseInt(activeDraggingElement.style.fontSize || 60);
     
     if (!petState.outfitConfigs) petState.outfitConfigs = {};
-    if (!petState.outfitConfigs[petState.outfit]) petState.outfitConfigs[petState.outfit] = {};
+    if (!petState.outfitConfigs[activeDraggingOutfit]) petState.outfitConfigs[activeDraggingOutfit] = {};
     
-    petState.outfitConfigs[petState.outfit].x = currentLeft;
-    petState.outfitConfigs[petState.outfit].y = currentTop;
-    petState.outfitConfigs[petState.outfit].scale = currentScale;
+    petState.outfitConfigs[activeDraggingOutfit].x = currentLeft;
+    petState.outfitConfigs[activeDraggingOutfit].y = currentTop;
+    petState.outfitConfigs[activeDraggingOutfit].scale = currentScale;
     savePetState();
+    
+    activeDraggingElement = null;
+    activeDraggingOutfit = null;
   } else if (isDraggingBed) {
     isDraggingBed = false;
     kiwiBed.style.cursor = 'grab';
@@ -822,27 +895,7 @@ window.addEventListener('mouseup', (e) => {
   }
 });
 
-kiwiOutfit.addEventListener('wheel', (e) => {
-  if (!isOutfitEditMode) return;
-  e.preventDefault();
-  let currentScale = parseInt(kiwiOutfit.style.fontSize || 60);
-  if (e.deltaY < 0) {
-    currentScale += 2;
-  } else {
-    currentScale -= 2;
-  }
-  if (currentScale < 10) currentScale = 10;
-  if (currentScale > 150) currentScale = 150;
-  
-  kiwiOutfit.style.fontSize = `${currentScale}px`;
-  
-  if (!petState.outfitConfigs) petState.outfitConfigs = {};
-  if (!petState.outfitConfigs[petState.outfit]) petState.outfitConfigs[petState.outfit] = {};
-  petState.outfitConfigs[petState.outfit].scale = currentScale;
-  savePetState();
-  
-  ipcRenderer.send('outfit-pos-updated', { scale: currentScale });
-});
+// Note: outfit wheel event is now bound directly to the active element in applyOutfitPos
 
 kiwiBed.addEventListener('wheel', (e) => {
   if (!isSettingsEditMode) return;
@@ -873,7 +926,7 @@ menuSleep.addEventListener('click', () => {
   if (zzz) zzz.style.display = 'block';
   document.getElementById('kiwi-img').src = '../../../assets/images/kiwi_sleep.png';
   document.getElementById('kiwi-bed').style.display = 'block';
-  if (kiwiOutfit) kiwiOutfit.style.display = 'none';
+  if (typeof outfitContainer !== 'undefined' && outfitContainer) outfitContainer.style.display = 'none';
   
   showTempBubble('晚安... Zzz...');
 
@@ -917,7 +970,7 @@ function resetIdle() {
     if (zzz) zzz.style.display = 'none';
     document.getElementById('kiwi-img').src = '../../../assets/images/kiwi.png';
     document.getElementById('kiwi-bed').style.display = 'none';
-    if (kiwiOutfit && petState.outfit) kiwiOutfit.style.display = 'block';
+    if (typeof outfitContainer !== 'undefined' && outfitContainer) outfitContainer.style.display = 'block';
   }
 }
 window.addEventListener('mousemove', resetIdle);
@@ -935,7 +988,7 @@ setInterval(() => {
     if (zzz) zzz.style.display = 'block';
     document.getElementById('kiwi-img').src = '../../../assets/images/kiwi_sleep.png';
     document.getElementById('kiwi-bed').style.display = 'block';
-    if (kiwiOutfit) kiwiOutfit.style.display = 'none';
+    if (typeof outfitContainer !== 'undefined' && outfitContainer) outfitContainer.style.display = 'none';
   }
 }, 1000);
 
@@ -1138,11 +1191,50 @@ setTimeout(() => {
   ipcRenderer.send('set-ignore-mouse-events', true, { forward: true });
 }, 100);
 
+// --- 滑鼠撫摸反應 (Mouse Petting) ---
+let petScore = 0;
+let lastPetTime = 0;
+let pettingTimeout = null;
+let isPetting = false;
+
+kiwi.addEventListener('mousemove', (e) => {
+  if (currentAction === 'sleeping' || isDragging) return;
+  
+  const now = Date.now();
+  if (now - lastPetTime > 500) {
+    petScore = 0;
+  }
+  // 累加滑鼠移動距離
+  petScore += Math.abs(e.movementX) + Math.abs(e.movementY);
+  lastPetTime = now;
+  
+  // 累積移動超過 2000 像素才算作撫摸
+  if (petScore > 2000 && !isPetting) {
+    isPetting = true;
+    const oldAction = currentAction;
+    currentAction = 'petting';
+    kiwi.classList.remove('kiwi-pecking');
+    kiwi.classList.add('kiwi-petting');
+    
+    const heart = document.getElementById('kiwi-heart');
+    heart.style.display = 'block';
+    heart.style.animation = 'none';
+    heart.offsetHeight; // trigger reflow
+    heart.style.animation = 'floatHeart 1s ease-out forwards';
+    
+    if (pettingTimeout) clearTimeout(pettingTimeout);
+    pettingTimeout = setTimeout(() => {
+      isPetting = false;
+      petScore = 0;
+      kiwi.classList.remove('kiwi-petting');
+      heart.style.display = 'none';
+      if (currentAction === 'petting') currentAction = oldAction === 'eating' ? 'idle' : oldAction; 
+    }, 1500);
+  }
+});
+
 // 滑鼠穿透判定邏輯
 window.addEventListener('mousemove', (event) => {
-  // 判定是否在實體互動元素上 (對話泡泡、輸入框、右鍵選單、奇異鳥本體、床、關閉按鈕)
   const isInteractive = event.target.closest('.chat-bubble, #chat-input, #custom-menu, #kiwi-sprite-wrapper, #kiwi-bed, #chat-close');
-  
-  // 如果不在互動元素上，則設定視窗穿透 (ignore = true)
   ipcRenderer.send('set-ignore-mouse-events', !isInteractive, { forward: true });
 });

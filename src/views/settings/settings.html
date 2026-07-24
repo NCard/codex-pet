@@ -45,6 +45,25 @@
   </div>
   
   <div class="section">
+    <div class="section-title">🧠 AI 個性設定 (Personality)</div>
+    
+    <div class="control-group">
+      <label>選擇個性</label>
+      <select id="ai-personality" style="width: 100%; padding: 4px; border-radius: 4px;">
+        <option value="default">預設模式 (親切小幫手)</option>
+        <option value="bard">吟遊詩人模式 (說話像作詩)</option>
+        <option value="grumpy">暴躁模式 (覺得麻煩但會幫忙)</option>
+        <option value="custom">自訂模式 (自己設定個性)</option>
+      </select>
+    </div>
+    
+    <div class="control-group" id="custom-personality-group" style="display: none; margin-top: 10px;">
+      <label>自訂個性描述 (限 15 字)</label>
+      <input type="text" id="custom-personality-input" maxlength="15" placeholder="例如：講話喜歡加喵" style="width: 100%; box-sizing: border-box; padding: 5px; border-radius: 5px; border: 1px solid #ccc; font-family: 'Microsoft JhengHei', sans-serif;">
+    </div>
+  </div>
+  
+  <div class="section">
     <div class="section-title">🔗 API 設定 (API Key)</div>
     
     <div class="control-group">

@@ -10,7 +10,9 @@ const defaultSettings = {
   bedScale: 170,
   bedZ: -1,
   animSpeed: 1.0,
-  apiKey: ''
+  apiKey: '',
+  aiPersonality: 'default',
+  aiCustomPrompt: ''
 };
 
 let petState = {};
@@ -32,7 +34,9 @@ const els = {
   bedScale: document.getElementById('bed-scale'),
   bedZ: document.getElementById('bed-z'),
   animSpeed: document.getElementById('anim-speed'),
-  apiKey: document.getElementById('setting-apiKey')
+  apiKey: document.getElementById('setting-apiKey'),
+  aiPersonality: document.getElementById('ai-personality'),
+  aiCustomPrompt: document.getElementById('custom-personality-input')
 };
 
 const vals = {
@@ -50,6 +54,15 @@ function initUI() {
   els.bedZ.value = petState.settings.bedZ ?? defaultSettings.bedZ;
   els.animSpeed.value = petState.settings.animSpeed ?? defaultSettings.animSpeed;
   els.apiKey.value = petState.settings.apiKey ?? defaultSettings.apiKey;
+  els.aiPersonality.value = petState.settings.aiPersonality ?? defaultSettings.aiPersonality;
+  els.aiCustomPrompt.value = petState.settings.aiCustomPrompt ?? defaultSettings.aiCustomPrompt;
+  
+  if (els.aiPersonality.value === 'custom') {
+    document.getElementById('custom-personality-group').style.display = 'block';
+  } else {
+    document.getElementById('custom-personality-group').style.display = 'none';
+  }
+  
   updateLabels();
 }
 
@@ -67,7 +80,9 @@ function saveAndBroadcast() {
     bedScale: parseInt(els.bedScale.value),
     bedZ: parseInt(els.bedZ.value),
     animSpeed: parseFloat(els.animSpeed.value),
-    apiKey: els.apiKey.value
+    apiKey: els.apiKey.value,
+    aiPersonality: els.aiPersonality.value,
+    aiCustomPrompt: els.aiCustomPrompt.value
   };
   
   fs.writeFileSync(statePath, JSON.stringify(petState, null, 2));
@@ -75,11 +90,18 @@ function saveAndBroadcast() {
 }
 
 Object.keys(els).forEach(key => {
-  if (key === 'apiKey') return; // 獨立處理
+  if (key === 'apiKey' || key === 'aiCustomPrompt') return; // 獨立處理或特別處理
   els[key].addEventListener('input', () => {
+    if (key === 'aiPersonality') {
+      document.getElementById('custom-personality-group').style.display = els.aiPersonality.value === 'custom' ? 'block' : 'none';
+    }
     updateLabels();
     saveAndBroadcast();
   });
+});
+
+els.aiCustomPrompt.addEventListener('input', () => {
+  saveAndBroadcast();
 });
 
 document.getElementById('btn-save-key').addEventListener('click', () => {

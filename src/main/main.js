@@ -25,6 +25,7 @@ let outfitWin = null;
 let alarmWin = null;
 let todoWin = null;
 let historyWin = null;
+let settingsWindow = null;
 
 function createWindow() {
   const primaryDisplay = screen.getPrimaryDisplay();
@@ -194,7 +195,6 @@ app.whenReady().then(() => {
     if (outfitWin) outfitWin.webContents.send('outfit-pos-updated', data);
   });
 
-  let settingsWindow = null;
   ipcMain.on('open-settings', () => {
     if (settingsWindow) {
       settingsWindow.focus();
