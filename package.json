@@ -1,7 +1,7 @@
 {
   "name": "ai-pet",
   "productName": "Wiki Wiki",
-  "version": "1.1.0",
+  "version": "1.1.0.1",
   "main": "src/main/main.js",
   "scripts": {
     "start": "electron .",
