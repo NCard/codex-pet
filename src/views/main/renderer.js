@@ -968,7 +968,8 @@ menuAlarm.addEventListener('click', () => {
 });
 
 menuClose.addEventListener('click', () => {
-  window.close();
+  customMenu.style.display = 'none';
+  ipcRenderer.send('request-close-confirm');
 });
 
 // 簡單的隨機移動邏輯 (在桌面範圍內隨機移動視窗)

@@ -243,6 +243,22 @@ app.whenReady().then(() => {
     if (settingsWindow) settingsWindow.webContents.send('update-settings-ui', settingsData);
   });
 
+  ipcMain.on('request-close-confirm', (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    dialog.showMessageBox(win, {
+      type: 'question',
+      title: '關閉 Wiki Wiki',
+      message: '確定要關閉奇異鳥小助手嗎？',
+      buttons: ['確定關閉', '取消'],
+      defaultId: 1,
+      cancelId: 1
+    }).then(result => {
+      if (result.response === 0) {
+        app.quit();
+      }
+    });
+  });
+
   ipcMain.on('alarms-changed', () => {
     if (alarmWin) alarmWin.webContents.send('reload-data');
   });
