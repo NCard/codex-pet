@@ -13,6 +13,10 @@
   "author": "",
   "license": "ISC",
   "description": "Kiwi Desktop Pet",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/NCard/codex-pet.git"
+  },
   "build": {
     "appId": "com.codexpet.kiwi",
     "win": {
@@ -29,6 +33,13 @@
       "!.env",
       "!data/**/*",
       "!logs/**/*"
+    ],
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "NCard",
+        "repo": "codex-pet"
+      }
     ]
   },
   "dependencies": {
@@ -36,6 +47,7 @@
     "@modelcontextprotocol/sdk": "^1.29.0",
     "chokidar": "^4.0.3",
     "dotenv": "^17.4.2",
+    "electron-updater": "^6.8.9",
     "jimp": "^0.16.13"
   },
   "devDependencies": {

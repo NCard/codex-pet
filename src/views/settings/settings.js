@@ -102,4 +102,20 @@ document.getElementById('btn-reset').addEventListener('click', () => {
   saveAndBroadcast();
 });
 
+const btnCheckUpdate = document.getElementById('btn-check-update');
+const updateMsg = document.getElementById('update-msg');
+
+btnCheckUpdate.addEventListener('click', () => {
+  updateMsg.style.display = 'block';
+  btnCheckUpdate.disabled = true;
+  btnCheckUpdate.innerText = '檢查中...';
+  ipcRenderer.send('check-update-manual');
+});
+
+ipcRenderer.on('update-check-done', () => {
+  updateMsg.style.display = 'none';
+  btnCheckUpdate.disabled = false;
+  btnCheckUpdate.innerText = '手動檢查更新';
+});
+
 initUI();

@@ -1,6 +1,9 @@
 require('../utils/logger');
-const { app, BrowserWindow, ipcMain, Tray, Menu, screen } = require('electron');
+const { app, BrowserWindow, ipcMain, Tray, Menu, screen, dialog } = require('electron');
 const path = require('path');
+const fs = require('fs');
+const { petStatePath } = require('../utils/paths');
+const { autoUpdater } = require('electron-updater');
 
 try {
   const reloader = require('electron-reloader');
@@ -153,7 +156,6 @@ app.whenReady().then(() => {
     });
     todoWin.setMenu(null);
     todoWin.loadFile(path.join(__dirname, '../views/todo/todo.html'));
-    todoWin.on('closed', () => todoWin = null);
   });
 
   ipcMain.on('open-outfit', () => {
@@ -234,6 +236,107 @@ app.whenReady().then(() => {
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
+  
+  try {
+    chokidar.watch(path.join(__dirname, '../views'), { ignored: /[\/\\]\./ }).on('all', () => {
+      app.relaunch();
+      app.exit();
+    });
+  } catch (err) {
+    console.error('Failed to init chokidar:', err);
+  }
+  
+  isManualCheck = false;
+  try {
+    autoUpdater.checkForUpdates();
+  } catch (e) {}
+});
+
+let isManualCheck = false;
+autoUpdater.autoDownload = false;
+
+ipcMain.on('check-update-manual', () => {
+  isManualCheck = true;
+  try {
+    autoUpdater.checkForUpdates().then(result => {
+      if (result === null) {
+        // App is not packed
+        dialog.showMessageBox({
+          type: 'info',
+          title: '檢查更新 (開發模式)',
+          message: '目前處於開發模式，已自動跳過更新檢查。若要測試更新功能，請先執行打包 (npm run dist)。',
+          buttons: ['確定']
+        });
+        if (settingsWindow) settingsWindow.webContents.send('update-check-done');
+      }
+    }).catch(err => {
+      dialog.showErrorBox('檢查更新失敗', err.toString());
+      if (settingsWindow) settingsWindow.webContents.send('update-check-done');
+    });
+  } catch(e) {
+    dialog.showErrorBox('檢查更新發生錯誤', e.toString());
+    if (settingsWindow) settingsWindow.webContents.send('update-check-done');
+  }
+});
+
+autoUpdater.on('update-available', (info) => {
+  const version = info.version;
+  let state = {};
+  if (fs.existsSync(petStatePath)) {
+    try { state = JSON.parse(fs.readFileSync(petStatePath, 'utf8')); } catch(e){}
+  }
+  
+  if (!isManualCheck) {
+    if (state.skippedVersion === version) return;
+    const today = new Date().toISOString().split('T')[0];
+    if (state.snoozedVersion === version && state.snoozeDate === today) return;
+  }
+  
+  dialog.showMessageBox({
+    type: 'info',
+    title: '檢查更新',
+    message: `發佈了新版本 v${version}！`,
+    detail: (info.releaseNotes || '修復了一些 Bug，並帶來了新功能！').toString().replace(/<[^>]*>?/gm, ''),
+    buttons: ['更新', '下次提醒', '跳過這個版本'],
+    defaultId: 0,
+    cancelId: 1
+  }).then(result => {
+    if (result.response === 0) {
+      autoUpdater.downloadUpdate();
+      if (mainWindow) mainWindow.webContents.send('show-bubble', '正在下載更新中... 下載完成後將自動重啟。');
+    } else if (result.response === 1) {
+      state.snoozedVersion = version;
+      state.snoozeDate = new Date().toISOString().split('T')[0];
+      fs.writeFileSync(petStatePath, JSON.stringify(state, null, 2), 'utf8');
+    } else if (result.response === 2) {
+      state.skippedVersion = version;
+      fs.writeFileSync(petStatePath, JSON.stringify(state, null, 2), 'utf8');
+    }
+    if (settingsWindow) settingsWindow.webContents.send('update-check-done');
+  });
+});
+
+autoUpdater.on('update-not-available', () => {
+  if (isManualCheck) {
+    dialog.showMessageBox({
+      type: 'info',
+      title: '檢查更新',
+      message: '目前已是最新版本！',
+      buttons: ['確定']
+    });
+    if (settingsWindow) settingsWindow.webContents.send('update-check-done');
+  }
+});
+
+autoUpdater.on('error', (err) => {
+  if (isManualCheck) {
+    dialog.showErrorBox('檢查更新失敗', err.toString());
+    if (settingsWindow) settingsWindow.webContents.send('update-check-done');
+  }
+});
+
+autoUpdater.on('update-downloaded', () => {
+  autoUpdater.quitAndInstall();
 });
 
 app.on('window-all-closed', () => {
