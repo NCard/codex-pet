@@ -144,6 +144,19 @@ function saveSettings() {
   setDirty(false);
 }
 
+function revertSettings() {
+  try {
+    if (fs.existsSync(statePath)) {
+      const savedState = JSON.parse(fs.readFileSync(statePath, 'utf8'));
+      if (savedState.settings) {
+        petState.settings = savedState.settings;
+      }
+    }
+  } catch (e) {}
+  ipcRenderer.send('settings-changed', petState.settings);
+  setDirty(false);
+}
+
 // 監聽變更
 Object.keys(els).forEach(key => {
   els[key].addEventListener('input', () => {
@@ -257,7 +270,7 @@ btnModalSave.addEventListener('click', () => {
 });
 
 btnModalDiscard.addEventListener('click', () => {
-  setDirty(false);
+  revertSettings();
   confirmModal.style.display = 'none';
   pendingClose = true;
   window.close();
