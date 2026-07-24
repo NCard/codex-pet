@@ -741,14 +741,10 @@ ipcRenderer.on('outfit-closed', () => {
 });
 // 監聽設定更新
 ipcRenderer.on('update-settings', (event, newSettings) => {
-  const oldApiKey = petState.settings?.apiKey;
   petState.settings = newSettings;
   applySettings(newSettings);
   savePetState();
-  
-  if (oldApiKey !== newSettings.apiKey) {
-    initAI();
-  }
+  initAI();
 });
 
 ipcRenderer.on('update-outfit', (event, newOutfits) => {
