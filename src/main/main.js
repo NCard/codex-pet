@@ -79,7 +79,11 @@ ipcMain.on('set-ignore-mouse-events', (event, ignore, options) => {
 ipcMain.on('window-move', (event, x, y) => {
   const win = BrowserWindow.fromWebContents(event.sender);
   if (win) {
-    win.setPosition(x, y);
+    const targetX = Math.round(Number(x));
+    const targetY = Math.round(Number(y));
+    if (!isNaN(targetX) && !isNaN(targetY)) {
+      win.setPosition(targetX, targetY);
+    }
   }
 });
 

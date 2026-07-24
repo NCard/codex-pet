@@ -967,9 +967,13 @@ menuClose.addEventListener('click', () => {
 function getRealWindowPos() {
   try {
     const pos = ipcRenderer.sendSync('get-window-pos');
-    if (pos && typeof pos.x === 'number') return pos;
+    if (pos && typeof pos.x === 'number' && !isNaN(pos.x) && typeof pos.y === 'number' && !isNaN(pos.y)) {
+      return { x: Math.round(pos.x), y: Math.round(pos.y) };
+    }
   } catch(e) {}
-  return { x: window.screenX, y: window.screenY };
+  const sx = Math.round(Number(window.screenX)) || 0;
+  const sy = Math.round(Number(window.screenY)) || 0;
+  return { x: sx, y: sy };
 }
 
 const initialPos = getRealWindowPos();
