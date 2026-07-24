@@ -83,6 +83,16 @@ ipcMain.on('window-move', (event, x, y) => {
   }
 });
 
+ipcMain.on('get-window-pos', (event) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (win) {
+    const [x, y] = win.getPosition();
+    event.returnValue = { x, y };
+  } else {
+    event.returnValue = { x: 0, y: 0 };
+  }
+});
+
 app.whenReady().then(() => {
   createWindow();
 

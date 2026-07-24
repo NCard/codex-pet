@@ -952,8 +952,17 @@ menuClose.addEventListener('click', () => {
 
 // 簡單的隨機移動邏輯 (在桌面範圍內隨機移動視窗)
 // 這裡展示如何透過 renderer 控制 window 的位置
-let x = window.screenX;
-let y = window.screenY;
+function getRealWindowPos() {
+  try {
+    const pos = ipcRenderer.sendSync('get-window-pos');
+    if (pos && typeof pos.x === 'number') return pos;
+  } catch(e) {}
+  return { x: window.screenX, y: window.screenY };
+}
+
+const initialPos = getRealWindowPos();
+let x = initialPos.x;
+let y = initialPos.y;
 
 let currentAction = 'idle'; // 'idle', 'moving', 'eating', 'sleeping'
 let idleTime = 0; // 閒置計時器
@@ -1071,8 +1080,9 @@ setInterval(() => {
     currentAction = 'moving';
     
     // 拖曳後視窗位置會改變，必須在每次移動前重新抓取當前真實位置
-    x = window.screenX;
-    y = window.screenY;
+    const currentPos = getRealWindowPos();
+    x = currentPos.x;
+    y = currentPos.y;
     
     // 5% 機率進行遠距離散步
     let rangeX = 300;
@@ -1128,7 +1138,7 @@ setInterval(() => {
 
       x += stepX;
       y += stepY;
-      window.moveTo(Math.round(x), Math.round(y)); // 更新視窗位置
+      ipcRenderer.send('window-move', Math.round(x), Math.round(y)); // 更新視窗位置
       currentStep++;
 
       // 到達目的地時停止
