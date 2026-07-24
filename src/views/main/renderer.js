@@ -1100,10 +1100,15 @@ setInterval(() => {
     let targetY = y + moveY;
     
     // 取得當前視窗所在螢幕的邊界 (支援多螢幕)
-    const minX = window.screen.availLeft || 0;
-    const minY = window.screen.availTop || 0;
-    const maxX = minX + window.screen.availWidth - 250;
-    const maxY = minY + window.screen.availHeight - 250;
+    // 因視窗總高度為 550px，奇異鳥位於視窗底部 (上方約有 330px 的對話框區域)
+    // 當奇異鳥靠在螢幕頂端時，視窗 Y 座標約為 -330px，因此 minY 必須允許負值，否則會觸發向下瞬移 Bug
+    const screenAvailTop = window.screen.availTop || 0;
+    const screenAvailLeft = window.screen.availLeft || 0;
+    
+    const minX = screenAvailLeft - 20;
+    const minY = screenAvailTop - 330; 
+    const maxX = screenAvailLeft + window.screen.availWidth - 230;
+    const maxY = screenAvailTop + window.screen.availHeight - 520;
     
     // 防止跑出當前螢幕外
     targetX = Math.max(minX, Math.min(targetX, maxX));
