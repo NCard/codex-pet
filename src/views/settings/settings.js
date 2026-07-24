@@ -2,6 +2,7 @@ const { ipcRenderer, shell } = require('electron');
 const fs = require('fs');
 const path = require('path');
 const { petStatePath: statePath } = require('../../utils/paths');
+require('dotenv').config({ path: path.resolve(__dirname, '../../../.env') });
 
 // 預設設定
 const defaultSettings = {
@@ -73,7 +74,7 @@ function initUI() {
   els.bedScale.value = s.bedScale ?? defaultSettings.bedScale;
   els.bedZ.value = s.bedZ ?? defaultSettings.bedZ;
   els.animSpeed.value = s.animSpeed ?? defaultSettings.animSpeed;
-  els.apiKey.value = s.apiKey ?? defaultSettings.apiKey;
+  els.apiKey.value = s.apiKey || process.env.GEMINI_API_KEY || '';
   els.aiPersonality.value = s.aiPersonality ?? defaultSettings.aiPersonality;
   els.aiCustomPrompt.value = s.aiCustomPrompt ?? defaultSettings.aiCustomPrompt;
   
