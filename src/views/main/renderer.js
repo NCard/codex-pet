@@ -282,6 +282,7 @@ function showAlarmBubble(alarm) {
 }
 
 let isDragging = false;
+let hasDragged = false;
 let mouseOffsetX, mouseOffsetY;
 let dragStartX, dragStartY;
 let lastDragX = 0;
@@ -331,6 +332,7 @@ function updatePhysicsSwing() {
 kiwi.addEventListener('mousedown', (e) => {
   if (e.button !== 0) return; // 只回應左鍵
   isDragging = true;
+  hasDragged = false;
   
   // 記錄初始座標用來判斷是點擊還是拖曳
   dragStartX = e.screenX;
@@ -340,42 +342,49 @@ kiwi.addEventListener('mousedown', (e) => {
   smoothedVx = 0;
   swingAngle = 0;
 
-  // 固定游標抓在奇異鳥頭頂那搓毛的位置 (X 軸中央，Y 軸頂端頭毛處)
-  const rect = kiwi.getBoundingClientRect();
-  mouseOffsetX = rect.left + (rect.width / 2);
-  mouseOffsetY = rect.top + 25;
-  
-  // 獨占 grabbed 狀態
-  currentAction = 'grabbed';
-  kiwi.classList.remove('walking');
-  const img = document.getElementById('kiwi-img');
-  if (img) {
-    img.classList.remove('kiwi-tired');
-  }
-  if (kiwiAccessory && kiwiAccessory.innerText === '💦') {
-    kiwiAccessory.style.display = 'none';
-  }
-
-  kiwi.style.transformOrigin = '50% 15%';
-  kiwi.classList.add('shock');
-  if (img && currentAction !== 'sleeping') {
-    img.src = '../../../assets/images/kiwi_dangling.png';
-  }
-
-  // 啟動物理擺動模擬動畫 loop
-  if (!swingAnimFrame) {
-    swingAnimFrame = requestAnimationFrame(updatePhysicsSwing);
-  }
-
-  // 按下當下立刻吸附對齊頭毛
-  x = e.screenX - mouseOffsetX;
-  y = e.screenY - mouseOffsetY;
-  ipcRenderer.send('window-move', x, y);
+  // 記錄游標相對於元素的點擊座標
+  mouseOffsetX = e.clientX;
+  mouseOffsetY = e.clientY;
 });
 
 // 拖曳視窗與速度感應物理擺動
 window.addEventListener('mousemove', (e) => {
-  if (isDragging || currentAction === 'grabbed') {
+  if (!isDragging) return;
+
+  const moveDist = Math.hypot(e.screenX - dragStartX, e.screenY - dragStartY);
+
+  // 移動超過 8px 時，才正式啟動抓起懸空姿態並將游標吸附對齊頭毛
+  if (moveDist > 8 && currentAction !== 'grabbed') {
+    hasDragged = true;
+    currentAction = 'grabbed';
+
+    // 固定游標抓在奇異鳥頭頂那搓毛的位置 (X 軸中央，Y 軸頂端頭毛處)
+    const rect = kiwi.getBoundingClientRect();
+    mouseOffsetX = rect.left + (rect.width / 2);
+    mouseOffsetY = rect.top + 25;
+
+    kiwi.classList.remove('walking');
+    const img = document.getElementById('kiwi-img');
+    if (img) {
+      img.classList.remove('kiwi-tired');
+    }
+    if (kiwiAccessory && kiwiAccessory.innerText === '💦') {
+      kiwiAccessory.style.display = 'none';
+    }
+
+    kiwi.style.transformOrigin = '50% 15%';
+    kiwi.classList.add('shock');
+    if (img && currentAction !== 'sleeping') {
+      img.src = '../../../assets/images/kiwi_dangling.png';
+    }
+
+    if (!swingAnimFrame) {
+      swingAnimFrame = requestAnimationFrame(updatePhysicsSwing);
+    }
+  }
+
+  // 確定進入拖曳後移動視窗
+  if (hasDragged || currentAction === 'grabbed') {
     x = e.screenX - mouseOffsetX;
     y = e.screenY - mouseOffsetY;
     ipcRenderer.send('window-move', x, y);
@@ -393,8 +402,10 @@ window.addEventListener('mousemove', (e) => {
 
 // 放開滑鼠結束拖曳
 window.addEventListener('mouseup', () => {
-  if (isDragging || currentAction === 'grabbed') {
-    isDragging = false;
+  if (!isDragging) return;
+  isDragging = false;
+
+  if (currentAction === 'grabbed') {
     currentAction = 'idle';
     kiwi.classList.remove('shock'); // 恢復正常
     
@@ -414,10 +425,13 @@ window.addEventListener('mouseup', () => {
   }
 });
 
-// 點擊奇異鳥顯示輸入框
+// 點擊奇異鳥顯示對話框 (未拖曳時 100% 觸發)
 kiwi.addEventListener('click', (e) => {
-  // 如果移動距離超過 5 像素，判定為拖曳，不顯示對話框
-  if (Math.abs(e.screenX - dragStartX) > 5 || Math.abs(e.screenY - dragStartY) > 5) return;
+  // 如果曾經觸發拖曳，跳過點擊處理
+  if (hasDragged) {
+    hasDragged = false;
+    return;
+  }
 
   // 點擊時開心地跳躍
   kiwi.classList.add('jumping');
@@ -425,7 +439,7 @@ kiwi.addEventListener('click', (e) => {
 
   // 顯示輸入框並自動 Focus
   chatInput.style.display = 'block';
-      if(typeof chatEscHint !== 'undefined') chatEscHint.style.display = 'block';
+  if (typeof chatEscHint !== 'undefined') chatEscHint.style.display = 'block';
   chatBubble.style.display = 'none';
   chatInput.focus();
 });
