@@ -84,6 +84,15 @@ function initUI() {
     document.getElementById('custom-personality-group').style.display = 'none';
   }
   
+  // 動態讀取 package.json 的當前版本，避免 HTML 寫死
+  try {
+    const pkg = require('../../../package.json');
+    const aboutVerEl = document.getElementById('about-app-version');
+    if (aboutVerEl && pkg && pkg.version) {
+      aboutVerEl.innerText = `v${pkg.version}`;
+    }
+  } catch(e) {}
+
   updateLabels();
   updateBedEditUI();
   setDirty(false);
