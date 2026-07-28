@@ -22,12 +22,17 @@ const menuSettings = document.getElementById('menu-settings');
 
 const kiwiOutfit = document.getElementById('kiwi-outfit');
 const kiwiBed = document.getElementById('kiwi-bed');
-const outfits = ['', '🎩', '🕶️', '🎀', '👑'];
+const outfits = ['', '🎩', '🕶️', '🎀', '👑', '🌸', '🎓', '🎃', '🎉', '🥽'];
 const defaultOutfitConfigs = {
   '🎩': { x: 62, y: -31, scale: 60 },
   '🕶️': { x: 76, y: 17, scale: 51 },
-  '🎀': { x: 78, y: 70, scale: 40 },
-  '👑': { x: 59, y: -38, scale: 60 }
+  '🎀': { x: 79, y: 75, scale: 40 },
+  '👑': { x: 59, y: -38, scale: 60 },
+  '🌸': { x: 80, y: -18, scale: 20 },
+  '🎓': { x: 60, y: -34, scale: 60 },
+  '🎃': { x: 60, y: -32, scale: 44 },
+  '🎉': { x: 60, y: -35, scale: 55 },
+  '🥽': { x: 76, y: 15, scale: 45 }
 };
 
 let isOutfitEditMode = false;
