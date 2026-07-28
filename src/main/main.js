@@ -187,6 +187,7 @@ app.whenReady().then(() => {
     });
     todoWin.setMenu(null);
     todoWin.loadFile(path.join(__dirname, '../views/todo/todo.html'));
+    todoWin.on('closed', () => { todoWin = null; });
   });
 
   ipcMain.on('open-outfit', () => {

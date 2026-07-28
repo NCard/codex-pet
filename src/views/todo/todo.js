@@ -114,6 +114,14 @@ function renderTodos() {
     checkbox.type = 'checkbox';
     checkbox.className = 'todo-checkbox';
     checkbox.checked = todo.done;
+
+    const contentDiv = document.createElement('div');
+    contentDiv.className = 'todo-content';
+
+    const textDiv = document.createElement('div');
+    textDiv.className = 'todo-text';
+    textDiv.textContent = todo.text;
+
     const metaDiv = document.createElement('div');
     metaDiv.className = 'todo-meta';
     
