@@ -45,6 +45,18 @@
 
 ---
 
+## 📥 下載與安裝說明 (Installation Notice)
+
+您可以直接前往 [GitHub Releases](https://github.com/NCard/codex-pet/releases) 下載最新的 Windows 安裝檔 (`Wiki-Wiki-Setup-x.x.x.exe`)。
+
+> [!NOTE]
+> **🛡️ Windows SmartScreen 安全防護提示：**
+> 本軟體為免費個人開源專案，未購買高額商業數位憑證。若雙擊 `.exe` 安裝檔時 Windows 跳出「**Windows 已經保護您的電腦 (未知發行者)**」藍色警告畫面：
+> 1. 請點擊畫面上的 **「更多資訊 (More info)」**
+> 2. 點擊下方出現的 **「仍要執行 (Run anyway)」** 即可正常安裝與開啟！
+
+---
+
 ## 🚀 如何啟動
 
 1. 開啟終端機並確保位於專案資料夾 (例如 `cd codex-pet`)。
