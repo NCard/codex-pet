@@ -217,6 +217,69 @@ app.whenReady().then(() => {
   ipcMain.on('update-outfit', (event, data) => {
     if (mainWindow) mainWindow.webContents.send('update-outfit', data);
   });
+
+  ipcMain.on('get-cursor-pos', (event) => {
+    event.returnValue = screen.getCursorScreenPoint();
+  });
+
+  let laserOverlayWindows = [];
+
+  function createLaserOverlayWindows() {
+    closeLaserOverlayWindows();
+    const displays = screen.getAllDisplays();
+
+    laserOverlayWindows = displays.map((display) => {
+      const win = new BrowserWindow({
+        width: display.bounds.width,
+        height: display.bounds.height,
+        x: display.bounds.x,
+        y: display.bounds.y,
+        transparent: true,
+        frame: false,
+        alwaysOnTop: true,
+        skipTaskbar: true,
+        resizable: false,
+        focusable: false,
+        webPreferences: {
+          nodeIntegration: true,
+          contextIsolation: false
+        }
+      });
+
+      win.setIgnoreMouseEvents(true, { forward: true });
+      win.setAlwaysOnTop(true, 'screen-saver');
+      win.loadFile(path.join(__dirname, '../views/main/laser_overlay.html'));
+      return win;
+    });
+  }
+
+  function closeLaserOverlayWindows() {
+    laserOverlayWindows.forEach(win => {
+      try {
+        if (win && !win.isDestroyed()) win.close();
+      } catch(e) {}
+    });
+    laserOverlayWindows = [];
+  }
+
+  ipcMain.on('toggle-laser-overlay', (event, enable) => {
+    if (enable) {
+      createLaserOverlayWindows();
+    } else {
+      closeLaserOverlayWindows();
+    }
+  });
+
+  // 動態監聽螢幕插拔與解析度改變，自動重構多螢幕 Overlay 視窗
+  screen.on('display-added', () => {
+    if (laserOverlayWindows.length > 0) createLaserOverlayWindows();
+  });
+  screen.on('display-removed', () => {
+    if (laserOverlayWindows.length > 0) createLaserOverlayWindows();
+  });
+  screen.on('display-metrics-changed', () => {
+    if (laserOverlayWindows.length > 0) createLaserOverlayWindows();
+  });
   
   ipcMain.on('update-outfit-pos', (event, data) => {
     if (mainWindow) mainWindow.webContents.send('update-outfit-pos', data);

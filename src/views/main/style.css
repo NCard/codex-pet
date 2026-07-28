@@ -333,3 +333,30 @@ body, html {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.03) translateY(-2px); }
 }
+
+/* 雷射筆遊戲專用動畫與光點效果 */
+@keyframes laserPulse {
+  0% { transform: translate(-50%, -50%) scale(0.85); box-shadow: 0 0 8px #ff1744, 0 0 16px #ff1744; }
+  100% { transform: translate(-50%, -50%) scale(1.25); box-shadow: 0 0 16px #ff1744, 0 0 32px #ff5252, 0 0 45px #ff80ab; }
+}
+
+.kiwi-chasing {
+  animation: walk calc(0.35s / var(--anim-speed, 1)) infinite linear !important;
+}
+
+@keyframes fast-chase {
+  0% { transform: translateY(0) scaleX(1); }
+  100% { transform: translateY(-8px) scaleX(1.04); }
+}
+
+.kiwi-pouncing {
+  animation: pounce-jump 0.4s ease-out !important;
+}
+
+@keyframes pounce-jump {
+  0% { transform: translateY(0) scale(1); }
+  40% { transform: translateY(-22px) scale(1.15, 0.88) rotate(-10deg); }
+  70% { transform: translateY(5px) scale(0.92, 1.08); }
+  100% { transform: translateY(0) scale(1); }
+}
+

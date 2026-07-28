@@ -17,8 +17,10 @@ const menuAlarm = document.getElementById('menu-alarm');
 const menuTodo = document.getElementById('menu-todo');
 const menuFeed = document.getElementById('menu-feed');
 const menuPet = document.getElementById('menu-pet');
+const menuLaser = document.getElementById('menu-laser');
 const menuOutfit = document.getElementById('menu-outfit');
 const menuSettings = document.getElementById('menu-settings');
+const laserDot = document.getElementById('laser-dot');
 
 const kiwiOutfit = document.getElementById('kiwi-outfit');
 const kiwiBed = document.getElementById('kiwi-bed');
@@ -467,7 +469,7 @@ chatInput.addEventListener('keydown', async (e) => {
     const text = chatInput.value;
     if (text.startsWith('/')) {
       e.preventDefault(); // 防止失去焦點
-      const commands = ['/help', '/md5', '/base64', '/uuid', '/calc', '/pomodoro', '/todo', '/clear'];
+      const commands = ['/help', '/laser', '/md5', '/base64', '/uuid', '/calc', '/pomodoro', '/todo', '/clear'];
       const match = commands.find(c => c.startsWith(text));
       if (match) {
         chatInput.value = match + ' ';
@@ -513,6 +515,7 @@ chatInput.addEventListener('keydown', async (e) => {
       if (cmd === '/help') {
         reply = 'Wiki Wiki 指令模式喵！<br>' +
                 '<b>/help</b> : 顯示這個說明<br>' +
+                '<b>/laser</b> : 開啟/關閉雷射筆追逐遊戲 🔴<br>' +
                 '<b>/md5 [字串]</b> : 轉成 md5 32碼<br>' +
                 '<b>/base64 [encode/decode] [字串]</b> : base64 轉換<br>' +
                 '<b>/uuid</b> : 產生隨機 UUID<br>' +
@@ -520,6 +523,10 @@ chatInput.addEventListener('keydown', async (e) => {
                 '<b>/pomodoro [分鐘]</b> : 啟動番茄鐘 (預設25分)<br>' +
                 '<b>/todo [事項]</b> : 新增待辦事項<br>' +
                 '<b>/clear</b> : 清除歷史對話紀錄';
+      } else if (cmd === '/laser') {
+        toggleLaserGame();
+        chatInput.disabled = false;
+        return;
       } else if (cmd === '/md5') {
         // 如果前後有雙引號，則去除
         if (argStr.startsWith('"') && argStr.endsWith('"')) {
@@ -987,7 +994,6 @@ window.addEventListener('mousemove', (e) => {
     
     activeDraggingElement.style.left = `${newLeft}px`;
     activeDraggingElement.style.top = `${newTop}px`;
-    
     ipcRenderer.send('outfit-pos-updated', { outfit: activeDraggingOutfit, x: newLeft, y: newTop });
   } else if (isDraggingBed) {
     const flip = parseInt(document.getElementById('kiwi-wrapper').style.getPropertyValue('--flip')) || 1;
@@ -1084,6 +1090,296 @@ menuAlarm.addEventListener('click', () => {
 menuClose.addEventListener('click', () => {
   customMenu.style.display = 'none';
   ipcRenderer.send('request-close-confirm');
+});
+
+// --- 雷射筆追逐小遊戲 (Laser Pointer Chase Game - 全螢幕全域 60fps 平滑追逐) ---
+let isLaserGameActive = false;
+let laserTimeoutTimer = null;
+let laserAnimFrame = null;
+let laserScore = 0;
+let lastPounceTime = 0;
+let lastGlobalMouseX = 0;
+let lastGlobalMouseY = 0;
+
+let isGameJustStarted = false;
+let openingMouseX = 0;
+let openingMouseY = 0;
+let startMoveTime = 0;
+
+let isWaitingMouseLeave = false;
+let pouncedMouseX = 0;
+let pouncedMouseY = 0;
+let isJumpingBeforeRechase = false;
+
+function resetLaserTimeout() {
+  clearTimeout(laserTimeoutTimer);
+  if (!isLaserGameActive) return;
+  // 滑鼠連續 30 秒無移動時自動結束雷射遊戲 (防止干擾工作)
+  laserTimeoutTimer = setTimeout(() => {
+    if (isLaserGameActive) {
+      toggleLaserGame(false);
+      showTempBubble('🔴 雷射筆已逾時自動關閉囉！');
+    }
+  }, 30000);
+}
+
+function updateLaserPhysicsLoop() {
+  if (!isLaserGameActive) return;
+
+  try {
+    // 抓取全螢幕全域滑鼠座標 (跨螢幕、超越單一 Electron 視窗範圍)
+    const globalMouse = ipcRenderer.sendSync('get-cursor-pos');
+    if (globalMouse && typeof globalMouse.x === 'number' && typeof globalMouse.y === 'number') {
+      
+      if (globalMouse.x !== lastGlobalMouseX || globalMouse.y !== lastGlobalMouseY) {
+        lastGlobalMouseX = globalMouse.x;
+        lastGlobalMouseY = globalMouse.y;
+        resetLaserTimeout();
+      }
+
+      const currentPos = getRealWindowPos();
+      const now = Date.now();
+
+      if (currentAction !== 'sleeping' && currentAction !== 'grabbed' && !isDragging) {
+        
+        // 1. 🛡️ 開場對話階段 (isGameJustStarted)
+        // 剛開啟時絕對不觸發抓取與移動，讓使用者看清對話。直到滑鼠拉開 70px 且滿 3 秒後才跳躍出發！
+        if (isGameJustStarted) {
+          const distFromStart = Math.hypot(globalMouse.x - openingMouseX, globalMouse.y - openingMouseY);
+          
+          if (distFromStart < 70) {
+            // 滑鼠尚未拉開，重置計時器，在原地面向滑鼠
+            startMoveTime = 0;
+          } else {
+            // 滑鼠已拉開 70px，開始計算 3 秒倒數
+            if (!startMoveTime) startMoveTime = now;
+
+            if (now - startMoveTime >= 3000) {
+              // 滿 3 秒囉！跳一下冒愛心，正式開啟遊戲！
+              isGameJustStarted = false;
+              startMoveTime = 0;
+              isJumpingBeforeRechase = true;
+
+              kiwi.classList.add('jumping');
+              const heart = document.getElementById('kiwi-heart');
+              if (heart) {
+                heart.style.display = 'block';
+                heart.style.animation = 'none';
+                heart.offsetHeight;
+                heart.style.animation = 'floatHeart 1s ease-out forwards';
+                setTimeout(() => { heart.style.display = 'none'; }, 1000);
+              }
+
+              setTimeout(() => {
+                kiwi.classList.remove('jumping');
+                isJumpingBeforeRechase = false;
+              }, 500);
+            }
+          }
+
+          // 原地面向滑鼠
+          const kiwiRect = kiwi.getBoundingClientRect();
+          const kiwiCenterX = currentPos.x + kiwiRect.left + kiwiRect.width / 2;
+          const direction = (globalMouse.x - kiwiCenterX) < 0 ? -1 : 1;
+          document.getElementById('kiwi-wrapper').style.setProperty('--flip', direction);
+          kiwi.classList.remove('kiwi-chasing', 'walking');
+
+          laserAnimFrame = requestAnimationFrame(updateLaserPhysicsLoop);
+          return;
+        }
+
+        // 2. 🎯 撲倒抓到後的休息階段 (isWaitingMouseLeave)
+        // 抓到後停在原地，當滑鼠拉開 > 70px 時立即跳躍冒愛心重新追擊
+        if (isWaitingMouseLeave) {
+          const mouseDistFromPounce = Math.hypot(globalMouse.x - pouncedMouseX, globalMouse.y - pouncedMouseY);
+          if (mouseDistFromPounce < 70) {
+            kiwi.classList.remove('kiwi-chasing', 'walking');
+            laserAnimFrame = requestAnimationFrame(updateLaserPhysicsLoop);
+            return;
+          } else {
+            isWaitingMouseLeave = false;
+            isJumpingBeforeRechase = true;
+
+            kiwi.classList.add('jumping');
+            const heart = document.getElementById('kiwi-heart');
+            if (heart) {
+              heart.style.display = 'block';
+              heart.style.animation = 'none';
+              heart.offsetHeight;
+              heart.style.animation = 'floatHeart 1s ease-out forwards';
+              setTimeout(() => { heart.style.display = 'none'; }, 1000);
+            }
+
+            setTimeout(() => {
+              kiwi.classList.remove('jumping');
+              isJumpingBeforeRechase = false;
+            }, 500);
+          }
+        }
+
+        // 3. 若正處於重新出發的跳躍動畫中，先暫停移動
+        if (isJumpingBeforeRechase) {
+          laserAnimFrame = requestAnimationFrame(updateLaserPhysicsLoop);
+          return;
+        }
+
+        // 4. 正常追逐與抓取判定
+        const kiwiRect = kiwi.getBoundingClientRect();
+        const kiwiCenterX = currentPos.x + kiwiRect.left + kiwiRect.width / 2;
+        const kiwiCenterY = currentPos.y + kiwiRect.top + kiwiRect.height / 2;
+
+        const dx = globalMouse.x - kiwiCenterX;
+        const dy = globalMouse.y - kiwiCenterY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        // 翻轉面向雷射點
+        const direction = dx < 0 ? -1 : 1;
+        document.getElementById('kiwi-wrapper').style.setProperty('--flip', direction);
+
+        // 觸發撲倒抓取判定 (距離小於 55px 且冷卻 > 800ms)
+        if (distance < 55 && now - lastPounceTime > 800) {
+          lastPounceTime = now;
+          laserScore++;
+
+          // 標記抓到狀態，紀錄當前抓取座標
+          isWaitingMouseLeave = true;
+          pouncedMouseX = globalMouse.x;
+          pouncedMouseY = globalMouse.y;
+
+          kiwi.classList.remove('kiwi-chasing', 'walking');
+          kiwi.classList.add('kiwi-pouncing');
+
+          showTempBubble(`🎯 抓到了！嘿嘿，我已經抓到 ${laserScore} 次囉！`);
+
+          setTimeout(() => {
+            kiwi.classList.remove('kiwi-pouncing');
+          }, 450);
+        } else if (distance >= 55 && !kiwi.classList.contains('kiwi-pouncing')) {
+          // 60fps 平滑萌寵小跑 (搖擺搖晃腳步動畫 + 線性插值平滑移動)
+          kiwi.classList.add('kiwi-chasing', 'walking');
+          currentAction = 'chasing';
+
+          // 正確計算奇異鳥身體中心的視窗偏移量 (將奇異鳥頭/嘴巴精確對準雷射紅點)
+          const kiwiCenterOffsetX = kiwiRect.left + kiwiRect.width / 2;
+          const kiwiCenterOffsetY = kiwiRect.top + kiwiRect.height / 2;
+
+          const targetX = globalMouse.x - kiwiCenterOffsetX;
+          const targetY = globalMouse.y - kiwiCenterOffsetY;
+
+          let diffX = (targetX - currentPos.x) * 0.04;
+          let diffY = (targetY - currentPos.y) * 0.04;
+
+          // 限速保護 (最高每幀移動 4.5px)，呈現輕快悠閒的萌萌腳步
+          const maxSpeed = 4.5;
+          const moveDist = Math.sqrt(diffX * diffX + diffY * diffY);
+          if (moveDist > maxSpeed) {
+            diffX = (diffX / moveDist) * maxSpeed;
+            diffY = (diffY / moveDist) * maxSpeed;
+          }
+
+          const smoothX = Math.round(currentPos.x + diffX);
+          const smoothY = Math.round(currentPos.y + diffY);
+
+          if (smoothX !== currentPos.x || smoothY !== currentPos.y) {
+            ipcRenderer.send('window-move', smoothX, smoothY);
+            x = smoothX;
+            y = smoothY;
+          }
+        } else if (distance < 55) {
+          kiwi.classList.remove('kiwi-chasing', 'walking');
+        }
+      }
+    }
+  } catch(e) {}
+
+  laserAnimFrame = requestAnimationFrame(updateLaserPhysicsLoop);
+}
+
+function toggleLaserGame(enable) {
+  if (typeof enable === 'boolean') {
+    isLaserGameActive = enable;
+  } else {
+    isLaserGameActive = !isLaserGameActive;
+  }
+
+  customMenu.style.display = 'none';
+
+  if (isLaserGameActive) {
+    laserScore = 0;
+    currentAction = 'laser';
+    kiwi.classList.remove('walking');
+
+    // 初始化開場狀態
+    isGameJustStarted = true;
+    startMoveTime = 0;
+    isWaitingMouseLeave = false;
+    isJumpingBeforeRechase = false;
+
+    const globalMouse = ipcRenderer.sendSync('get-cursor-pos');
+    openingMouseX = globalMouse ? globalMouse.x : 0;
+    openingMouseY = globalMouse ? globalMouse.y : 0;
+
+    if (laserDot) laserDot.style.display = 'none';
+    ipcRenderer.send('toggle-laser-overlay', true);
+    showTempBubble('🔴 哇！是紅點耶！！快動動滑鼠讓我抓！ (按 ESC / 右鍵 / 雙擊結束)');
+    resetLaserTimeout();
+    if (laserAnimFrame) cancelAnimationFrame(laserAnimFrame);
+    laserAnimFrame = requestAnimationFrame(updateLaserPhysicsLoop);
+  } else {
+    if (laserDot) laserDot.style.display = 'none';
+    ipcRenderer.send('toggle-laser-overlay', false);
+    clearTimeout(laserTimeoutTimer);
+    if (laserAnimFrame) {
+      cancelAnimationFrame(laserAnimFrame);
+      laserAnimFrame = null;
+    }
+    kiwi.classList.remove('kiwi-chasing', 'kiwi-pouncing', 'walking', 'jumping');
+    currentAction = 'idle';
+
+    const kiwiImg = document.getElementById('kiwi-img');
+
+    if (laserScore === 0) {
+      // 0 次結束：哭哭難過
+      if (kiwiImg && currentAction !== 'sleeping') {
+        kiwiImg.src = '../../../assets/images/kiwi_tired.png';
+        setTimeout(() => {
+          if (currentAction !== 'sleeping') kiwiImg.src = '../../../assets/images/kiwi.png';
+        }, 3000);
+      }
+      showTempBubble('😭 嗚嗚... 一次都沒抓到紅點... 好可惜喔！');
+    } else {
+      // 1 次以上結束：開心蹦跳
+      kiwi.classList.add('jumping');
+      setTimeout(() => { kiwi.classList.remove('jumping'); }, 600);
+      showTempBubble(`🎉 嘿嘿！今天成功抓到了 ${laserScore} 次紅點！太開心啦！`);
+    }
+  }
+}
+
+if (menuLaser) {
+  menuLaser.addEventListener('click', () => {
+    toggleLaserGame();
+  });
+}
+
+// 快捷退出機制：ESC 鍵、右鍵點擊、雙擊滑鼠
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && isLaserGameActive) {
+    toggleLaserGame(false);
+  }
+});
+
+window.addEventListener('contextmenu', (e) => {
+  if (isLaserGameActive) {
+    e.preventDefault();
+    toggleLaserGame(false);
+  }
+});
+
+window.addEventListener('dblclick', () => {
+  if (isLaserGameActive) {
+    toggleLaserGame(false);
+  }
 });
 
 // 簡單的隨機移動邏輯 (在桌面範圍內隨機移動視窗)
@@ -1211,8 +1507,8 @@ setInterval(() => {
 
 // 每隔一段時間隨機走動
 setInterval(() => {
-  // 只有在 idle 狀態才能決定是否走動
-  if (currentAction !== 'idle' || kiwi.classList.contains('sleeping') || isWorking) return;
+  // 只有在 idle 狀態且未開啟雷射筆時才能決定是否走動
+  if (isLaserGameActive || currentAction !== 'idle' || kiwi.classList.contains('sleeping') || isWorking) return;
   if (chatBubble.style.display === 'block' || chatInput.style.display === 'block') return;
 
   // 40% 機率決定走動
