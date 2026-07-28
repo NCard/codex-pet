@@ -7,12 +7,44 @@
 </head>
 <body>
   <div class="header">
-    <h1>📜 Wiki Wiki 的回憶錄</h1>
-    <p>這裡記錄了我們之間所有的點點滴滴！</p>
-    <button id="clear-history-btn" style="padding: 6px 12px; cursor: pointer; background: #ff5252; color: white; border: none; border-radius: 5px; font-weight: bold; margin-top: 5px;">🧹 清空紀錄</button>
+    <div class="header-top">
+      <h1>📜 Wiki Wiki 的回憶錄</h1>
+      <div class="header-btns">
+        <button id="toggle-search-btn" class="icon-btn" title="展開/收合搜尋列">
+          🔍 <span id="search-active-dot" class="active-dot" style="display: none;">●</span>
+        </button>
+        <button id="clear-history-btn" class="icon-btn danger" title="清空對話紀錄">🧹</button>
+      </div>
+    </div>
+    <p class="subtitle">這裡記錄了我們之間所有的點點滴滴！</p>
+    
+    <!-- 搜尋與日期篩選工具列 (預設收起 collapsed) -->
+    <div id="search-box" class="search-box collapsed">
+      <div class="search-inputs">
+        <div class="input-wrapper keyword-wrapper">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="keyword-input" placeholder="搜尋對話關鍵字 (模糊查詢)...">
+          <button id="clear-keyword-btn" class="clear-btn" style="display: none;">✕</button>
+        </div>
+        <div class="input-wrapper date-wrapper">
+          <span class="date-icon">📅</span>
+          <select id="date-select" class="date-select" title="選擇有紀錄的日期">
+            <option value="">所有日期</option>
+          </select>
+        </div>
+        <button id="reset-filter-btn" title="重設篩選條件">🔄 重設</button>
+      </div>
+      <div id="filter-status" class="filter-status"></div>
+    </div>
   </div>
+
+  <!-- LINE 風格滾動浮動日期標籤 (定位在 Header 下方) -->
+  <div id="floating-date-pill" class="floating-date-pill">
+    <span id="floating-date-text">📅 2026 年 7 月 28 日</span>
+  </div>
+
   <div id="history-container">
-    <!-- Chat history will be loaded here -->
+    <!-- Chat history with LINE style date dividers will be loaded here -->
   </div>
   <button id="scroll-bottom-btn" title="回到最下方">⬇️</button>
   <script src="history.js"></script>
