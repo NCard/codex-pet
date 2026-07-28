@@ -27,9 +27,10 @@ body, html {
 }
 
 #kiwi-sprite-wrapper {
-  /* 待機呼吸動畫 */
+  /* 待機呼吸動畫與抓取擺動支點 */
   animation: breathe calc(3s / var(--anim-speed, 1)) infinite ease-in-out;
   cursor: grab;
+  transform-origin: 50% 15%;
 }
 
 #kiwi-sprite-wrapper:active {
@@ -324,9 +325,8 @@ body, html {
   animation: sleep-breathe calc(4s / var(--anim-speed, 1)) infinite ease-in-out !important;
 }
 .shock {
-  /* 被抓起來時縮小 */
-  transform: scaleX(var(--flip)) scale(0.8) translateY(-10px) !important;
-  transition: transform 0.1s ease;
+  /* 抓住懸空時暫停其它動畫，保持原比例不縮小 */
+  animation: none !important;
 }
 
 @keyframes sleep-breathe {

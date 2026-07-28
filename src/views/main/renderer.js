@@ -284,35 +284,134 @@ function showAlarmBubble(alarm) {
 let isDragging = false;
 let mouseOffsetX, mouseOffsetY;
 let dragStartX, dragStartY;
+let lastDragX = 0;
+let lastDragTime = 0;
+let smoothedVx = 0;
+let swingAngle = 0;
+let swingAnimFrame = null;
+
+// 60fps 低通濾波+彈簧柔和單擺物理模擬
+function updatePhysicsSwing() {
+  const kiwiWrapper = document.getElementById('kiwi-wrapper');
+  const flip = (kiwiWrapper && parseInt(kiwiWrapper.style.getPropertyValue('--flip')) === -1) ? -1 : 1;
+
+  if (isDragging || currentAction === 'grabbed') {
+    // 自然衰減即時速度
+    smoothedVx *= 0.88;
+
+    // 採用非線性響應公式：大幅提升小距離快速晃動時的靈敏度與擺動幅度
+    const absVx = Math.abs(smoothedVx);
+    const rawAngle = Math.sign(smoothedVx) * Math.pow(absVx, 0.85) * 0.22;
+    const targetAngle = Math.max(-30, Math.min(30, rawAngle));
+
+    // 彈簧跟隨插值
+    swingAngle += (targetAngle - swingAngle) * 0.22;
+
+    const renderAngle = (swingAngle * flip).toFixed(2);
+    kiwi.style.transform = `rotate(${renderAngle}deg)`;
+    swingAnimFrame = requestAnimationFrame(updatePhysicsSwing);
+  } else {
+    // 釋放狀態：柔和緩動回歸正中 (0deg)
+    smoothedVx = 0;
+    swingAngle += (0 - swingAngle) * 0.22;
+
+    if (Math.abs(swingAngle) < 0.05) {
+      swingAngle = 0;
+      kiwi.style.transform = 'rotate(0deg)';
+      swingAnimFrame = null;
+      return;
+    }
+    const renderAngle = (swingAngle * flip).toFixed(2);
+    kiwi.style.transform = `rotate(${renderAngle}deg)`;
+    swingAnimFrame = requestAnimationFrame(updatePhysicsSwing);
+  }
+}
 
 // 記錄滑鼠按下時的位置，準備拖曳
 kiwi.addEventListener('mousedown', (e) => {
   if (e.button !== 0) return; // 只回應左鍵
   isDragging = true;
-  // 記錄游標在視窗內的相對位置 (避免使用 window.screenX，因在 RDP 或多螢幕時常有座標回報錯誤的 Bug)
-  mouseOffsetX = e.clientX;
-  mouseOffsetY = e.clientY;
+  
   // 記錄初始座標用來判斷是點擊還是拖曳
   dragStartX = e.screenX;
   dragStartY = e.screenY;
+  lastDragX = e.screenX;
+  lastDragTime = performance.now();
+  smoothedVx = 0;
+  swingAngle = 0;
+
+  // 固定游標抓在奇異鳥頭頂那搓毛的位置 (X 軸中央，Y 軸頂端頭毛處)
+  const rect = kiwi.getBoundingClientRect();
+  mouseOffsetX = rect.left + (rect.width / 2);
+  mouseOffsetY = rect.top + 25;
   
-  // 被抓起來時觸發驚嚇動作
+  // 獨占 grabbed 狀態
+  currentAction = 'grabbed';
+  kiwi.classList.remove('walking');
+  const img = document.getElementById('kiwi-img');
+  if (img) {
+    img.classList.remove('kiwi-tired');
+  }
+  if (kiwiAccessory && kiwiAccessory.innerText === '💦') {
+    kiwiAccessory.style.display = 'none';
+  }
+
+  kiwi.style.transformOrigin = '50% 15%';
   kiwi.classList.add('shock');
+  if (img && currentAction !== 'sleeping') {
+    img.src = '../../../assets/images/kiwi_dangling.png';
+  }
+
+  // 啟動物理擺動模擬動畫 loop
+  if (!swingAnimFrame) {
+    swingAnimFrame = requestAnimationFrame(updatePhysicsSwing);
+  }
+
+  // 按下當下立刻吸附對齊頭毛
+  x = e.screenX - mouseOffsetX;
+  y = e.screenY - mouseOffsetY;
+  ipcRenderer.send('window-move', x, y);
 });
 
-// 拖曳視窗
+// 拖曳視窗與速度感應物理擺動
 window.addEventListener('mousemove', (e) => {
-  if (isDragging) {
+  if (isDragging || currentAction === 'grabbed') {
     x = e.screenX - mouseOffsetX;
     y = e.screenY - mouseOffsetY;
     ipcRenderer.send('window-move', x, y);
+
+    // 低通濾波器：保留高頻小幅度動作的靈敏度
+    const now = performance.now();
+    const dt = Math.max(0.008, (now - lastDragTime) / 1000);
+    const rawVx = (e.screenX - lastDragX) / dt;
+    lastDragX = e.screenX;
+    lastDragTime = now;
+
+    smoothedVx += (rawVx - smoothedVx) * 0.45;
   }
 });
 
 // 放開滑鼠結束拖曳
 window.addEventListener('mouseup', () => {
-  isDragging = false;
-  kiwi.classList.remove('shock'); // 恢復正常
+  if (isDragging || currentAction === 'grabbed') {
+    isDragging = false;
+    currentAction = 'idle';
+    kiwi.classList.remove('shock'); // 恢復正常
+    
+    // 如果物理 Loop 未運行，啟動餘震擺平
+    if (!swingAnimFrame) {
+      swingAnimFrame = requestAnimationFrame(updatePhysicsSwing);
+    }
+
+    const kiwiImg = document.getElementById('kiwi-img');
+    if (kiwiImg && currentAction !== 'sleeping') {
+      if (petState.hunger <= 20) {
+        kiwiImg.src = '../../../assets/images/kiwi_tired.png';
+      } else {
+        kiwiImg.src = '../../../assets/images/kiwi.png';
+      }
+    }
+  }
 });
 
 // 點擊奇異鳥顯示輸入框
@@ -1198,14 +1297,14 @@ setInterval(() => {
   petState.hunger = Math.max(0, petState.hunger - 1);
   petState.mood = Math.max(0, petState.mood - 1);
 
-  const isSleepingState = currentAction === 'sleeping' || kiwi.classList.contains('sleeping');
+  const isExcludedState = currentAction === 'sleeping' || kiwi.classList.contains('sleeping') || currentAction === 'grabbed' || isDragging;
 
   if (usage > 70) {
-    if (!isWorking && kiwiAccessory.style.display === 'none') {
+    if (!isWorking && kiwiAccessory.style.display === 'none' && !isExcludedState) {
       kiwiAccessory.innerText = '💦';
       kiwiAccessory.style.display = 'block';
     }
-    if (!isSleepingState) {
+    if (!isExcludedState) {
       const img = document.getElementById('kiwi-img');
       if (!img.src.includes('kiwi_tired.png')) {
         img.src = '../../../assets/images/kiwi_tired.png';
@@ -1216,7 +1315,7 @@ setInterval(() => {
     if (!isWorking && kiwiAccessory.innerText === '💦') {
       kiwiAccessory.style.display = 'none';
     }
-    if (!isSleepingState) {
+    if (!isExcludedState) {
       const img = document.getElementById('kiwi-img');
       if (!img.src.includes('kiwi_sleep.png') && img.src.includes('kiwi_tired.png')) {
         img.src = '../../../assets/images/kiwi.png';
