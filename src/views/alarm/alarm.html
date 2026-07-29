@@ -3,11 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <title>Wiki Wiki 鬧鐘排程</title>
+  <link rel="stylesheet" href="../common/theme.css">
   <link rel="stylesheet" href="alarm.css">
 </head>
 <body>
   <div class="header">
-    <h1>⏰ 鬧鐘排程</h1>
+    <h1><i class="theme-icon icon-alarm"></i> 鬧鐘排程</h1>
     <p>設定時間，時間到了我會叫你喔！</p>
   </div>
   
@@ -35,22 +36,25 @@
 
     <div class="input-group" style="margin-top: 10px;">
       <div style="display: flex; align-items: center; gap: 5px;">
-        <select id="alarm-hour" style="padding: 8px; border: 1px solid #ccc; border-radius: 5px;"></select>
+        <select id="alarm-hour" style="padding: 8px; border: 1px solid #c5e1a5; border-radius: 12px; outline: none;"></select>
         <span>:</span>
-        <select id="alarm-minute" style="padding: 8px; border: 1px solid #ccc; border-radius: 5px;"></select>
+        <select id="alarm-minute" style="padding: 8px; border: 1px solid #c5e1a5; border-radius: 12px; outline: none;"></select>
       </div>
       <input type="text" id="alarm-message" placeholder="例如：下班囉！記得打卡！" required>
     </div>
     <div class="input-group" style="margin-top: 10px;">
-      <label for="alarm-snooze" style="font-size: 14px; font-weight: bold; color: #555;">貪睡間隔 (分鐘):</label>
-      <input type="number" id="alarm-snooze" value="5" min="1" max="60" style="width: 60px; padding: 5px; border: 1px solid #ccc; border-radius: 5px;">
-      <button id="add-alarm-btn" style="flex: 1;">➕ 新增提醒</button>
+      <label for="alarm-snooze" style="font-size: 13px; font-weight: bold; color: var(--theme-text-sub);">貪睡間隔 (分鐘):</label>
+      <input type="number" id="alarm-snooze" value="5" min="1" max="60" style="width: 60px; padding: 6px 8px; border: 1.5px solid #c5e1a5; border-radius: 10px; outline: none;">
+      <button id="add-alarm-btn" style="flex: 1;"><i class="theme-icon icon-add"></i> 新增提醒</button>
     </div>
   </div>
 
   <div id="alarm-list">
     <!-- Alarms will be generated here -->
   </div>
+
+  <!-- 底部精緻草地花邊裝飾 -->
+  <div class="bottom-grass-accent"></div>
 
   <script src="alarm.js"></script>
 </body>

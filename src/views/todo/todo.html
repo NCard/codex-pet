@@ -3,11 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <title>Wiki Wiki 待辦事項</title>
+  <link rel="stylesheet" href="../common/theme.css">
   <link rel="stylesheet" href="todo.css">
 </head>
 <body>
   <div class="header">
-    <h1>📋 待辦事項小秘書</h1>
+    <h1><i class="theme-icon icon-todo"></i> 待辦事項小秘書</h1>
     <p>記下該做的事，還能串聯提醒喔！</p>
   </div>
   
@@ -16,21 +17,21 @@
       <textarea id="todo-text" placeholder="例如：明天早上 9 點開會 (可按 Shift+Enter 換行)" rows="2" required></textarea>
     </div>
     <div class="input-group" style="margin-top: 10px; align-items: flex-start; flex-direction: column; width: 100%;">
-      <label style="font-size: 14px; font-weight: bold; color: #555; cursor: pointer;">
-        <input type="checkbox" id="todo-has-alarm"> 加上提醒 (建立鬧鐘)
+      <label style="font-size: 13px; font-weight: bold; color: var(--theme-text-sub); cursor: pointer; display: flex; align-items: center; gap: 6px;">
+        <input type="checkbox" id="todo-has-alarm"> <span><i class="theme-icon icon-bell" style="width: 16px; height: 16px;"></i> 加上提醒 (建立鬧鐘)</span>
       </label>
       
-      <div id="todo-alarm-settings" style="display: none; flex-direction: column; gap: 8px; width: 100%; background: #f9f9f9; padding: 10px; border-radius: 5px; border: 1px solid #eee;">
-        <div style="display: flex; gap: 10px;">
+      <div id="todo-alarm-settings" style="display: none; flex-direction: column; gap: 8px; width: 100%; background: #ffffff; padding: 12px; border-radius: 14px; border: 1px solid #c5e1a5; box-shadow: 0 4px 12px rgba(0,0,0,0.03); margin-top: 8px;">
+        <div style="display: flex; gap: 15px;">
           <label><input type="radio" name="todo-alarm-type" value="date" checked> 📅 日期</label>
           <label><input type="radio" name="todo-alarm-type" value="weekly"> 🔁 每週</label>
         </div>
         
-        <div style="display: flex; gap: 5px; align-items: center;">
-          <input type="date" id="todo-alarm-date" style="padding: 5px; border: 1px solid #ccc; border-radius: 4px;">
-          <select id="todo-alarm-hour" style="padding: 5px; border: 1px solid #ccc; border-radius: 4px;"></select>
+        <div style="display: flex; gap: 6px; align-items: center;">
+          <input type="date" id="todo-alarm-date" style="padding: 6px 8px; border: 1.5px solid #c5e1a5; border-radius: 10px; outline: none;">
+          <select id="todo-alarm-hour" style="padding: 6px 8px; border: 1.5px solid #c5e1a5; border-radius: 10px; outline: none;"></select>
           <span>:</span>
-          <select id="todo-alarm-minute" style="padding: 5px; border: 1px solid #ccc; border-radius: 4px;"></select>
+          <select id="todo-alarm-minute" style="padding: 6px 8px; border: 1.5px solid #c5e1a5; border-radius: 10px; outline: none;"></select>
         </div>
         
         <div id="todo-weekly-group" style="display: none;">
@@ -45,19 +46,24 @@
           </div>
         </div>
         
-        <div style="display: flex; align-items: center; gap: 5px;">
-          <span style="font-size: 12px; color: #555;">貪睡間隔:</span>
-          <input type="number" id="todo-snooze" value="5" min="1" max="60" style="width: 50px; padding: 4px; border: 1px solid #ccc; border-radius: 4px;"> 分鐘
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <span style="font-size: 12px; color: var(--theme-text-sub);">貪睡間隔:</span>
+          <input type="number" id="todo-snooze" value="5" min="1" max="60" style="width: 55px; padding: 4px 6px; border: 1.5px solid #c5e1a5; border-radius: 8px; outline: none;"> 分鐘
         </div>
       </div>
       
-      <button id="add-todo-btn" style="width: 100%; margin-top: 10px; padding: 8px; background: #4caf50; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">➕ 新增待辦</button>
+      <button id="add-todo-btn" style="width: 100%; margin-top: 12px; padding: 10px; background: var(--theme-btn-primary-bg); color: white; border: none; border-radius: 14px; cursor: pointer; font-weight: bold; box-shadow: var(--theme-btn-primary-shadow); transition: var(--theme-transition); display: flex; align-items: center; justify-content: center; gap: 6px;">
+        <i class="theme-icon icon-add"></i> 新增待辦
+      </button>
     </div>
   </div>
 
   <div id="todo-list">
     <!-- Todos will be generated here -->
   </div>
+
+  <!-- 底部精緻草地花邊裝飾 -->
+  <div class="bottom-grass-accent"></div>
 
   <script src="todo.js"></script>
 </body>

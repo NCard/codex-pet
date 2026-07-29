@@ -8,8 +8,9 @@ ipcRenderer.on('reload-data', () => {
   loadAlarms();
 });
 
-const { alarmsPath } = require('../../utils/paths');
+const { alarmsPath, petStatePath } = require('../../utils/paths');
 let alarms = [];
+let todos = [];
 
 const hourSelect = document.getElementById('alarm-hour');
 const minuteSelect = document.getElementById('alarm-minute');
@@ -77,6 +78,16 @@ function loadAlarms() {
     alarms = [];
   }
   
+  // 載入待辦事項用於雙向綁定顯示
+  if (fs.existsSync(petStatePath)) {
+    try {
+      const petStateData = JSON.parse(fs.readFileSync(petStatePath, 'utf8'));
+      todos = petStateData.todos || [];
+    } catch (e) {
+      todos = [];
+    }
+  }
+
   // Sort alarms by time
   alarms.sort((a, b) => a.time.localeCompare(b.time));
   renderAlarms();
@@ -121,14 +132,27 @@ function renderAlarms() {
       }
     }
     
-    msgDiv.innerHTML = `<span style="font-size:12px; color:#00796b; font-weight:bold;">${typeText}</span><br>${alarm.message}<br><span style="font-size: 12px; color: #888;">(貪睡: ${alarm.snoozeInterval || 5} 分鐘)</span>`;
+    let linkedTodoHtml = '';
+    let linkedTodo = todos.find(t => (t.linkedAlarmId && t.linkedAlarmId === alarm.id) || (alarm.linkedTodoId && alarm.linkedTodoId === t.id));
+    if (!linkedTodo) {
+      linkedTodo = todos.find(t => alarm.message === t.text || alarm.message === `📋 待辦提醒：${t.text}`);
+    }
+
+    if (linkedTodo) {
+      linkedTodoHtml = `<button class="linked-badge todo-link-btn" title="點擊前往待辦事項視窗" onclick="ipcRenderer.send('open-todo')">📋 綁定待辦 🔗</button>`;
+    }
+
+    // 清理重複的「📋 待辦提醒：」前綴，避免在鬧鐘卡片中重複顯示兩次
+    const displayMsg = alarm.message.replace(/^📋 待辦提醒：/, '');
+
+    msgDiv.innerHTML = `<span style="font-size:12px; color:#00796b; font-weight:bold;">${typeText}</span> ${linkedTodoHtml}<br>${displayMsg}<br><span style="font-size: 11px; color: #888;">(貪睡: ${alarm.snoozeInterval || 5} 分鐘)</span>`;
     
     const actionsDiv = document.createElement('div');
     actionsDiv.className = 'alarm-actions';
     
     const toggleBtn = document.createElement('button');
-    toggleBtn.className = 'btn-toggle';
-    toggleBtn.textContent = alarm.enabled ? '🔔' : '🔕';
+    toggleBtn.className = 'btn-toggle' + (alarm.enabled ? '' : ' disabled');
+    toggleBtn.innerHTML = alarm.enabled ? '<i class="theme-icon icon-bell"></i>' : '🔕';
     toggleBtn.title = alarm.enabled ? '停用' : '啟用';
     toggleBtn.onclick = () => {
       alarm.enabled = !alarm.enabled;
@@ -137,8 +161,8 @@ function renderAlarms() {
     };
     
     const editBtn = document.createElement('button');
-    editBtn.className = 'btn-toggle';
-    editBtn.textContent = '✏️';
+    editBtn.className = 'btn-edit';
+    editBtn.innerHTML = '✏️';
     editBtn.title = '編輯';
     editBtn.onclick = () => {
       editingId = alarm.id;
@@ -159,13 +183,13 @@ function renderAlarms() {
         });
       }
       
-      addBtn.textContent = '💾 儲存';
+      addBtn.innerHTML = '💾 儲存';
       addBtn.style.background = '#4caf50';
     };
     
     const deleteBtn = document.createElement('button');
     deleteBtn.className = 'btn-delete';
-    deleteBtn.textContent = '🗑️';
+    deleteBtn.innerHTML = '<i class="theme-icon icon-trash"></i>';
     deleteBtn.title = '刪除';
     deleteBtn.onclick = () => {
       if (confirm(`確定要刪除「${alarm.time}」的提醒嗎？`)) {

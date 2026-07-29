@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none">
+  <!-- 日曆主體 (圓角蛋形卡片) -->
+  <rect x="4" y="5" width="16" height="15" rx="4" fill="#ffffff" stroke="#2e7d32" stroke-width="2"/>
+  <!-- 日曆頭部 (奇異綠) -->
+  <path d="M4 8C4 6.34315 5.34315 5 7 5H17C18.6569 5 20 6.34315 20 8V9H4V8Z" fill="#81c784"/>
+  <!-- 扣環 -->
+  <rect x="7" y="3" width="2" height="4" rx="1" fill="#ff7043"/>
+  <rect x="15" y="3" width="2" height="4" rx="1" fill="#ff7043"/>
+  <!-- 日期可愛雀斑/點點 -->
+  <circle cx="9" cy="13" r="1.5" fill="#2e7d32"/>
+  <circle cx="15" cy="13" r="1.5" fill="#2e7d32"/>
+  <circle cx="12" cy="16" r="1.5" fill="#4caf50"/>
+</svg>

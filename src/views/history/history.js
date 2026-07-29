@@ -92,26 +92,73 @@ function updateDateSelectOptions() {
   });
 }
 
-// 高亮包含搜尋關鍵字的文字
-function highlightKeyword(text, keyword) {
-  if (!keyword || !keyword.trim()) return text;
-  const escapedKw = keyword.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const regex = new RegExp(`(${escapedKw})`, 'gi');
-  return text.replace(regex, '<mark class="highlight">$1</mark>');
+// 解析 Markdown 與換行，並支援搜尋關鍵字高亮
+function formatMessageContent(rawText, keyword) {
+  if (!rawText) return '';
+
+  let formatted = rawText;
+
+  // 1. 將舊紀錄中存留的字面 <br> 或 <br/> 統一還原為 \n 換行
+  formatted = formatted.replace(/<br\s*\/?>/gi, '\n');
+
+  // 2. HTML 轉義防範 XSS
+  formatted = formatted
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+
+  // 3. 處理三反引號 Markdown 程式碼區塊 ```...```
+  formatted = formatted.replace(/```([\s\S]*?)```/g, (match, code) => {
+    return `<pre><code>${code.trim()}</code></pre>`;
+  });
+
+  // 4. 處理單反引號 行內程式碼 `...`
+  formatted = formatted.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+  // 5. 處理 **粗體**
+  formatted = formatted.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+
+  // 6. 處理 \n 換行轉成 <br/>
+  formatted = formatted.replace(/\n/g, '<br/>');
+
+  // 7. 搜尋關鍵字高亮 (避免破壞 HTML 標籤)
+  if (keyword && keyword.trim()) {
+    const escapedKw = keyword.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(`(${escapedKw})(?![^<]*>)`, 'gi');
+    formatted = formatted.replace(regex, '<mark class="highlight">$1</mark>');
+  }
+
+  return formatted;
+}
+
+// 格式化為系統地區標準格式的日期時間 (例如：2026/7/28 16:17:07)
+function formatFullDateTime(timestampStr) {
+  if (!timestampStr) return '';
+  const d = new Date(timestampStr);
+  if (!isNaN(d.getTime())) {
+    return d.toLocaleString();
+  }
+  return timestampStr;
 }
 
 // 判斷並更新「回到最下方按鈕」顯示/隱藏狀態
 function updateScrollBottomBtnVisibility() {
-  if (!scrollBottomBtn) return;
-  // 計算滾動距離，離底部小於 60px 即判定為「已在最下方」
+  if (!scrollBottomBtn || !historyContainer) return;
   const threshold = 60;
-  const isAtBottom = (window.innerHeight + window.scrollY) >= (document.body.offsetHeight - threshold);
+  const isAtBottom = (historyContainer.scrollHeight - historyContainer.scrollTop - historyContainer.clientHeight) <= threshold;
 
   if (isAtBottom) {
     scrollBottomBtn.classList.remove('visible');
   } else {
     scrollBottomBtn.classList.add('visible');
   }
+}
+
+// 監聽 historyContainer 滾動事件
+if (historyContainer) {
+  historyContainer.addEventListener('scroll', () => {
+    updateScrollBottomBtnVisibility();
+  });
 }
 
 // 根據篩選條件過濾並渲染歷史紀錄
@@ -184,33 +231,35 @@ function renderHistory() {
       historyContainer.appendChild(dateDivider);
     }
 
-    const msgDiv = document.createElement('div');
-    msgDiv.className = `msg ${item.role}`;
-    
-    const safeText = item.message.replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    const highlightedText = highlightKeyword(safeText, keywordInput.value.trim());
-    
-    let textContent = highlightedText;
-    if (item.role === 'kiwi') {
-      textContent = `<span style="color: #c97a2e; font-weight: bold;">Wiki Wiki：</span><br/>${highlightedText}`;
-    } else {
-      textContent = `<strong>你：</strong><br/>${highlightedText}`;
-    }
+    const chatRow = document.createElement('div');
+    chatRow.className = `chat-row ${item.role}`;
 
-    let timeOnly = item.timestamp || '';
-    const timeMatch = timeOnly.match(/\d{1,2}:\d{2}(:\d{2})?/);
-    if (timeMatch) {
-      timeOnly = timeMatch[0];
-    }
+    const formattedContent = formatMessageContent(item.message, keywordInput.value.trim());
+    const fullTimeStr = formatFullDateTime(item.timestamp);
 
-    msgDiv.innerHTML = `
-      <div>${textContent}</div>
-      <div class="timestamp">${timeOnly}</div>
+    const isKiwi = item.role === 'kiwi';
+    const avatarHtml = isKiwi 
+      ? `<div class="avatar kiwi-avatar"><img src="../../../assets/images/kiwi.png" alt="Kiwi"/></div>`
+      : `<div class="avatar user-avatar"><div class="user-icon-inner">👤</div></div>`;
+
+    const badgeHtml = isKiwi ? `<span class="role-badge">AI</span>` : '';
+
+    chatRow.innerHTML = `
+      ${avatarHtml}
+      <div class="msg ${item.role}">
+        <div class="msg-header">
+          <span class="msg-sender ${item.role}-sender">${isKiwi ? 'Wiki Wiki' : '你'}</span>
+          ${badgeHtml}
+        </div>
+        <div class="msg-content">${formattedContent}</div>
+        <div class="timestamp"><span class="clock-icon">🕒</span> ${fullTimeStr}</div>
+      </div>
     `;
-    historyContainer.appendChild(msgDiv);
+    historyContainer.appendChild(chatRow);
   });
 
   updateScrollBottomBtnVisibility();
+  updateFloatingDatePill();
 }
 
 function loadHistory() {
@@ -222,26 +271,35 @@ function loadHistory() {
   }
   try {
     const data = fs.readFileSync(historyPath, 'utf8');
-    if (data.trim() !== '') {
+    if (data && data.trim() !== '') {
       try {
         const decrypted = cryptoUtils.decryptData(data);
         allHistory = JSON.parse(decrypted);
-      } catch (e) {
-        allHistory = JSON.parse(data);
+      } catch (e1) {
+        try {
+          allHistory = JSON.parse(data);
+        } catch (e2) {
+          console.warn('History data parse failed, initializing empty list:', e2);
+          allHistory = [];
+        }
       }
     } else {
+      allHistory = [];
+    }
+    if (!Array.isArray(allHistory)) {
       allHistory = [];
     }
     updateDateSelectOptions();
     renderHistory();
   } catch (err) {
-    console.error(err);
-    historyContainer.innerHTML = '<div style="text-align: center; color: red;">讀取歷史紀錄失敗 😢</div>';
+    console.error('loadHistory error:', err);
+    allHistory = [];
+    updateDateSelectOptions();
+    renderHistory();
   }
 }
 
-// 智慧型懸浮日期標籤與「回到最下方按鈕」滾動監聽
-window.addEventListener('scroll', () => {
+function updateFloatingDatePill() {
   updateScrollBottomBtnVisibility();
 
   if (!floatingDatePill || !floatingDateText) return;
@@ -252,43 +310,43 @@ window.addEventListener('scroll', () => {
     return;
   }
 
-  const header = document.querySelector('.header');
-  const headerBottom = header ? header.getBoundingClientRect().bottom : 90;
-  const viewportHeight = window.innerHeight;
-
+  const containerRect = historyContainer.getBoundingClientRect();
   let activeDateText = '';
   let isAnyDividerVisibleInViewport = false;
 
   dividers.forEach(divider => {
     const rect = divider.getBoundingClientRect();
 
-    // 檢測當前視口畫面中是否直接看得見「日期標題條」
-    if (rect.top >= headerBottom - 10 && rect.top <= viewportHeight - 50) {
+    // 只要日期分隔標籤有任何一部分在容器的可見範圍內，即判定為「看得到日期」
+    if (rect.bottom > containerRect.top && rect.top < containerRect.bottom) {
       isAnyDividerVisibleInViewport = true;
     }
 
-    // 取得滾動在 Header 頂部下方的當前日期段落
-    if (rect.top <= headerBottom + 60) {
+    // 取得當前捲過或位於 Container 頂部的日期標題
+    if (rect.top <= containerRect.top + 60) {
       activeDateText = divider.dataset.dateText || divider.querySelector('span').innerText;
     }
   });
 
-  // 如果畫面上看得到日期標題，或者未滾動到任何日期標題處 -> 自動淡出隱藏！
+  // 如果畫面上看得到任何日期標題，或者未捲動過任何日期標題 -> 強制隱藏懸浮日期！
   if (isAnyDividerVisibleInViewport || !activeDateText) {
     floatingDatePill.classList.remove('visible');
   } else {
-    // 畫面上看不到任何日期標籤時 -> 自動漸出顯示懸浮日期！
+    // 畫面上完全看不到任何日期標籤時 -> 漸出顯示懸浮日期！
     floatingDateText.innerText = activeDateText.startsWith('📅') ? activeDateText : `📅 ${activeDateText}`;
-    floatingDatePill.style.top = `${Math.max(10, headerBottom + 12)}px`;
+    floatingDatePill.style.top = `${containerRect.top + 12}px`;
     floatingDatePill.classList.add('visible');
 
-    // 停止滾動 2 秒後淡出
+    // 停止滾動 2 秒後自動淡出隱藏
     clearTimeout(scrollTimer);
     scrollTimer = setTimeout(() => {
       floatingDatePill.classList.remove('visible');
     }, 2000);
   }
-});
+}
+
+// 智慧型懸浮日期標籤與「回到最下方按鈕」滾動監聽 (綁定於歷史容器 historyContainer)
+historyContainer.addEventListener('scroll', updateFloatingDatePill);
 
 // 監聽關鍵字與日期選項變更
 keywordInput.addEventListener('input', () => {
@@ -315,7 +373,9 @@ resetFilterBtn.addEventListener('click', () => {
 
 // 初次載入歷史紀錄並捲動到最底部
 loadHistory();
-window.scrollTo(0, document.body.scrollHeight);
+if (historyContainer) {
+  historyContainer.scrollTop = historyContainer.scrollHeight;
+}
 updateScrollBottomBtnVisibility();
 
 document.getElementById('clear-history-btn').addEventListener('click', () => {
@@ -334,17 +394,17 @@ document.getElementById('clear-history-btn').addEventListener('click', () => {
 // 定時拉取歷史紀錄，當使用者正在搜尋時保持結果不被干擾
 setInterval(() => {
   const isFiltering = keywordInput.value.trim() !== '' || dateSelect.value !== '';
-  if (!isFiltering) {
-    const isAtBottom = (window.innerHeight + window.scrollY) >= document.body.offsetHeight - 10;
+  if (!isFiltering && historyContainer) {
+    const isAtBottom = (historyContainer.scrollHeight - historyContainer.scrollTop - historyContainer.clientHeight) <= 20;
     loadHistory();
     if (isAtBottom) {
-      window.scrollTo(0, document.body.scrollHeight);
+      historyContainer.scrollTop = historyContainer.scrollHeight;
     }
   }
 }, 3000);
 
-if (scrollBottomBtn) {
+if (scrollBottomBtn && historyContainer) {
   scrollBottomBtn.addEventListener('click', () => {
-    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    historyContainer.scrollTo({ top: historyContainer.scrollHeight, behavior: 'smooth' });
   });
 }

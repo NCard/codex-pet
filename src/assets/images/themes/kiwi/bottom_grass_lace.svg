@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 60" fill="none" preserveAspectRatio="none">
+  <!-- 蠟筆手繪風青草地 + 花邊向右延伸結構 -->
+  <!-- 底層軟草波浪丘陵 -->
+  <path d="M0 60 L0 35 C 80 20, 180 45, 300 25 C 420 8, 520 30, 600 15 L600 60 Z" fill="#c8e6c9" fill-opacity="0.45"/>
+  <path d="M0 60 L0 42 C 100 32, 220 50, 360 30 C 480 18, 540 38, 600 24 L600 60 Z" fill="#a5d6a7" fill-opacity="0.55"/>
+
+  <!-- 蠟筆小嫩芽與草花邊 (手繪線條風格) -->
+  <g stroke="#2e7d32" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <!-- 嫩芽 1 (左) -->
+    <path d="M50 35 C 45 25, 35 25, 42 35 C 49 45, 55 35, 50 35 Z" fill="#81c784" fill-opacity="0.7"/>
+    <path d="M50 45 L50 33"/>
+    
+    <!-- 嫩芽 2 (中左) -->
+    <path d="M180 38 C 175 28, 165 28, 172 38 Z" fill="#81c784" fill-opacity="0.7"/>
+    <path d="M180 45 L180 36"/>
+
+    <!-- 嫩芽 3 (中右高點) -->
+    <path d="M340 25 C 332 12, 320 15, 330 25 C 340 35, 348 22, 340 25 Z" fill="#66bb6a" fill-opacity="0.8"/>
+    <path d="M340 38 L340 23"/>
+
+    <!-- 花邊向右延伸的嫩葉草叢 (右側重點延伸) -->
+    <path d="M480 22 C 470 10, 458 12, 468 22 C 478 32, 488 18, 480 22 Z" fill="#4caf50" fill-opacity="0.85"/>
+    <path d="M480 35 L480 20"/>
+
+    <path d="M530 28 C 522 15, 510 18, 520 28 C 530 38, 538 24, 530 28 Z" fill="#4caf50" fill-opacity="0.85"/>
+    <path d="M530 40 L530 26"/>
+
+    <path d="M575 18 C 568 5, 555 8, 565 18 C 575 28, 582 14, 575 18 Z" fill="#2e7d32" fill-opacity="0.9"/>
+    <path d="M575 32 L575 16"/>
+  </g>
+</svg>

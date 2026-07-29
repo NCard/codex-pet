@@ -3,17 +3,20 @@
 <head>
   <meta charset="UTF-8">
   <title>Wiki Wiki 歷史對話紀錄</title>
+  <link rel="stylesheet" href="../common/theme.css">
   <link rel="stylesheet" href="history.css">
 </head>
 <body>
   <div class="header">
     <div class="header-top">
-      <h1>📜 Wiki Wiki 的回憶錄</h1>
+      <h1><i class="theme-icon icon-book"></i> Wiki Wiki 的回憶錄</h1>
       <div class="header-btns">
         <button id="toggle-search-btn" class="icon-btn" title="展開/收合搜尋列">
-          🔍 <span id="search-active-dot" class="active-dot" style="display: none;">●</span>
+          <i class="theme-icon icon-search"></i> <span id="search-active-dot" class="active-dot" style="display: none;">●</span>
         </button>
-        <button id="clear-history-btn" class="icon-btn danger" title="清空對話紀錄">🧹</button>
+        <button id="clear-history-btn" class="icon-btn danger" title="清空對話紀錄">
+          <i class="theme-icon icon-trash"></i>
+        </button>
       </div>
     </div>
     <p class="subtitle">這裡記錄了我們之間所有的點點滴滴！</p>
@@ -22,17 +25,18 @@
     <div id="search-box" class="search-box collapsed">
       <div class="search-inputs">
         <div class="input-wrapper keyword-wrapper">
-          <span class="search-icon">🔍</span>
+          <span class="search-icon"><i class="theme-icon icon-search"></i></span>
           <input type="text" id="keyword-input" placeholder="搜尋對話關鍵字 (模糊查詢)...">
           <button id="clear-keyword-btn" class="clear-btn" style="display: none;">✕</button>
         </div>
         <div class="input-wrapper date-wrapper">
-          <span class="date-icon">📅</span>
           <select id="date-select" class="date-select" title="選擇有紀錄的日期">
             <option value="">所有日期</option>
           </select>
         </div>
-        <button id="reset-filter-btn" title="重設篩選條件">🔄 重設</button>
+        <button id="reset-filter-btn" title="重設篩選條件">
+          <i class="theme-icon icon-reset"></i> 重設
+        </button>
       </div>
       <div id="filter-status" class="filter-status"></div>
     </div>
@@ -44,9 +48,16 @@
   </div>
 
   <div id="history-container">
-    <!-- Chat history with LINE style date dividers will be loaded here -->
+    <!-- Chat history with timeline and avatars will be loaded here -->
   </div>
-  <button id="scroll-bottom-btn" title="回到最下方">⬇️</button>
+
+  <button id="scroll-bottom-btn" title="回到最下方">
+    <i class="theme-icon icon-scroll-bottom"></i>
+  </button>
+
+  <!-- 底部精緻草地葉片裝飾 -->
+  <div class="bottom-grass-accent"></div>
+
   <script src="history.js"></script>
 </body>
 </html>

@@ -3,21 +3,22 @@
 <head>
   <meta charset="UTF-8">
   <title>Wiki Wiki 設定中心</title>
+  <link rel="stylesheet" href="../common/theme.css">
   <link rel="stylesheet" href="settings.css">
 </head>
 <body>
-  <div class="header">⚙️ 設定中心</div>
+  <div class="header"><i class="theme-icon icon-gear"></i> 設定中心</div>
   
   <div class="tabs">
-    <button class="tab-btn active" data-tab="tab-general">⚙️ 一般</button>
-    <button class="tab-btn" data-tab="tab-bed">🛌 床鋪</button>
-    <button class="tab-btn" data-tab="tab-about">ℹ️ 關於</button>
+    <button class="tab-btn active" data-tab="tab-general"><i class="theme-icon icon-gear"></i> 一般</button>
+    <button class="tab-btn" data-tab="tab-bed"><i class="theme-icon icon-bed"></i> 床鋪</button>
+    <button class="tab-btn" data-tab="tab-about"><i class="theme-icon icon-info"></i> 關於</button>
   </div>
 
   <!-- 一般設定頁籤 -->
   <div id="tab-general" class="tab-content active">
     <div class="section">
-      <div class="section-title">🔗 API 設定 (API Key)</div>
+      <div class="section-title">🔑 API 設定 (API Key)</div>
       <div class="control-group">
         <label>Gemini API Key</label>
         <div style="display: flex; gap: 10px; margin-top: 5px;">
@@ -28,7 +29,7 @@
     </div>
 
     <div class="section">
-      <div class="section-title">🧠 AI 個性設定 (Personality)</div>
+      <div class="section-title">💬 AI 個性設定 (Personality)</div>
       <div class="control-group">
         <label>選擇語氣與個性</label>
         <select id="ai-personality">
@@ -57,7 +58,7 @@
   <!-- 床鋪設定頁籤 -->
   <div id="tab-bed" class="tab-content">
     <div class="section">
-      <div class="section-title">🛌 床鋪狀態控制</div>
+      <div class="section-title"><i class="theme-icon icon-bed"></i> 床鋪狀態控制</div>
       <button id="btn-toggle-bed-edit" class="bed-edit-btn">✏️ 開啟床鋪編輯模式 (小鳥坐床)</button>
       <div id="bed-edit-tip" style="font-size: 11px; color: #e65100; margin-top: 6px; display: none;">
         💡 編輯模式已開啟：奇異鳥已移至床上，您可以直接拖曳床鋪或調整下方數值！
@@ -122,8 +123,8 @@
   <div class="footer-bar">
     <div id="dirty-status" class="dirty-status" style="visibility: hidden;">⚠️ 有未儲存變更</div>
     <div class="footer-btns">
-      <button id="btn-reset" class="btn-secondary">還原預設</button>
-      <button id="btn-save-all" class="btn-primary">💾 儲存設定</button>
+      <button id="btn-reset" class="btn-secondary"><i class="theme-icon icon-reset"></i> 還原預設</button>
+      <button id="btn-save-all" class="btn-primary"><i class="theme-icon icon-save"></i> 儲存設定</button>
     </div>
   </div>
 
@@ -140,6 +141,7 @@
     </div>
   </div>
 
+  <div class="bottom-grass-accent"></div>
   <script src="settings.js"></script>
 </body>
 </html>

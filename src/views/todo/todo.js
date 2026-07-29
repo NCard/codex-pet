@@ -125,21 +125,22 @@ function renderTodos() {
     const metaDiv = document.createElement('div');
     metaDiv.className = 'todo-meta';
     
-    // Find linked alarm
+    // Find linked alarm (支援 ID 或訊息標題智慧匹配)
     let linkedAlarm = null;
     if (todo.linkedAlarmId) {
       linkedAlarm = alarms.find(a => a.id === todo.linkedAlarmId);
     }
+    if (!linkedAlarm) {
+      linkedAlarm = alarms.find(a => a.linkedTodoId === todo.id || a.message === todo.text || a.message === `📋 待辦提醒：${todo.text}`);
+      if (linkedAlarm) {
+        todo.linkedAlarmId = linkedAlarm.id;
+        linkedAlarm.linkedTodoId = todo.id;
+      }
+    }
     
     if (linkedAlarm) {
-      let typeText = '';
-      if (linkedAlarm.type === 'date') {
-        typeText = `📅 ${linkedAlarm.date} ${linkedAlarm.time}`;
-      } else {
-        if (linkedAlarm.days.length === 7) typeText = `🔁 每天 ${linkedAlarm.time}`;
-        else typeText = `🔁 每週 ${linkedAlarm.days.map(d => ['日','一','二','三','四','五','六'][d]).join(',')} ${linkedAlarm.time}`;
-      }
-      metaDiv.innerHTML = `<span style="color: ${linkedAlarm.enabled ? '#00796b' : '#aaa'};">⏰ 已綁定鬧鐘: ${typeText}</span><span style="color:#aaa;">(貪睡: ${linkedAlarm.snoozeInterval || 5}分)</span>`;
+      let timeStr = linkedAlarm.time || '';
+      metaDiv.innerHTML = `<button class="linked-badge alarm-link-btn" title="點擊前往鬧鐘排程視窗" onclick="ipcRenderer.send('open-alarm')">⏰ 綁定鬧鐘 ${timeStr} 🔗</button><br><span class="snooze-info" style="font-size: 11px; color: #888;">(貪睡: ${linkedAlarm.snoozeInterval || 5} 分鐘)</span>`;
     }
     
     // Checkbox triggers alarm disable
@@ -160,8 +161,8 @@ function renderTodos() {
     actionsDiv.className = 'todo-actions';
     
     const editBtn = document.createElement('button');
-    editBtn.className = 'btn-toggle';
-    editBtn.textContent = '✏️';
+    editBtn.className = 'btn-edit';
+    editBtn.innerHTML = '✏️';
     editBtn.title = '編輯';
     editBtn.onclick = () => {
       editingId = todo.id;
@@ -194,13 +195,13 @@ function renderTodos() {
         dayCheckboxes.forEach(cb => cb.checked = false);
       }
       
-      addBtn.textContent = '💾 儲存';
+      addBtn.innerHTML = '💾 儲存';
       addBtn.style.background = '#2196F3';
     };
     
     const deleteBtn = document.createElement('button');
     deleteBtn.className = 'btn-delete';
-    deleteBtn.textContent = '🗑️';
+    deleteBtn.innerHTML = '<i class="theme-icon icon-trash"></i>';
     deleteBtn.title = '刪除';
     deleteBtn.onclick = () => {
       if (confirm(`確定要刪除「${todo.text}」嗎？`)) {

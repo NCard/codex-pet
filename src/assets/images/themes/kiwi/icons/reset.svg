@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none">
+  <!-- 奇異鳥樹葉重設雙箭頭 -->
+  <path d="M12 4C7.58172 4 4 7.58172 4 12C4 13.8827 4.65 15.6134 5.74 16.98" stroke="#2e7d32" stroke-width="2.5" stroke-linecap="round"/>
+  <path d="M12 20C16.4183 20 20 16.4183 20 12C20 10.1173 19.35 8.3866 18.26 7.02" stroke="#2e7d32" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- 箭頭嫩葉 -->
+  <path d="M4 17L7 17L7 14" stroke="#4caf50" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M20 7L17 7L17 10" stroke="#4caf50" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="12" cy="12" r="2" fill="#ff7043"/>
+</svg>

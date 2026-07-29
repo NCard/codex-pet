@@ -1,0 +1,170 @@
+/* 🎨 Codex Pet (Wiki Wiki) 全局主題 Token 系統 */
+:root,
+:root[data-theme="kiwi"] {
+  --theme-bg-color: #f7faf3;
+  --theme-bg-gradient: linear-gradient(145deg, #fbfdf8 0%, #f2f7ec 100%);
+  --theme-bg-pattern: url('../../assets/images/themes/kiwi/bg_pattern.svg');
+  
+  --theme-card-bg: rgba(255, 255, 255, 0.94);
+  --theme-card-border: 1px solid rgba(197, 225, 165, 0.45);
+  --theme-card-radius: 20px;
+  
+  --theme-primary: #4caf50;
+  --theme-primary-hover: #2e7d32;
+  --theme-primary-light: #e8f5e9;
+  --theme-primary-border: #aed581;
+  
+  --theme-accent: #ff7043;
+  --theme-accent-hover: #f4511e;
+  --theme-accent-light: #fbe9e7;
+
+  --theme-badge-bg: #dcedc8;
+  --theme-badge-text: #336600;
+
+  --theme-text-title: #2e7d32;
+  --theme-text-body: #37474f;
+  --theme-text-sub: #78909c;
+  --theme-text-muted: #90a4ae;
+
+  --theme-input-bg: #ffffff;
+  --theme-input-border: 1.5px solid #c5e1a5;
+  --theme-input-focus: #4caf50;
+
+  --theme-btn-primary-bg: linear-gradient(135deg, #5fb365, #4ca652);
+  --theme-btn-primary-text: #ffffff;
+  --theme-btn-primary-shadow: 0 4px 14px rgba(76, 175, 80, 0.35);
+
+  --theme-btn-secondary-bg: #e8f5e9;
+  --theme-btn-secondary-text: #2e7d32;
+  --theme-btn-secondary-border: 1px solid #aed581;
+
+  --theme-shadow-card: 0 10px 30px rgba(46, 125, 50, 0.08), 0 2px 8px rgba(0, 0, 0, 0.03);
+  --theme-shadow-hover: 0 14px 36px rgba(46, 125, 50, 0.14), 0 4px 12px rgba(0, 0, 0, 0.05);
+
+  --theme-font-main: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Microsoft JhengHei', sans-serif;
+  --theme-transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* 主題圖示路徑 Tokens */
+  --theme-icon-search: url('../../assets/images/themes/kiwi/icons/search.svg');
+  --theme-icon-trash: url('../../assets/images/themes/kiwi/icons/trash.svg');
+  --theme-icon-clear: url('../../assets/images/themes/kiwi/icons/trash.svg');
+  --theme-icon-reset: url('../../assets/images/themes/kiwi/icons/reset.svg');
+  --theme-icon-calendar: url('../../assets/images/themes/kiwi/icons/calendar.svg');
+  --theme-icon-scroll-bottom: url('../../assets/images/themes/kiwi/icons/scroll_bottom.svg');
+  --theme-icon-book: url('../../assets/images/themes/kiwi/icons/memory_book.svg');
+  --theme-icon-alarm: url('../../assets/images/themes/kiwi/icons/alarm_clock.svg');
+  --theme-icon-todo: url('../../assets/images/themes/kiwi/icons/todo_checklist.svg');
+  --theme-icon-add: url('../../assets/images/themes/kiwi/icons/add.svg');
+  --theme-icon-bell: url('../../assets/images/themes/kiwi/icons/bell.svg');
+  --theme-icon-gear: url('../../assets/images/themes/kiwi/icons/gear.svg');
+  --theme-icon-bed: url('../../assets/images/themes/kiwi/icons/bed.svg');
+  --theme-icon-info: url('../../assets/images/themes/kiwi/icons/info.svg');
+  --theme-icon-save: url('../../assets/images/themes/kiwi/icons/save.svg');
+}
+
+/* 全局頁面背景：多重光影漸層 + 低飽和度淡雅奇異鳥無縫紋理 */
+body {
+  background-color: var(--theme-bg-color, #f7faf3);
+  background-image: 
+    radial-gradient(circle at 15% 15%, rgba(232, 245, 233, 0.65) 0%, transparent 45%),
+    radial-gradient(circle at 85% 85%, rgba(220, 237, 200, 0.55) 0%, transparent 45%),
+    var(--theme-bg-pattern);
+  background-repeat: repeat;
+  background-size: auto, auto, 300px 300px;
+  background-attachment: fixed;
+}
+
+/* 通用主題 Icon 元件 */
+.theme-icon {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  vertical-align: middle;
+  transition: var(--theme-transition);
+}
+
+.theme-icon.icon-book {
+  background-image: var(--theme-icon-book);
+  width: 24px;
+  height: 24px;
+}
+
+.theme-icon.icon-alarm {
+  background-image: var(--theme-icon-alarm);
+  width: 24px;
+  height: 24px;
+}
+
+.theme-icon.icon-todo {
+  background-image: var(--theme-icon-todo);
+  width: 24px;
+  height: 24px;
+}
+
+.theme-icon.icon-add {
+  background-image: var(--theme-icon-add);
+}
+
+.theme-icon.icon-bell {
+  background-image: var(--theme-icon-bell);
+}
+
+.theme-icon.icon-search {
+  background-image: var(--theme-icon-search);
+}
+
+.theme-icon.icon-trash, .theme-icon.icon-clear {
+  background-image: var(--theme-icon-trash);
+}
+
+.theme-icon.icon-reset {
+  background-image: var(--theme-icon-reset);
+}
+
+.theme-icon.icon-calendar {
+  background-image: var(--theme-icon-calendar);
+}
+
+.theme-icon.icon-scroll-bottom {
+  background-image: var(--theme-icon-scroll-bottom);
+  width: 24px;
+  height: 24px;
+}
+
+.theme-icon.icon-gear {
+  background-image: var(--theme-icon-gear);
+}
+
+.theme-icon.icon-bed {
+  background-image: var(--theme-icon-bed);
+}
+
+.theme-icon.icon-info {
+  background-image: var(--theme-icon-info);
+}
+
+.theme-icon.icon-save {
+  background-image: var(--theme-icon-save);
+}
+
+/* 全局捲動條美化 */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c5e1a5;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #9cc069;
+}

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none">
+  <!-- 奇異鳥回憶紀錄本主體 -->
+  <rect x="5" y="4" width="14" height="17" rx="3" fill="#81c784" stroke="#2e7d32" stroke-width="2"/>
+  <!-- 書脊線條 -->
+  <line x1="8" y1="4" x2="8" y2="21" stroke="#2e7d32" stroke-width="1.5"/>
+  <!-- 奇異鳥腳印/腳丫小金裝飾 -->
+  <path d="M12 9C12 9 13.5 10 15 10M12 12H15.5M12 15C12 15 13.5 14 15 14" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round"/>
+  <!-- 書籤絲帶 -->
+  <path d="M14 4V8L16 6.5L18 8V4" fill="#ff7043"/>
+</svg>

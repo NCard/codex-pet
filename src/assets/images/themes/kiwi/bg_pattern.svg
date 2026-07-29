@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="320" viewBox="0 0 320 320" fill="none">
+  <!-- 清爽淡雅奇異鳥與極簡線條花背景 (100% 精確還原使用者圖片：圓鳥身、右嘴、兩腳、眼點點靠右) -->
+  <g opacity="0.13" stroke="#2e7d32" stroke-linecap="round" stroke-linejoin="round">
+    
+    <!-- 1. 奇異鳥剪影 (大圓鳥身 + 右長嘴 + 雙腿 + 眼睛點點靠右) -->
+    <g transform="translate(180, 150)">
+      <!-- 圓滾滾鳥身 (弧形大圓) -->
+      <path d="M 22,22 A 28,28 0 1 1 58,38" stroke-width="2" fill="none"/>
+      <!-- 兩條站立雙腳 -->
+      <line x1="26" y1="62" x2="20" y2="76" stroke-width="2"/>
+      <line x1="46" y1="62" x2="52" y2="76" stroke-width="2"/>
+      <!-- 右側長鳥嘴 -->
+      <line x1="58" y1="30" x2="78" y2="34" stroke-width="2"/>
+      <!-- 眼睛點點 (靠右鳥嘴方向) -->
+      <circle cx="48" cy="28" r="2.2" fill="#2e7d32"/>
+    </g>
+
+    <!-- 2. 極簡線條花朵 🌸 (僅 2 朵，稀疏乾淨，絕不密集) -->
+    <!-- 線條花 1 (左上角) -->
+    <g transform="translate(50, 60)">
+      <path d="M12 2 C8 -3, -2 6, 3 10 C-2 14, 6 23, 10 18 C14 23, 22 14, 17 10 C22 6, 14 -3, 10 2 Z" stroke-width="1.5" fill="none"/>
+      <line x1="10" y1="18" x2="10" y2="34" stroke-width="1.5"/>
+    </g>
+
+    <!-- 線條花 2 (右上角) -->
+    <g transform="translate(250, 45)">
+      <path d="M10 2 C6 -3, -2 6, 3 10 C-2 14, 6 23, 10 18 C14 23, 22 14, 17 10 C22 6, 14 -3, 10 2 Z" stroke-width="1.5" fill="none"/>
+      <line x1="10" y1="18" x2="10" y2="32" stroke-width="1.5"/>
+    </g>
+
+  </g>
+</svg>

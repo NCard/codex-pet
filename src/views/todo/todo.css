@@ -1,200 +1,274 @@
 body {
+  font-family: var(--theme-font-main);
+  color: var(--theme-text-body);
   margin: 0;
-  padding: 0;
-  background-color: #f4f9f9;
-  font-family: 'Microsoft JhengHei', sans-serif;
-  color: #333;
+  padding: 16px;
+  box-sizing: border-box;
+  user-select: none;
 }
 
 .header {
-  background: linear-gradient(135deg, #e8f5e9 0%, #81c784 100%);
-  padding: 20px;
   text-align: center;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-  color: #2e7d32;
-  position: sticky;
-  top: 0;
-  z-index: 100;
+  margin-bottom: 16px;
 }
 
 .header h1 {
-  margin: 0 0 10px 0;
-  font-size: 24px;
+  font-size: 20px;
+  color: var(--theme-text-title);
+  margin: 0 0 4px 0;
+  font-weight: 700;
 }
 
 .header p {
+  font-size: 12px;
+  color: var(--theme-text-sub);
   margin: 0;
-  font-size: 14px;
 }
 
+/* 表單容器卡片 */
 .form-container {
-  padding: 20px;
-  background: white;
-  margin: 15px;
-  border-radius: 10px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  background: var(--theme-card-bg);
+  backdrop-filter: blur(12px);
+  border: var(--theme-card-border);
+  border-radius: var(--theme-card-radius);
+  padding: 16px;
+  box-shadow: var(--theme-shadow-card);
+  margin-bottom: 16px;
+  transition: var(--theme-transition);
+}
+
+.form-container:hover {
+  box-shadow: var(--theme-shadow-hover);
 }
 
 .input-group {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   align-items: center;
 }
 
-.input-group input[type="text"],
-.input-group textarea {
-  flex: 1;
-  padding: 8px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  font-size: 16px;
-  font-family: inherit;
-}
-
-.input-group textarea {
+#todo-text {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 16px;
+  border: var(--theme-input-border);
+  background: var(--theme-input-bg);
+  color: var(--theme-text-body);
+  font-size: 13px;
+  outline: none;
   resize: vertical;
-  min-height: 40px;
+  box-sizing: border-box;
+  font-family: inherit;
+  transition: var(--theme-transition);
 }
 
-.input-group input[type="time"] {
-  padding: 6px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  font-size: 14px;
-  font-family: inherit;
+#todo-text:focus {
+  border-color: var(--theme-input-focus);
+  box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.12);
+}
+
+#todo-alarm-settings {
+  background: var(--theme-primary-light);
+  border: 1px dashed var(--theme-primary-border);
+  border-radius: 16px;
+  box-sizing: border-box;
+}
+
+/* 星期圓形膠囊選擇器 */
+.days-selector {
+  display: flex;
+  justify-content: space-between;
+  gap: 4px;
 }
 
 .day-chip {
+  position: relative;
   cursor: pointer;
-  display: inline-block;
 }
 
-.day-chip input[type="checkbox"] {
-  display: none;
+.day-chip input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
 }
 
 .day-chip span {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
-  background: #f0f0f0;
-  color: #888;
-  font-size: 14px;
+  background: #ffffff;
+  color: var(--theme-primary);
+  font-size: 12px;
   font-weight: bold;
-  transition: all 0.2s ease;
-  user-select: none;
+  transition: var(--theme-transition);
+  border: 1px solid var(--theme-primary-border);
 }
 
-.day-chip input[type="checkbox"]:checked + span {
-  background: #4caf50;
-  color: white;
-  box-shadow: 0 3px 6px rgba(76, 175, 80, 0.3);
-  transform: translateY(-2px);
+.day-chip input:checked + span {
+  background: var(--theme-primary);
+  color: #ffffff;
+  box-shadow: 0 4px 10px rgba(46, 125, 50, 0.3);
 }
 
-.day-chip:hover span {
-  background: #e0e0e0;
-}
-.day-chip input[type="checkbox"]:checked:hover + span {
-  background: #43a047;
-}
-
-.input-group button {
-  padding: 8px 15px;
-  background: #4caf50;
-  color: white;
+#add-todo-btn {
+  background: var(--theme-btn-primary-bg);
+  color: var(--theme-btn-primary-text);
   border: none;
-  border-radius: 5px;
-  cursor: pointer;
+  padding: 10px 16px;
+  border-radius: 16px;
+  font-size: 13px;
   font-weight: bold;
-  font-size: 14px;
-  transition: background 0.2s;
+  cursor: pointer;
+  box-shadow: var(--theme-btn-primary-shadow);
+  transition: var(--theme-transition);
 }
 
-.input-group button:hover {
-  background: #388e3c;
+#add-todo-btn:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.05);
 }
 
+/* 待辦事項列表卡片 */
 #todo-list {
-  padding: 0 15px 20px 15px;
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
 .todo-item {
-  background: white;
-  padding: 15px;
-  border-radius: 10px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  background: var(--theme-card-bg);
+  backdrop-filter: blur(12px);
+  border: var(--theme-card-border);
+  border-radius: var(--theme-card-radius);
+  padding: 12px 16px;
+  box-shadow: var(--theme-shadow-card);
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  border-left: 5px solid #4caf50;
-  transition: opacity 0.3s;
+  align-items: flex-start;
+  transition: var(--theme-transition);
+}
+
+.todo-item:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--theme-shadow-hover);
 }
 
 .todo-item.done {
-  opacity: 0.6;
-  border-left: 5px solid #ccc;
-  text-decoration: line-through;
-}
-
-.todo-checkbox {
-  width: 20px;
-  height: 20px;
-  cursor: pointer;
-}
-
-.todo-content {
-  flex: 1;
-  margin-left: 15px;
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-
-.todo-text {
-  font-size: 16px;
-  color: #333;
-  word-break: break-all;
-  white-space: pre-wrap;
+  opacity: 0.65;
+  background: rgba(245, 247, 242, 0.8);
 }
 
 .todo-item.done .todo-text {
-  color: #777;
+  text-decoration: line-through;
+  color: var(--theme-text-muted);
 }
 
-.todo-meta {
-  font-size: 12px;
-  color: #888;
+.todo-content {
   display: flex;
+  align-items: flex-start;
   gap: 10px;
+  flex: 1;
 }
 
+.todo-checkbox {
+  accent-color: var(--theme-primary);
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.todo-text {
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--theme-text-body);
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+
+/* 雙向綁定按鈕標籤 */
+.linked-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: bold;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+  font-family: inherit;
+  border: 1px solid transparent;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.linked-badge:hover {
+  transform: translateY(-1px) scale(1.05);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+}
+
+.linked-badge.todo-link, .linked-badge.todo-link-btn {
+  background: #e8f5e9;
+  color: #2e7d32;
+  border-color: #c5e1a5;
+}
+
+.linked-badge.alarm-link, .linked-badge.alarm-link-btn {
+  background: #e0f2f1;
+  color: #00695c;
+  border-color: #80cbd4;
+}
+
+/* 現代化可愛操作按鈕列 (Todo Actions) */
 .todo-actions {
   display: flex;
+  align-items: center;
   gap: 8px;
+  margin-left: 10px;
 }
 
-.btn-toggle, .btn-delete {
-  background: none;
-  border: none;
-  font-size: 20px;
-  cursor: pointer;
-  transition: transform 0.2s;
-}
-
-.btn-toggle:hover, .btn-delete:hover {
-  transform: scale(1.2);
-}
-
-.empty-state {
-  text-align: center;
-  color: #999;
-  padding: 40px;
+.btn-toggle, .btn-edit, .btn-delete, .action-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-size: 14px;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+}
+
+.btn-edit {
+  background: #fff8e1;
+  border-color: #ffe082;
+  color: #f57f17;
+}
+
+.btn-edit:hover {
+  transform: translateY(-2px) scale(1.1);
+  background: #ffffff;
+  box-shadow: 0 4px 12px rgba(255, 179, 0, 0.25);
+}
+
+.btn-delete, .action-btn.delete {
+  background: #ffebee;
+  border-color: #ffcdd2;
+  color: #e53935;
+}
+
+.btn-delete:hover, .action-btn.delete:hover {
+  transform: translateY(-2px) scale(1.1);
+  background: #ffffff;
+  box-shadow: 0 4px 12px rgba(239, 83, 80, 0.3);
 }

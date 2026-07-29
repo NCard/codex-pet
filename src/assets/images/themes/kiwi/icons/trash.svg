@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none">
+  <!-- 奇異鳥垃圾桶主體 (紅粉色可愛垃圾桶) -->
+  <path d="M6 7L7.2 19C7.35 20.15 8.3 21 9.45 21H14.55C15.7 21 16.65 20.15 16.8 19L18 7" stroke="#e57373" stroke-width="2" stroke-linecap="round"/>
+  <!-- 桶蓋 -->
+  <path d="M4 7H20" stroke="#e57373" stroke-width="2" stroke-linecap="round"/>
+  <path d="M9 7V5C9 4.45 9.45 4 10 4H14C14.55 4 15 4.45 15 5V7" stroke="#e57373" stroke-width="2" stroke-linecap="round"/>
+  <!-- 垃圾桶直紋條 -->
+  <line x1="10" y1="11" x2="10" y2="17" stroke="#ef5350" stroke-width="1.8" stroke-linecap="round"/>
+  <line x1="14" y1="11" x2="14" y2="17" stroke="#ef5350" stroke-width="1.8" stroke-linecap="round"/>
+</svg>
