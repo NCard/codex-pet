@@ -11,20 +11,22 @@ const fs = require('fs');
 const { petStatePath } = require('../utils/paths');
 const { autoUpdater } = require('electron-updater');
 
-try {
-  const reloader = require('electron-reloader');
-  reloader(module, {
-    ignore: [
-      /data/,
-      /task\.md/,
-      /implementation_plan\.md/,
-      /walkthrough\.md/,
-      /\.system_generated/,
-      /logs/,
-      /app\.log/
-    ]
-  });
-} catch (_) {}
+if (!app.isPackaged) {
+  try {
+    const reloader = require('electron-reloader');
+    reloader(module, {
+      ignore: [
+        /data/,
+        /task\.md/,
+        /implementation_plan\.md/,
+        /walkthrough\.md/,
+        /\.system_generated/,
+        /logs/,
+        /app\.log/
+      ]
+    });
+  } catch (_) {}
+}
 
 let mainWindow = null;
 let outfitWin = null;
