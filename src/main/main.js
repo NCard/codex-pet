@@ -360,15 +360,7 @@ app.whenReady().then(() => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
   
-  try {
-    chokidar.watch(path.join(__dirname, '../views'), { ignored: /[\/\\]\./ }).on('all', () => {
-      app.relaunch();
-      app.exit();
-    });
-  } catch (err) {
-    console.error('Failed to init chokidar:', err);
-  }
-  
+
   isManualCheck = false;
   try {
     autoUpdater.checkForUpdates();
