@@ -1123,10 +1123,23 @@ function resetLaserTimeout() {
   }, 30000);
 }
 
+// 計算螢幕解析度縮放比例 (基於 Full HD 1920x1080 基準，讓 2K/4K 螢幕的移動速度與距離比例保持一致)
+function getResolutionScale() {
+  try {
+    const currentWidth = (window.screen && window.screen.width) ? window.screen.width : 1920;
+    const scale = currentWidth / 1920;
+    return Math.max(0.75, Math.min(scale, 3.0));
+  } catch(e) {
+    return 1.0;
+  }
+}
+
 function updateLaserPhysicsLoop() {
   if (!isLaserGameActive) return;
 
   try {
+    const scale = getResolutionScale();
+
     // 抓取全螢幕全域滑鼠座標 (跨螢幕、超越單一 Electron 視窗範圍)
     const globalMouse = ipcRenderer.sendSync('get-cursor-pos');
     if (globalMouse && typeof globalMouse.x === 'number' && typeof globalMouse.y === 'number') {
@@ -1143,11 +1156,12 @@ function updateLaserPhysicsLoop() {
       if (currentAction !== 'sleeping' && currentAction !== 'grabbed' && !isDragging) {
         
         // 1. 🛡️ 開場對話階段 (isGameJustStarted)
-        // 剛開啟時絕對不觸發抓取與移動，讓使用者看清對話。直到滑鼠拉開 70px 且滿 3 秒後才跳躍出發！
+        // 剛開啟時絕對不觸發抓取與移動，讓使用者看清對話。直到滑鼠拉開 70px (隨解析度縮放) 且滿 3 秒後才跳躍出發！
         if (isGameJustStarted) {
           const distFromStart = Math.hypot(globalMouse.x - openingMouseX, globalMouse.y - openingMouseY);
+          const thresholdLeave = 70 * scale;
           
-          if (distFromStart < 70) {
+          if (distFromStart < thresholdLeave) {
             // 滑鼠尚未拉開，重置計時器，在原地面向滑鼠
             startMoveTime = 0;
           } else {
@@ -1189,10 +1203,11 @@ function updateLaserPhysicsLoop() {
         }
 
         // 2. 🎯 撲倒抓到後的休息階段 (isWaitingMouseLeave)
-        // 抓到後停在原地，當滑鼠拉開 > 70px 時立即跳躍冒愛心重新追擊
+        // 抓到後停在原地，當滑鼠拉開 > 70px (隨解析度縮放) 時立即跳躍冒愛心重新追擊
         if (isWaitingMouseLeave) {
           const mouseDistFromPounce = Math.hypot(globalMouse.x - pouncedMouseX, globalMouse.y - pouncedMouseY);
-          if (mouseDistFromPounce < 70) {
+          const thresholdLeave = 70 * scale;
+          if (mouseDistFromPounce < thresholdLeave) {
             kiwi.classList.remove('kiwi-chasing', 'walking');
             laserAnimFrame = requestAnimationFrame(updateLaserPhysicsLoop);
             return;
@@ -1236,8 +1251,9 @@ function updateLaserPhysicsLoop() {
         const direction = dx < 0 ? -1 : 1;
         document.getElementById('kiwi-wrapper').style.setProperty('--flip', direction);
 
-        // 觸發撲倒抓取判定 (距離小於 55px 且冷卻 > 800ms)
-        if (distance < 55 && now - lastPounceTime > 800) {
+        // 觸發撲倒抓取判定 (隨解析度縮放，基準距離 55px 且冷卻 > 800ms)
+        const pounceDist = 55 * scale;
+        if (distance < pounceDist && now - lastPounceTime > 800) {
           lastPounceTime = now;
           laserScore++;
 
@@ -1254,7 +1270,7 @@ function updateLaserPhysicsLoop() {
           setTimeout(() => {
             kiwi.classList.remove('kiwi-pouncing');
           }, 450);
-        } else if (distance >= 55 && !kiwi.classList.contains('kiwi-pouncing')) {
+        } else if (distance >= pounceDist && !kiwi.classList.contains('kiwi-pouncing')) {
           // 60fps 平滑萌寵小跑 (搖擺搖晃腳步動畫 + 線性插值平滑移動)
           kiwi.classList.add('kiwi-chasing', 'walking');
           currentAction = 'chasing';
@@ -1269,8 +1285,8 @@ function updateLaserPhysicsLoop() {
           let diffX = (targetX - currentPos.x) * 0.04;
           let diffY = (targetY - currentPos.y) * 0.04;
 
-          // 限速保護 (最高每幀移動 4.5px)，呈現輕快悠閒的萌萌腳步
-          const maxSpeed = 4.5;
+          // 限速保護 (基於 Full HD 4.5px * scale)，讓 2K/4K 螢幕呈現等比例輕快小跑
+          const maxSpeed = 4.5 * scale;
           const moveDist = Math.sqrt(diffX * diffX + diffY * diffY);
           if (moveDist > maxSpeed) {
             diffX = (diffX / moveDist) * maxSpeed;
@@ -1285,7 +1301,7 @@ function updateLaserPhysicsLoop() {
             x = smoothX;
             y = smoothY;
           }
-        } else if (distance < 55) {
+        } else if (distance < pounceDist) {
           kiwi.classList.remove('kiwi-chasing', 'walking');
         }
       }
@@ -1443,6 +1459,9 @@ let triggeredAlarms = {};
 function triggerAlarm(alarm, alarmKey) {
   if (!triggeredAlarms[alarmKey]) {
     triggeredAlarms[alarmKey] = true;
+    if (isLaserGameActive) {
+      toggleLaserGame(false);
+    }
     resetIdle();
     showAlarmBubble(alarm);
     kiwi.classList.add('jumping');
@@ -1520,12 +1539,14 @@ setInterval(() => {
     x = currentPos.x;
     y = currentPos.y;
     
-    // 5% 機率進行遠距離散步
-    let rangeX = 300;
-    let rangeY = 100;
+    const scale = getResolutionScale();
+
+    // 5% 機率進行遠距離散步 (隨螢幕解析度動態縮放)
+    let rangeX = 300 * scale;
+    let rangeY = 100 * scale;
     if (Math.random() < 0.05) {
-      rangeX = 1500;
-      rangeY = 500;
+      rangeX = 1500 * scale;
+      rangeY = 500 * scale;
     }
     
     // 決定移動距離
@@ -1558,11 +1579,12 @@ setInterval(() => {
     // 加上走路動畫 class (身體晃動)
     kiwi.classList.add('walking');
 
-    // 計算實際移動距離與步數，保持移動速度大約一致 (約每 16ms 移動 2.5 像素)
+    // 計算實際移動距離與步數，保持視覺移動速度一致 (基於 Full HD 2.5px * scale)
     const dx = targetX - x;
     const dy = targetY - y;
     const distance = Math.sqrt(dx * dx + dy * dy);
-    const steps = Math.max(10, Math.round(distance / 2.5));
+    const stepSpeed = 2.5 * scale;
+    const steps = Math.max(10, Math.round(distance / stepSpeed));
     
     let currentStep = 0;
     
