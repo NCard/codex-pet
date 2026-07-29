@@ -43,6 +43,7 @@ function createWindow() {
   const randomY = Math.floor(Math.random() * (screenHeight - winHeight));
 
   mainWindow = new BrowserWindow({
+    icon: path.join(__dirname, '../../assets/images/kiwi.png'),
     width: winWidth,
     height: winHeight,
     x: randomX,
@@ -138,6 +139,7 @@ app.whenReady().then(() => {
       return;
     }
     historyWin = new BrowserWindow({
+    icon: path.join(__dirname, '../../assets/images/kiwi.png'),
       width: 600,
       height: 800,
       title: 'Wiki Wiki 歷史對話紀錄',
@@ -158,6 +160,7 @@ app.whenReady().then(() => {
       return;
     }
     alarmWin = new BrowserWindow({
+    icon: path.join(__dirname, '../../assets/images/kiwi.png'),
       width: 500,
       height: 650,
       title: 'Wiki Wiki 鬧鐘排程',
@@ -177,6 +180,7 @@ app.whenReady().then(() => {
       return;
     }
     todoWin = new BrowserWindow({
+    icon: path.join(__dirname, '../../assets/images/kiwi.png'),
       width: 500,
       height: 650,
       title: 'Wiki Wiki 待辦事項',
@@ -196,6 +200,7 @@ app.whenReady().then(() => {
       return;
     }
     outfitWin = new BrowserWindow({
+    icon: path.join(__dirname, '../../assets/images/kiwi.png'),
       width: 400,
       height: 550,
       title: 'Wiki Wiki 的衣櫥',
@@ -230,6 +235,7 @@ app.whenReady().then(() => {
 
     laserOverlayWindows = displays.map((display) => {
       const win = new BrowserWindow({
+    icon: path.join(__dirname, '../../assets/images/kiwi.png'),
         width: display.bounds.width,
         height: display.bounds.height,
         x: display.bounds.x,
@@ -295,6 +301,7 @@ app.whenReady().then(() => {
       return;
     }
     settingsWindow = new BrowserWindow({
+    icon: path.join(__dirname, '../../assets/images/kiwi.png'),
       width: 350,
       height: 500,
       title: 'Wiki Wiki 設定中心',
