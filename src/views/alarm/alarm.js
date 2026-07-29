@@ -12,58 +12,17 @@ const { alarmsPath, petStatePath } = require('../../utils/paths');
 let alarms = [];
 let todos = [];
 
-const hourSelect = document.getElementById('alarm-hour');
-const minuteSelect = document.getElementById('alarm-minute');
-const dateInput = document.getElementById('alarm-date');
-const msgInput = document.getElementById('alarm-message');
-const snoozeInput = document.getElementById('alarm-snooze');
-const addBtn = document.getElementById('add-alarm-btn');
+const btnOpenAdd = document.getElementById('btn-open-add');
 const alarmList = document.getElementById('alarm-list');
-const typeRadios = document.getElementsByName('alarm-type');
-const dateGroup = document.getElementById('date-group');
-const weeklyGroup = document.getElementById('weekly-group');
-const dayCheckboxes = document.querySelectorAll('.days-selector input[type="checkbox"]');
 
-let editingId = null;
-
-// Toggle UI based on type
-function updateTypeUI() {
-  const selectedType = document.querySelector('input[name="alarm-type"]:checked').value;
-  if (selectedType === 'date') {
-    dateGroup.style.display = 'flex';
-    weeklyGroup.style.display = 'none';
-  } else {
-    dateGroup.style.display = 'none';
-    weeklyGroup.style.display = 'block';
-  }
-}
-
-typeRadios.forEach(radio => radio.addEventListener('change', updateTypeUI));
-// Initialize UI
-updateTypeUI();
-
-// Initialize Time Options
-for(let i=0; i<24; i++) {
-  const val = i.toString().padStart(2, '0');
-  hourSelect.add(new Option(val, val));
-}
-for(let i=0; i<60; i++) {
-  const val = i.toString().padStart(2, '0');
-  minuteSelect.add(new Option(val, val));
-}
-
-// Set default date and time to now
-const now = new Date();
-dateInput.value = now.toISOString().split('T')[0];
-hourSelect.value = now.getHours().toString().padStart(2, '0');
-minuteSelect.value = now.getMinutes().toString().padStart(2, '0');
+let isCreatingDraft = false;
+let activeEditId = null;
 
 function loadAlarms() {
   if (fs.existsSync(alarmsPath)) {
     try {
       const data = fs.readFileSync(alarmsPath, 'utf8');
       alarms = JSON.parse(data);
-      // Migrate old alarms
       alarms.forEach(a => {
         if (!a.type) {
           a.type = 'weekly';
@@ -78,7 +37,6 @@ function loadAlarms() {
     alarms = [];
   }
   
-  // 載入待辦事項用於雙向綁定顯示
   if (fs.existsSync(petStatePath)) {
     try {
       const petStateData = JSON.parse(fs.readFileSync(petStatePath, 'utf8'));
@@ -88,7 +46,6 @@ function loadAlarms() {
     }
   }
 
-  // Sort alarms by time
   alarms.sort((a, b) => a.time.localeCompare(b.time));
   renderAlarms();
 }
@@ -101,15 +58,209 @@ function saveAlarms() {
   }
 }
 
+function createAlarmInlineForm(initialData, isDraft, onSave, onCancel) {
+  const formCard = document.createElement('div');
+  formCard.className = 'inline-form-card';
+
+  const data = initialData || {
+    type: 'date',
+    date: new Date().toISOString().split('T')[0],
+    time: `${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`,
+    days: [0, 1, 2, 3, 4, 5, 6],
+    message: '',
+    snoozeInterval: 5
+  };
+
+  const [initH, initM] = (data.time || '12:00').split(':');
+
+  formCard.innerHTML = `
+    <div class="inline-form-row" style="gap: 20px; font-size: 13px; font-weight: bold;">
+      <label style="cursor: pointer;"><input type="radio" class="inline-type-radio" value="date" ${data.type === 'date' ? 'checked' : ''}> 📅 特定日期</label>
+      <label style="cursor: pointer;"><input type="radio" class="inline-type-radio" value="weekly" ${data.type === 'weekly' ? 'checked' : ''}> 🔁 每週重複</label>
+    </div>
+
+    <div class="inline-date-group" style="display: ${data.type === 'date' ? 'block' : 'none'};">
+      <input type="date" class="inline-date-input" value="${data.date || new Date().toISOString().split('T')[0]}" style="width: 100%; box-sizing: border-box; padding: 6px 10px; border: 1.5px solid #c5e1a5; border-radius: 10px; outline: none; font-family: inherit; font-size: 13px;">
+    </div>
+
+    <div class="inline-weekly-group" style="display: ${data.type === 'weekly' ? 'block' : 'none'};">
+      <div class="days-selector" style="display: flex; gap: 4px; justify-content: space-between;">
+        ${['日','一','二','三','四','五','六'].map((day, idx) => `
+          <label class="day-chip">
+            <input type="checkbox" class="inline-day-cb" value="${idx}" ${(data.days || []).includes(idx) ? 'checked' : ''}>
+            <span>${day}</span>
+          </label>
+        `).join('')}
+      </div>
+    </div>
+
+    <div class="inline-form-row space-between" style="font-size: 13px;">
+      <div style="display: flex; align-items: center; gap: 4px;">
+        <span style="font-weight: bold; color: var(--theme-text-sub);">時間:</span>
+        <select class="inline-hour-select" style="padding: 5px 8px; border: 1.5px solid #c5e1a5; border-radius: 10px; outline: none; font-size: 13px; font-weight: bold;"></select>
+        <span>:</span>
+        <select class="inline-minute-select" style="padding: 5px 8px; border: 1.5px solid #c5e1a5; border-radius: 10px; outline: none; font-size: 13px; font-weight: bold;"></select>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 4px;">
+        <span style="font-weight: bold; color: var(--theme-text-sub);">貪睡:</span>
+        <input type="number" class="inline-snooze-input" value="${data.snoozeInterval || 5}" min="1" max="60" style="width: 48px; padding: 4px 6px; border: 1.5px solid #c5e1a5; border-radius: 8px; outline: none; text-align: center; font-size: 13px;">
+        <span style="color: var(--theme-text-sub);">分鐘</span>
+      </div>
+    </div>
+
+    <div class="inline-form-row">
+      <input type="text" class="inline-msg-input" placeholder="例如：下班囉！記得打卡！" value="${data.message || ''}" style="width: 100%; box-sizing: border-box; padding: 8px 12px; border: 1.5px solid #c5e1a5; border-radius: 10px; outline: none; font-size: 13px;">
+    </div>
+
+    <div class="inline-error-tip"></div>
+
+    <div class="inline-form-row space-between" style="margin-top: 2px;">
+      <div class="inline-form-actions" style="margin-left: auto;">
+        <button class="btn-cancel">取消</button>
+        <button class="btn-confirm">${isDraft ? '➕ 建立' : '💾 儲存'}</button>
+      </div>
+    </div>
+  `;
+
+  const hourSelect = formCard.querySelector('.inline-hour-select');
+  const minSelect = formCard.querySelector('.inline-minute-select');
+  for (let i = 0; i < 24; i++) {
+    const val = i.toString().padStart(2, '0');
+    hourSelect.add(new Option(val, val));
+  }
+  for (let i = 0; i < 60; i++) {
+    const val = i.toString().padStart(2, '0');
+    minSelect.add(new Option(val, val));
+  }
+  hourSelect.value = initH;
+  minSelect.value = initM;
+
+  const radios = formCard.querySelectorAll('.inline-type-radio');
+  const dateGroup = formCard.querySelector('.inline-date-group');
+  const weeklyGroup = formCard.querySelector('.inline-weekly-group');
+  const errorTip = formCard.querySelector('.inline-error-tip');
+
+  const showError = (msg) => {
+    errorTip.textContent = `⚠️ ${msg}`;
+    errorTip.style.display = 'block';
+    setTimeout(() => { errorTip.style.display = 'none'; }, 3000);
+  };
+
+  radios.forEach(r => r.addEventListener('change', () => {
+    if (r.value === 'date') {
+      dateGroup.style.display = 'block';
+      weeklyGroup.style.display = 'none';
+    } else {
+      dateGroup.style.display = 'none';
+      weeklyGroup.style.display = 'block';
+    }
+  }));
+
+  formCard.querySelector('.btn-confirm').onclick = () => {
+    const selectedType = formCard.querySelector('.inline-type-radio:checked').value;
+    const time = `${hourSelect.value}:${minSelect.value}`;
+    const msg = formCard.querySelector('.inline-msg-input').value.trim();
+    const snooze = parseInt(formCard.querySelector('.inline-snooze-input').value, 10) || 5;
+    const dateVal = formCard.querySelector('.inline-date-input').value;
+
+    let days = [];
+    if (selectedType === 'weekly') {
+      formCard.querySelectorAll('.inline-day-cb').forEach(cb => {
+        if (cb.checked) days.push(parseInt(cb.value, 10));
+      });
+      if (days.length === 0) {
+        showError('每週重複模式必須至少選擇一天！');
+        return;
+      }
+    } else {
+      if (!dateVal) {
+        showError('請選擇特定日期！');
+        return;
+      }
+    }
+
+    if (!msg) {
+      showError('請輸入提醒內容！');
+      return;
+    }
+
+    onSave({
+      type: selectedType,
+      time: time,
+      date: dateVal,
+      days: days,
+      message: msg,
+      snoozeInterval: snooze
+    });
+  };
+
+  const msgInputEl = formCard.querySelector('.inline-msg-input');
+  msgInputEl.onmousedown = (e) => {
+    e.stopPropagation();
+  };
+  msgInputEl.onclick = () => {
+    msgInputEl.focus();
+  };
+  msgInputEl.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      formCard.querySelector('.btn-confirm').click();
+    }
+  });
+
+  formCard.querySelector('.btn-cancel').onclick = () => {
+    onCancel();
+  };
+
+  setTimeout(() => {
+    window.focus();
+    msgInputEl.focus();
+  }, 50);
+
+  return formCard;
+}
+
 function renderAlarms() {
   alarmList.innerHTML = '';
+
+  if (isCreatingDraft) {
+    const draftForm = createAlarmInlineForm(null, true, (newAlarmData) => {
+      alarms.push({
+        id: crypto.randomUUID(),
+        enabled: true,
+        ...newAlarmData
+      });
+      saveAlarms();
+      isCreatingDraft = false;
+      loadAlarms();
+    }, () => {
+      isCreatingDraft = false;
+      renderAlarms();
+    });
+    alarmList.appendChild(draftForm);
+  }
   
-  if (alarms.length === 0) {
-    alarmList.innerHTML = '<div class="empty-state">還沒有設定任何提醒喔！<br>趕快在上方新增一個吧！</div>';
+  if (alarms.length === 0 && !isCreatingDraft) {
+    alarmList.innerHTML = '<div class="empty-state">還沒有設定任何提醒喔！<br>點擊右上角「➕ 新增」建立第一個提醒吧！</div>';
     return;
   }
 
   alarms.forEach(alarm => {
+    if (activeEditId === alarm.id) {
+      const editForm = createAlarmInlineForm(alarm, false, (updatedData) => {
+        Object.assign(alarm, updatedData);
+        saveAlarms();
+        activeEditId = null;
+        loadAlarms();
+      }, () => {
+        activeEditId = null;
+        renderAlarms();
+      });
+      alarmList.appendChild(editForm);
+      return;
+    }
+
     const item = document.createElement('div');
     item.className = 'alarm-item' + (alarm.enabled ? '' : ' disabled');
     
@@ -139,13 +290,19 @@ function renderAlarms() {
     }
 
     if (linkedTodo) {
-      linkedTodoHtml = `<button class="linked-badge todo-link-btn" title="點擊前往待辦事項視窗" onclick="ipcRenderer.send('open-todo')">📋 綁定待辦 🔗</button>`;
+      linkedTodoHtml = `<button class="linked-badge todo-link-btn" title="點擊前往待辦事項視窗" onclick="ipcRenderer.send('open-todo')">🔗</button>`;
     }
 
-    // 清理重複的「📋 待辦提醒：」前綴，避免在鬧鐘卡片中重複顯示兩次
     const displayMsg = alarm.message.replace(/^📋 待辦提醒：/, '');
 
-    msgDiv.innerHTML = `<span style="font-size:12px; color:#00796b; font-weight:bold;">${typeText}</span> ${linkedTodoHtml}<br>${displayMsg}<br><span style="font-size: 11px; color: #888;">(貪睡: ${alarm.snoozeInterval || 5} 分鐘)</span>`;
+    msgDiv.innerHTML = `
+      <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #00796b; font-weight: bold;">
+        <span>${typeText}</span>
+        ${linkedTodoHtml}
+      </div>
+      <div style="font-size: 13px; color: var(--theme-text-body); margin-top: 3px; line-height: 1.3;">${displayMsg}</div>
+      <div style="font-size: 11px; color: #888; margin-top: 2px;">(貪睡: ${alarm.snoozeInterval || 5} 分鐘)</div>
+    `;
     
     const actionsDiv = document.createElement('div');
     actionsDiv.className = 'alarm-actions';
@@ -165,26 +322,9 @@ function renderAlarms() {
     editBtn.innerHTML = '✏️';
     editBtn.title = '編輯';
     editBtn.onclick = () => {
-      editingId = alarm.id;
-      const [h, m] = alarm.time.split(':');
-      hourSelect.value = h;
-      minuteSelect.value = m;
-      msgInput.value = alarm.message;
-      snoozeInput.value = alarm.snoozeInterval || 5;
-      
-      document.querySelector(`input[name="alarm-type"][value="${alarm.type}"]`).checked = true;
-      updateTypeUI();
-      
-      if (alarm.type === 'date') {
-        dateInput.value = alarm.date;
-      } else {
-        dayCheckboxes.forEach(cb => {
-          cb.checked = alarm.days.includes(parseInt(cb.value));
-        });
-      }
-      
-      addBtn.innerHTML = '💾 儲存';
-      addBtn.style.background = '#4caf50';
+      activeEditId = alarm.id;
+      isCreatingDraft = false;
+      renderAlarms();
     };
     
     const deleteBtn = document.createElement('button');
@@ -192,18 +332,20 @@ function renderAlarms() {
     deleteBtn.innerHTML = '<i class="theme-icon icon-trash"></i>';
     deleteBtn.title = '刪除';
     deleteBtn.onclick = () => {
-      if (confirm(`確定要刪除「${alarm.time}」的提醒嗎？`)) {
+      actionsDiv.innerHTML = `
+        <span style="font-size:11px; color:#e53935; font-weight:bold;">確定刪除？</span>
+        <button class="btn-confirm-del" style="padding:3px 8px; background:#e53935; color:#fff; border:none; border-radius:8px; cursor:pointer; font-size:11px; font-weight:bold;">刪除</button>
+        <button class="btn-cancel-del" style="padding:3px 8px; background:#eee; border:none; border-radius:8px; cursor:pointer; font-size:11px;">取消</button>
+      `;
+      actionsDiv.querySelector('.btn-confirm-del').onclick = () => {
         alarms = alarms.filter(a => a.id !== alarm.id);
-        if (editingId === alarm.id) {
-          editingId = null;
-          addBtn.textContent = '➕ 新增提醒';
-          addBtn.style.background = '#ff9800';
-          timeInput.value = '';
-          msgInput.value = '';
-        }
+        if (activeEditId === alarm.id) activeEditId = null;
         saveAlarms();
         renderAlarms();
-      }
+      };
+      actionsDiv.querySelector('.btn-cancel-del').onclick = () => {
+        renderAlarms();
+      };
     };
     
     actionsDiv.appendChild(toggleBtn);
@@ -218,76 +360,11 @@ function renderAlarms() {
   });
 }
 
-addBtn.onclick = () => {
-  const selectedType = document.querySelector('input[name="alarm-type"]:checked').value;
-  const time = `${hourSelect.value}:${minuteSelect.value}`;
-  const msg = msgInput.value.trim();
-  const snooze = parseInt(snoozeInput.value, 10) || 5;
-  const dateVal = dateInput.value;
-  
-  let days = [];
-  if (selectedType === 'weekly') {
-    dayCheckboxes.forEach(cb => {
-      if (cb.checked) days.push(parseInt(cb.value));
-    });
-    if (days.length === 0) {
-      alert('每週重複模式必須至少選擇一天！');
-      return;
-    }
-  } else {
-    if (!dateVal) {
-      alert('請選擇特定日期！');
-      return;
-    }
-  }
-  
-  if (!time) {
-    alert('請選擇時間！');
-    return;
-  }
-  
-  if (!msg) {
-    alert('請輸入提醒內容！');
-    return;
-  }
-  
-  if (editingId) {
-    const alarm = alarms.find(a => a.id === editingId);
-    if (alarm) {
-      alarm.type = selectedType;
-      alarm.time = time;
-      alarm.date = dateVal;
-      alarm.days = days;
-      alarm.message = msg;
-      alarm.snoozeInterval = snooze;
-    }
-    editingId = null;
-    addBtn.textContent = '➕ 新增提醒';
-    addBtn.style.background = '#ff9800';
-  } else {
-    alarms.push({
-      id: crypto.randomUUID(),
-      type: selectedType,
-      time: time,
-      date: dateVal,
-      days: days,
-      message: msg,
-      snoozeInterval: snooze,
-      enabled: true
-    });
-  }
-  
-  saveAlarms();
-  msgInput.value = '';
-  snoozeInput.value = '5';
-  loadAlarms();
+btnOpenAdd.onclick = () => {
+  isCreatingDraft = true;
+  activeEditId = null;
+  renderAlarms();
+  window.focus();
 };
 
-msgInput.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') {
-    addBtn.click();
-  }
-});
-
-// Initial load
 loadAlarms();
