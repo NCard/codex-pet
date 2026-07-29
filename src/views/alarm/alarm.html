@@ -8,45 +8,11 @@
 </head>
 <body>
   <div class="header">
-    <h1><i class="theme-icon icon-alarm"></i> 鬧鐘排程</h1>
-    <p>設定時間，時間到了我會叫你喔！</p>
-  </div>
-  
-  <div class="form-container">
-    <div style="margin-bottom: 10px; display: flex; gap: 15px;">
-      <label><input type="radio" name="alarm-type" value="date" checked> 📅 特定日期</label>
-      <label><input type="radio" name="alarm-type" value="weekly"> 🔁 每週重複</label>
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+      <h1 style="margin: 0;"><i class="theme-icon icon-alarm"></i> 鬧鐘排程</h1>
+      <button id="btn-open-add" class="add-header-btn"><i class="theme-icon icon-add"></i> 新增</button>
     </div>
-    
-    <div class="input-group" id="date-group">
-      <input type="date" id="alarm-date" required>
-    </div>
-    
-    <div id="weekly-group" style="display: none; margin-bottom: 10px;">
-      <div class="days-selector">
-        <label class="day-chip"><input type="checkbox" value="0"><span>日</span></label>
-        <label class="day-chip"><input type="checkbox" value="1"><span>一</span></label>
-        <label class="day-chip"><input type="checkbox" value="2"><span>二</span></label>
-        <label class="day-chip"><input type="checkbox" value="3"><span>三</span></label>
-        <label class="day-chip"><input type="checkbox" value="4"><span>四</span></label>
-        <label class="day-chip"><input type="checkbox" value="5"><span>五</span></label>
-        <label class="day-chip"><input type="checkbox" value="6"><span>六</span></label>
-      </div>
-    </div>
-
-    <div class="input-group" style="margin-top: 10px;">
-      <div style="display: flex; align-items: center; gap: 5px;">
-        <select id="alarm-hour" style="padding: 8px; border: 1px solid #c5e1a5; border-radius: 12px; outline: none;"></select>
-        <span>:</span>
-        <select id="alarm-minute" style="padding: 8px; border: 1px solid #c5e1a5; border-radius: 12px; outline: none;"></select>
-      </div>
-      <input type="text" id="alarm-message" placeholder="例如：下班囉！記得打卡！" required>
-    </div>
-    <div class="input-group" style="margin-top: 10px;">
-      <label for="alarm-snooze" style="font-size: 13px; font-weight: bold; color: var(--theme-text-sub);">貪睡間隔 (分鐘):</label>
-      <input type="number" id="alarm-snooze" value="5" min="1" max="60" style="width: 60px; padding: 6px 8px; border: 1.5px solid #c5e1a5; border-radius: 10px; outline: none;">
-      <button id="add-alarm-btn" style="flex: 1;"><i class="theme-icon icon-add"></i> 新增提醒</button>
-    </div>
+    <p style="margin-top: 4px;">設定時間，時間到了我會叫你喔！</p>
   </div>
 
   <div id="alarm-list">

@@ -62,6 +62,12 @@
   --theme-icon-save: url('../../assets/images/themes/kiwi/icons/save.svg');
 }
 
+/* 確保所有輸入框與文字區塊可正常選取與輸入文字 */
+input, textarea, select {
+  user-select: text !important;
+  -webkit-user-select: text !important;
+}
+
 /* 全局頁面背景：多重光影漸層 + 低飽和度淡雅奇異鳥無縫紋理 */
 body {
   background-color: var(--theme-bg-color, #f7faf3);

@@ -8,54 +8,11 @@
 </head>
 <body>
   <div class="header">
-    <h1><i class="theme-icon icon-todo"></i> 待辦事項小秘書</h1>
-    <p>記下該做的事，還能串聯提醒喔！</p>
-  </div>
-  
-  <div class="form-container">
-    <div class="input-group">
-      <textarea id="todo-text" placeholder="例如：明天早上 9 點開會 (可按 Shift+Enter 換行)" rows="2" required></textarea>
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+      <h1 style="margin: 0;"><i class="theme-icon icon-todo"></i> 待辦事項小秘書</h1>
+      <button id="btn-open-add" class="add-header-btn"><i class="theme-icon icon-add"></i> 新增</button>
     </div>
-    <div class="input-group" style="margin-top: 10px; align-items: flex-start; flex-direction: column; width: 100%;">
-      <label style="font-size: 13px; font-weight: bold; color: var(--theme-text-sub); cursor: pointer; display: flex; align-items: center; gap: 6px;">
-        <input type="checkbox" id="todo-has-alarm"> <span><i class="theme-icon icon-bell" style="width: 16px; height: 16px;"></i> 加上提醒 (建立鬧鐘)</span>
-      </label>
-      
-      <div id="todo-alarm-settings" style="display: none; flex-direction: column; gap: 8px; width: 100%; background: #ffffff; padding: 12px; border-radius: 14px; border: 1px solid #c5e1a5; box-shadow: 0 4px 12px rgba(0,0,0,0.03); margin-top: 8px;">
-        <div style="display: flex; gap: 15px;">
-          <label><input type="radio" name="todo-alarm-type" value="date" checked> 📅 日期</label>
-          <label><input type="radio" name="todo-alarm-type" value="weekly"> 🔁 每週</label>
-        </div>
-        
-        <div style="display: flex; gap: 6px; align-items: center;">
-          <input type="date" id="todo-alarm-date" style="padding: 6px 8px; border: 1.5px solid #c5e1a5; border-radius: 10px; outline: none;">
-          <select id="todo-alarm-hour" style="padding: 6px 8px; border: 1.5px solid #c5e1a5; border-radius: 10px; outline: none;"></select>
-          <span>:</span>
-          <select id="todo-alarm-minute" style="padding: 6px 8px; border: 1.5px solid #c5e1a5; border-radius: 10px; outline: none;"></select>
-        </div>
-        
-        <div id="todo-weekly-group" style="display: none;">
-          <div class="days-selector" style="display: flex; gap: 5px; justify-content: space-between; margin-top: 5px;">
-            <label class="day-chip"><input type="checkbox" value="0"><span>日</span></label>
-            <label class="day-chip"><input type="checkbox" value="1"><span>一</span></label>
-            <label class="day-chip"><input type="checkbox" value="2"><span>二</span></label>
-            <label class="day-chip"><input type="checkbox" value="3"><span>三</span></label>
-            <label class="day-chip"><input type="checkbox" value="4"><span>四</span></label>
-            <label class="day-chip"><input type="checkbox" value="5"><span>五</span></label>
-            <label class="day-chip"><input type="checkbox" value="6"><span>六</span></label>
-          </div>
-        </div>
-        
-        <div style="display: flex; align-items: center; gap: 6px;">
-          <span style="font-size: 12px; color: var(--theme-text-sub);">貪睡間隔:</span>
-          <input type="number" id="todo-snooze" value="5" min="1" max="60" style="width: 55px; padding: 4px 6px; border: 1.5px solid #c5e1a5; border-radius: 8px; outline: none;"> 分鐘
-        </div>
-      </div>
-      
-      <button id="add-todo-btn" style="width: 100%; margin-top: 12px; padding: 10px; background: var(--theme-btn-primary-bg); color: white; border: none; border-radius: 14px; cursor: pointer; font-weight: bold; box-shadow: var(--theme-btn-primary-shadow); transition: var(--theme-transition); display: flex; align-items: center; justify-content: center; gap: 6px;">
-        <i class="theme-icon icon-add"></i> 新增待辦
-      </button>
-    </div>
+    <p style="margin-top: 4px;">記下該做的事，還能串聯提醒喔！</p>
   </div>
 
   <div id="todo-list">
