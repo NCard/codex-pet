@@ -18,17 +18,28 @@
     </div>
     <!-- 自訂右鍵選單 -->
     <div id="custom-menu" style="display: none;">
-      <div class="menu-item" id="menu-history">📜 歷史對話 (History)</div>
-      <div class="menu-item" id="menu-alarm">⏰ 鬧鐘排程 (Alarms)</div>
-      <div class="menu-item" id="menu-todo">📋 待辦事項 (Todo)</div>
-      <div class="menu-item" id="menu-feed">🍎 餵食 (Feed)</div>
-      <div class="menu-item" id="menu-pet">✋ 摸摸 (Pet)</div>
-      <div class="menu-item" id="menu-laser">🔴 開啟雷射筆 (Laser Game)</div>
-      <div class="menu-item" id="menu-sleep">💤 睡覺 (Sleep)</div>
-      <div class="menu-item" id="menu-outfit">🎩 衣櫥 (Outfit)</div>
-      <div class="menu-item" id="menu-settings">⚙️ 設定 (Settings)</div>
+      <div class="menu-group-title">— 效率工具 —</div>
+      <div class="menu-item" id="menu-todo">📋 待辦事項</div>
+      <div class="menu-item" id="menu-alarm">⏰ 鬧鐘排程</div>
+      <div class="menu-item" id="menu-history">📜 歷史對話</div>
+      
       <div class="menu-separator"></div>
-      <div class="menu-item" id="menu-close">❌ 關閉 (Exit)</div>
+      <div class="menu-group-title">— 互動玩耍 —</div>
+      <div class="menu-item" id="menu-feed">🍎 餵食</div>
+      <div class="menu-item" id="menu-pet">✋ 摸摸</div>
+      <div class="menu-item" id="menu-sleep">💤 睡覺</div>
+      <div class="menu-item" id="menu-laser">🔴 開啟雷射筆</div>
+      
+      <div class="menu-separator"></div>
+      <div class="menu-group-title">— 系統設定 —</div>
+      <div class="menu-item" id="menu-outfit">🎩 換裝衣櫥</div>
+      <div class="menu-item" id="menu-settings">⚙️ 設定</div>
+      
+      <div class="menu-separator"></div>
+      <div class="menu-footer-row">
+        <div class="menu-item menu-footer-btn" id="menu-cancel">取消</div>
+        <div class="menu-item menu-footer-btn danger" id="menu-close">結束</div>
+      </div>
     </div>
     <div id="laser-dot" style="display: none; position: fixed; width: 16px; height: 16px; border-radius: 50%; background: #ff1744; box-shadow: 0 0 12px #ff1744, 0 0 24px #ff5252; pointer-events: none; z-index: 9999; transform: translate(-50%, -50%); animation: laserPulse 0.6s infinite alternate;"></div>
     <div id="kiwi-wrapper" style="position: relative; display: inline-block;">

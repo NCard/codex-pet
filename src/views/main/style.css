@@ -174,31 +174,54 @@ body, html {
 
 #custom-menu {
   position: absolute;
-  background: white;
-  border: 1px solid #c5e1a5;
-  border-radius: 10px;
-  padding: 6px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  background-color: #fbfdf8;
+  background-image: 
+    radial-gradient(circle at 100% 0%, rgba(139, 195, 74, 0.25) 0%, transparent 65%),
+    radial-gradient(circle at 0% 100%, rgba(174, 213, 129, 0.15) 0%, transparent 60%),
+    linear-gradient(145deg, #fbfdf8 0%, #f4f9ed 100%);
+  border: 1.5px solid #aed581;
+  border-radius: 14px;
+  padding: 8px;
+  box-shadow: 0 10px 30px rgba(46, 125, 50, 0.08), 0 2px 8px rgba(0, 0, 0, 0.03);
   z-index: 1000;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
   user-select: none;
-  font-family: 'Microsoft JhengHei', sans-serif;
+  font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Microsoft JhengHei', sans-serif;
   max-height: 220px;
+  min-width: 160px;
   overflow-y: auto;
   overflow-x: hidden;
+  animation: menuFadeIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transform-origin: top left;
+}
+
+#custom-menu::-webkit-scrollbar {
+  width: 5px;
+}
+#custom-menu::-webkit-scrollbar-track {
+  background: transparent;
+}
+#custom-menu::-webkit-scrollbar-thumb {
+  background: #c5e1a5;
+  border-radius: 10px;
+}
+
+@keyframes menuFadeIn {
+  from { opacity: 0; transform: scale(0.9) translateY(-10px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
 }
 
 .menu-item {
-  padding: 6px 12px;
+  padding: 8px 14px;
   cursor: pointer;
-  border-radius: 6px;
+  border-radius: 10px;
   font-size: 13px;
   font-weight: bold;
   white-space: nowrap;
-  color: #336600;
+  color: #37474f;
   text-align: left;
-  transition: background 0.15s ease, transform 0.15s ease;
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .menu-item:hover {
@@ -209,8 +232,59 @@ body, html {
 
 .menu-separator {
   height: 1px;
-  background: #e0e0e0;
-  margin: 3px 0;
+  background: rgba(197, 225, 165, 0.4);
+  margin: 3px 4px;
+}
+
+.menu-group-title {
+  font-size: 11px;
+  color: #78909c;
+  text-align: center;
+  padding: 4px 0 2px 0;
+  margin: 0;
+  pointer-events: none;
+  font-weight: bold;
+  letter-spacing: 0.5px;
+}
+
+.menu-item.danger:hover {
+  background: #ffebee;
+  color: #d32f2f;
+}
+
+.menu-footer-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.menu-footer-btn {
+  flex: 1;
+  text-align: center;
+  justify-content: center;
+  display: flex;
+  padding: 8px 0;
+  font-size: 12px;
+  background: rgba(120, 144, 156, 0.1);
+  color: #546e7a;
+  border-radius: 10px;
+}
+
+.menu-item.menu-footer-btn:hover {
+  background: rgba(120, 144, 156, 0.2);
+  color: #37474f;
+  transform: translateY(-2px);
+}
+
+.menu-footer-btn.danger {
+  color: #d32f2f;
+  background: rgba(211, 47, 47, 0.08);
+}
+
+.menu-item.menu-footer-btn.danger:hover {
+  background: rgba(211, 47, 47, 0.15);
+  color: #b71c1c;
+  transform: translateY(-2px);
 }
 
 .chat-bubble::after {

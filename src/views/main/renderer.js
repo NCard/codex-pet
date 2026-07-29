@@ -1092,6 +1092,13 @@ menuClose.addEventListener('click', () => {
   ipcRenderer.send('request-close-confirm');
 });
 
+const menuCancel = document.getElementById('menu-cancel');
+if (menuCancel) {
+  menuCancel.addEventListener('click', () => {
+    customMenu.style.display = 'none';
+  });
+}
+
 // --- 雷射筆追逐小遊戲 (Laser Pointer Chase Game - 全螢幕全域 60fps 平滑追逐) ---
 let isLaserGameActive = false;
 let laserTimeoutTimer = null;
