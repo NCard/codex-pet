@@ -169,6 +169,18 @@ function showTempBubble(text, duration = 5000) {
 }
 
 ipcRenderer.on('summon-pet', () => {
+  const heart = document.getElementById('kiwi-heart');
+  if (heart) {
+    heart.style.display = 'block';
+    heart.style.animation = 'none';
+    heart.offsetHeight;
+    heart.style.animation = 'floatHeart 1s ease-out forwards';
+    setTimeout(() => { heart.style.display = 'none'; }, 1000);
+  }
+  
+  kiwi.classList.add('jumping');
+  setTimeout(() => { kiwi.classList.remove('jumping'); }, 500);
+
   const summonPhrases = [
     '找我嗎？ (・ω・)ノ',
     '您召喚了我嗎？ ✨(˶˚ ᗨ ˚˶)✨',
