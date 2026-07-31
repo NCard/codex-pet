@@ -95,93 +95,17 @@ async function initMCP() {
 
 initMCP().catch(console.error);
 
-function saveChatHistory(role, message) {
-  let history = [];
-  try {
-    if (fs.existsSync(historyPath)) {
-      const data = fs.readFileSync(historyPath, 'utf8');
-      if (data.trim() !== '') {
-        try {
-          const decrypted = cryptoUtils.decryptData(data);
-          history = JSON.parse(decrypted);
-        } catch (e) {
-          history = JSON.parse(data);
-        }
-      }
-    }
-  } catch (e) {
-    console.error('Failed to read history:', e);
-  }
-
-  history.push({
-    role,
-    message,
-    timestamp: new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' })
-  });
-
-  try {
-    const jsonStr = JSON.stringify(history, null, 2);
-    const encryptedStr = cryptoUtils.encryptData(jsonStr);
-    fs.writeFileSync(historyPath, encryptedStr, 'utf8');
-  } catch (e) {
-    console.error('Failed to save history:', e);
-  }
-}
-
-function clearChatHistory() {
-  try {
-    const encryptedStr = cryptoUtils.encryptData("[]");
-    fs.writeFileSync(historyPath, encryptedStr, 'utf8');
-  } catch (e) {
-    console.error('Failed to clear history:', e);
-  }
-}
-
-// 寵物狀態管理存儲機制
-let petState = {
-  hunger: 100,
-  mood: 100,
-  outfits: [],
-  outfitConfigs: {},
-  todos: [],
-  settings: {}
-};
-
-function loadPetState() {
-  try {
-    if (fs.existsSync(statePath)) {
-      const data = fs.readFileSync(statePath, 'utf8');
-      petState = { ...petState, ...JSON.parse(data) };
-      
-      // Data Migration: outfit (string) to outfits (array)
-      if (petState.outfit !== undefined) {
-        if (petState.outfit && typeof petState.outfit === 'string') {
-          if (!petState.outfits) petState.outfits = [];
-          if (!petState.outfits.includes(petState.outfit)) {
-            petState.outfits.push(petState.outfit);
-          }
-        }
-        delete petState.outfit;
-      }
-      
-      if (!petState.outfits) petState.outfits = [];
-      if (!petState.outfitConfigs) petState.outfitConfigs = {};
-    }
-  } catch (e) {
-    console.error('載入寵物狀態失敗:', e);
-  }
-}
-
-function savePetState() {
-  try {
-    fs.writeFileSync(statePath, JSON.stringify(petState, null, 2), 'utf8');
-  } catch (e) {
-    console.error('儲存寵物狀態失敗:', e);
-  }
-}
+const stateManager = require('./state.js');
+let petState = stateManager.petState;
 
 // 啟動時載入狀態
-loadPetState();
+stateManager.loadPetState();
+
+// 為了相容原本直接呼叫這幾個函式的地方，建立 alias
+const loadPetState = () => stateManager.loadPetState();
+const savePetState = () => stateManager.savePetState();
+const saveChatHistory = (role, message) => stateManager.saveChatHistory(role, message);
+const clearChatHistory = () => stateManager.clearChatHistory();
 applySettings(petState.settings);
 // 初始化待辦事項 UI
 // (已經移至獨立視窗)
