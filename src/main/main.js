@@ -389,10 +389,13 @@ app.whenReady().then(() => {
 
   ipcMain.on('alarms-changed', () => {
     if (alarmWin) alarmWin.webContents.send('reload-data');
+    if (mainWindow) mainWindow.webContents.send('reload-data');
   });
 
   ipcMain.on('pet-state-changed', () => {
     if (todoWin) todoWin.webContents.send('reload-data');
+    if (mainWindow) mainWindow.webContents.send('reload-data');
+    if (settingsWindow) settingsWindow.webContents.send('reload-data');
   });
 
   app.on('activate', () => {

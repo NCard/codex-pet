@@ -53,6 +53,7 @@ function saveAlarms() {
 function saveTodos() {
   try {
     fs.writeFileSync(statePath, JSON.stringify(petState, null, 2), 'utf8');
+    ipcRenderer.send('pet-state-changed');
   } catch (e) {
     console.error('Failed to save pet state:', e);
   }

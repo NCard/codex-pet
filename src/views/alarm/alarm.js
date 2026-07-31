@@ -53,6 +53,7 @@ function loadAlarms() {
 function saveAlarms() {
   try {
     fs.writeFileSync(alarmsPath, JSON.stringify(alarms, null, 2), 'utf8');
+    ipcRenderer.send('alarms-changed');
   } catch (e) {
     console.error('Failed to save alarms:', e);
   }

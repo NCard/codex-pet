@@ -134,4 +134,8 @@ function initDragging(ctx) {
   });
 }
 
-module.exports = { initDragging };
+module.exports = { 
+  initDragging,
+  getIsDragging: () => isDragging,
+  getHasDragged: () => hasDragged
+};

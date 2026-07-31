@@ -671,6 +671,10 @@ ipcRenderer.on('update-outfit', (event, newOutfits) => {
   setTimeout(() => { kiwi.classList.remove('jumping'); }, 500);
 });
 
+ipcRenderer.on('reload-data', () => {
+  loadPetState();
+});
+
 ipcRenderer.on('update-outfit-pos', (event, { outfit, x, y, scale }) => {
   if (!petState.outfitConfigs) petState.outfitConfigs = {};
   if (!petState.outfitConfigs[outfit]) {
@@ -951,7 +955,7 @@ function updateLaserPhysicsLoop() {
       const currentPos = getRealWindowPos();
       const now = Date.now();
 
-      if (currentAction !== 'sleeping' && currentAction !== 'grabbed' && !isDragging) {
+      if (currentAction !== 'sleeping' && currentAction !== 'grabbed' && !physics.getIsDragging()) {
         
         // 1. 🛡️ 開場對話階段 (isGameJustStarted)
         // 剛開啟時絕對不觸發抓取與移動，讓使用者看清對話。直到滑鼠拉開 70px (隨解析度縮放) 且滿 3 秒後才跳躍出發！
@@ -1241,7 +1245,7 @@ window.addEventListener('keydown', resetIdle);
 setInterval(() => {
   idleTime++;
   // 如果 60 秒沒有互動，就睡覺
-  if (idleTime > 60 && currentAction === 'idle' && !kiwi.classList.contains('sleeping') && !isWorking && !isDragging) {
+  if (idleTime > 60 && currentAction === 'idle' && !kiwi.classList.contains('sleeping') && !isWorking && !physics.getIsDragging()) {
     currentAction = 'sleeping'; // 進入睡覺狀態
     kiwi.classList.add('sleeping');
     const zzz = document.getElementById('kiwi-zzz');
@@ -1432,7 +1436,7 @@ setInterval(() => {
   petState.hunger = Math.max(0, petState.hunger - 1);
   petState.mood = Math.max(0, petState.mood - 1);
 
-  const isExcludedState = currentAction === 'sleeping' || kiwi.classList.contains('sleeping') || currentAction === 'grabbed' || isDragging;
+  const isExcludedState = currentAction === 'sleeping' || kiwi.classList.contains('sleeping') || currentAction === 'grabbed' || physics.getIsDragging();
 
   if (usage > 70) {
     if (!isWorking && kiwiAccessory.style.display === 'none' && !isExcludedState) {
@@ -1476,7 +1480,7 @@ let pettingTimeout = null;
 let isPetting = false;
 
 kiwi.addEventListener('mousemove', (e) => {
-  if (currentAction === 'sleeping' || isDragging || isDraggingOutfit || isDraggingBed) return;
+  if (currentAction === 'sleeping' || physics.getIsDragging() || isDraggingOutfit || isDraggingBed) return;
   
   const now = Date.now();
   if (now - lastPetTime > 500) {
@@ -1515,7 +1519,7 @@ kiwi.addEventListener('mousemove', (e) => {
 let lastIgnoreState = null;
 
 window.addEventListener('mousemove', (event) => {
-  if (isDragging || isDraggingOutfit || isDraggingBed) {
+  if (physics.getIsDragging() || isDraggingOutfit || isDraggingBed) {
     if (lastIgnoreState !== false) {
       lastIgnoreState = false;
       ipcRenderer.send('set-ignore-mouse-events', false);
