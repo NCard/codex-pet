@@ -360,6 +360,10 @@ app.whenReady().then(() => {
     registerGlobalShortcut();
     if (mainWindow) mainWindow.webContents.send('update-settings', settingsData);
   });
+
+  ipcMain.on('settings-preview', (event, settingsData) => {
+    if (mainWindow) mainWindow.webContents.send('preview-settings', settingsData);
+  });
   
   ipcMain.on('settings-dragged', (event, settingsData) => {
     if (settingsWindow) settingsWindow.webContents.send('update-settings-ui', settingsData);

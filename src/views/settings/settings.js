@@ -150,7 +150,7 @@ function getFormValues() {
 // 即時預覽廣播（不寫入硬碟）
 function previewBroadcast() {
   const values = getFormValues();
-  ipcRenderer.send('settings-changed', values);
+  ipcRenderer.send('settings-preview', values);
 }
 
 function saveSettings() {

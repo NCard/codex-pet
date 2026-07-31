@@ -803,6 +803,12 @@ ipcRenderer.on('update-settings', (event, newSettings) => {
   initAI();
 });
 
+ipcRenderer.on('preview-settings', (event, newSettings) => {
+  petState.settings = newSettings;
+  applySettings(newSettings);
+  initAI();
+});
+
 ipcRenderer.on('update-outfit', (event, newOutfits) => {
   petState.outfits = newOutfits || [];
   savePetState();
