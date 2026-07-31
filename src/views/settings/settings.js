@@ -169,6 +169,7 @@ function revertSettings() {
       }
     }
   } catch (e) {}
+  initUI();
   ipcRenderer.send('settings-changed', petState.settings);
   setDirty(false);
 }
@@ -212,6 +213,13 @@ els.summonShortcut.addEventListener('keydown', (e) => {
       els.summonShortcut.value = electronKey;
     }
   }
+  updateLabels();
+  checkDirty();
+  previewBroadcast();
+});
+
+document.getElementById('btn-reset-shortcut').addEventListener('click', () => {
+  els.summonShortcut.value = defaultSettings.summonShortcut;
   updateLabels();
   checkDirty();
   previewBroadcast();
