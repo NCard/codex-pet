@@ -13,7 +13,8 @@ const defaultSettings = {
   animSpeed: 1.0,
   apiKey: '',
   aiPersonality: 'default',
-  aiCustomPrompt: ''
+  aiCustomPrompt: '',
+  summonShortcut: 'CommandOrControl+Shift+K'
 };
 
 let petState = {};
@@ -41,7 +42,8 @@ const els = {
   animSpeed: document.getElementById('anim-speed'),
   apiKey: document.getElementById('setting-apiKey'),
   aiPersonality: document.getElementById('ai-personality'),
-  aiCustomPrompt: document.getElementById('custom-personality-input')
+  aiCustomPrompt: document.getElementById('custom-personality-input'),
+  summonShortcut: document.getElementById('setting-shortcut')
 };
 
 const vals = {
@@ -77,6 +79,7 @@ function initUI() {
   els.apiKey.value = s.apiKey || process.env.GEMINI_API_KEY || '';
   els.aiPersonality.value = s.aiPersonality ?? defaultSettings.aiPersonality;
   els.aiCustomPrompt.value = s.aiCustomPrompt ?? defaultSettings.aiCustomPrompt;
+  els.summonShortcut.value = s.summonShortcut ?? defaultSettings.summonShortcut;
   
   if (els.aiPersonality.value === 'custom') {
     document.getElementById('custom-personality-group').style.display = 'block';
@@ -116,7 +119,8 @@ function checkDirty() {
     current.animSpeed !== (s.animSpeed ?? defaultSettings.animSpeed) ||
     current.apiKey !== (s.apiKey ?? defaultSettings.apiKey) ||
     current.aiPersonality !== (s.aiPersonality ?? defaultSettings.aiPersonality) ||
-    current.aiCustomPrompt !== (s.aiCustomPrompt ?? defaultSettings.aiCustomPrompt)
+    current.aiCustomPrompt !== (s.aiCustomPrompt ?? defaultSettings.aiCustomPrompt) ||
+    current.summonShortcut !== (s.summonShortcut ?? defaultSettings.summonShortcut)
   );
   setDirty(hasChanged);
 }
@@ -138,7 +142,8 @@ function getFormValues() {
     animSpeed: parseFloat(els.animSpeed.value),
     apiKey: els.apiKey.value.trim(),
     aiPersonality: els.aiPersonality.value,
-    aiCustomPrompt: els.aiCustomPrompt.value.trim()
+    aiCustomPrompt: els.aiCustomPrompt.value.trim(),
+    summonShortcut: els.summonShortcut.value.trim()
   };
 }
 

@@ -5,7 +5,7 @@ process.on('uncaughtException', (error) => {
 process.on('unhandledRejection', (reason) => {
   console.error('[Main UnhandledRejection]:', reason);
 });
-const { app, BrowserWindow, ipcMain, Tray, Menu, screen, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, Tray, Menu, screen, dialog, globalShortcut } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { petStatePath } = require('../utils/paths');
@@ -116,7 +116,39 @@ ipcMain.on('get-window-pos', (event) => {
   }
 });
 
+function registerGlobalShortcut() {
+  globalShortcut.unregisterAll();
+  let shortcut = 'CommandOrControl+Shift+K';
+  try {
+    if (fs.existsSync(petStatePath)) {
+      const state = JSON.parse(fs.readFileSync(petStatePath, 'utf8'));
+      if (state.settings && state.settings.summonShortcut) {
+        shortcut = state.settings.summonShortcut;
+      }
+    }
+  } catch (e) {}
+
+  if (shortcut) {
+    try {
+      globalShortcut.register(shortcut, () => {
+        if (mainWindow) {
+          const point = screen.getCursorScreenPoint();
+          const [width, height] = mainWindow.getSize();
+          // Teleport to mouse position
+          mainWindow.setPosition(Math.round(point.x - width / 2), Math.round(point.y - height / 2));
+          mainWindow.show();
+          mainWindow.focus();
+          mainWindow.webContents.send('summon-pet');
+        }
+      });
+    } catch(err) {
+      console.error('Failed to register shortcut', err);
+    }
+  }
+}
+
 app.whenReady().then(() => {
+  registerGlobalShortcut();
   createWindow();
 
   ipcMain.on('show-context-menu', (event) => {
@@ -325,6 +357,7 @@ app.whenReady().then(() => {
   });
 
   ipcMain.on('settings-changed', (event, settingsData) => {
+    registerGlobalShortcut();
     if (mainWindow) mainWindow.webContents.send('update-settings', settingsData);
   });
   
@@ -483,6 +516,10 @@ autoUpdater.on('update-downloaded', () => {
   }).then(() => {
     autoUpdater.quitAndInstall(false, true);
   });
+});
+
+app.on('will-quit', () => {
+  globalShortcut.unregisterAll();
 });
 
 app.on('window-all-closed', () => {

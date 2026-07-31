@@ -168,6 +168,11 @@ function showTempBubble(text, duration = 5000) {
   }, duration);
 }
 
+ipcRenderer.on('summon-pet', () => {
+  chatBubble.style.display = 'block';
+  chatInput.focus();
+});
+
 ipcRenderer.on('show-update-progress', (event, { percent, speed, text }) => {
   if (isAlarmActive) return;
   chatBubble.style.display = 'block';
