@@ -140,7 +140,7 @@ function registerGlobalShortcut() {
           mainWindow.setPosition(Math.round(point.x - width / 2), Math.round(point.y - height / 2));
           mainWindow.show();
           mainWindow.focus();
-          mainWindow.webContents.send('summon-pet');
+          mainWindow.webContents.send('summon-kiwi');
         }
       });
     } catch(err) {

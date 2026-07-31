@@ -171,7 +171,12 @@ function showTempBubble(text, duration = 5000) {
   }, duration);
 }
 
-ipcRenderer.on('summon-pet', () => {
+ipcRenderer.on('summon-kiwi', () => {
+  if (laser.getIsLaserGameActive()) {
+    laser.toggleLaserGame(false);
+  }
+  resetIdle();
+
   const heart = document.getElementById('kiwi-heart');
   if (heart) {
     heart.style.display = 'block';
@@ -185,12 +190,10 @@ ipcRenderer.on('summon-pet', () => {
   setTimeout(() => { kiwi.classList.remove('jumping'); }, 500);
 
   const summonPhrases = [
-    '找我嗎？ (・ω・)ノ',
-    '您召喚了我嗎？ ✨(˶˚ ᗨ ˚˶)✨',
-    '隨時為您服務！ ( ੭•͈ω•͈)੭',
+    '主人！ (・ω・)ノ',
+    '我召喚出來啦！(˵¯͒〰¯͒˵)',
+    '聽候您的差遣( ੭•͈ω•͈)੭',
     '我來了！(蹦跳) ٩(ˊᗜˋ*)و',
-    '有什麼吩咐嗎？ (*´∀`)~♥',
-    '收到咒語！出現！ (๑•̀ㅂ•́)و✧',
     '登愣！我出現啦！ ⸜(๑\'ᵕ\'๑)⸝'
   ];
   const phrase = summonPhrases[Math.floor(Math.random() * summonPhrases.length)];
