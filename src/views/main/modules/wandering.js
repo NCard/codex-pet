@@ -10,7 +10,8 @@ function startWanderingLoop() {
   if (wanderingTimer) clearInterval(wanderingTimer);
 
   wanderingTimer = setInterval(() => {
-    const { laser, getCurrentAction, setCurrentAction, kiwi, getIsWorking, chatBubble, chatInput, getRealWindowPos, getResolutionScale, ipcRenderer, setWindowPos } = deps;
+    try {
+      const { laser, getCurrentAction, setCurrentAction, kiwi, getIsWorking, chatBubble, chatInput, getRealWindowPos, getResolutionScale, ipcRenderer, setWindowPos } = deps;
 
     if (laser.getIsLaserGameActive() || getCurrentAction() !== 'idle' || kiwi.classList.contains('sleeping') || getIsWorking()) return;
     if (chatBubble.style.display === 'block' || chatInput.style.display === 'block') return;
@@ -83,6 +84,9 @@ function startWanderingLoop() {
           if (getCurrentAction() === 'moving') setCurrentAction('idle');
         }
       }, 16);
+    }
+    } catch(e) {
+      require('fs').writeFileSync('err_wandering.log', e.stack);
     }
   }, 3000);
 }

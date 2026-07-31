@@ -937,6 +937,11 @@ function getRealWindowPos() {
   return { x: sx, y: sy };
 }
 
+function getResolutionScale() {
+  const width = window.screen.bounds ? window.screen.bounds.width : window.screen.width;
+  return width / 1920; 
+}
+
 const initialPos = getRealWindowPos();
 let x = initialPos.x;
 let y = initialPos.y;
