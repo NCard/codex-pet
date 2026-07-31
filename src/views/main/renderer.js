@@ -330,7 +330,7 @@ chatInput.addEventListener('keydown', async (e) => {
                 '<b>/todo [事項]</b> : 新增待辦事項<br>' +
                 '<b>/clear</b> : 清除歷史對話紀錄';
       } else if (cmd === '/laser') {
-        laser.toggleLaserGame();
+        try { laser.toggleLaserGame(); } catch (e) { require('fs').writeFileSync('error.log', e.stack); }
         chatInput.disabled = false;
         return;
       } else if (cmd === '/md5') {
@@ -917,6 +917,12 @@ laser.init({
   getCurrentAction: () => currentAction,
   setWindowPos: (newX, newY) => { x = newX; y = newY; }
 });
+
+if (menuLaser) {
+  menuLaser.addEventListener('click', () => {
+    laser.toggleLaserGame();
+  });
+}
 // 簡單的隨機移動邏輯 (在桌面範圍內隨機移動視窗)
 // 這裡展示如何透過 renderer 控制 window 的位置
 function getRealWindowPos() {
@@ -1252,3 +1258,4 @@ window.addEventListener('mousemove', (event) => {
     ipcRenderer.send('set-ignore-mouse-events', ignore, { forward: true });
   }
 });
+
