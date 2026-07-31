@@ -169,7 +169,9 @@ function showTempBubble(text, duration = 5000) {
 }
 
 ipcRenderer.on('summon-pet', () => {
-  chatBubble.style.display = 'block';
+  chatInput.style.display = 'block';
+  if (typeof chatEscHint !== 'undefined' && chatEscHint) chatEscHint.style.display = 'block';
+  chatBubble.style.display = 'none';
   chatInput.focus();
 });
 
