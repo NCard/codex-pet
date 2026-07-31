@@ -169,10 +169,17 @@ function showTempBubble(text, duration = 5000) {
 }
 
 ipcRenderer.on('summon-pet', () => {
-  chatInput.style.display = 'block';
-  if (typeof chatEscHint !== 'undefined' && chatEscHint) chatEscHint.style.display = 'block';
-  chatBubble.style.display = 'none';
-  chatInput.focus();
+  const summonPhrases = [
+    '找我嗎？ (・ω・)ノ',
+    '您召喚了我嗎？ ✨(˶˚ ᗨ ˚˶)✨',
+    '隨時為您服務！ ( ੭•͈ω•͈)੭',
+    '我來了！(蹦跳) ٩(ˊᗜˋ*)و',
+    '有什麼吩咐嗎？ (*´∀`)~♥',
+    '收到咒語！出現！ (๑•̀ㅂ•́)و✧',
+    '登愣！我出現啦！ ⸜(๑\'ᵕ\'๑)⸝'
+  ];
+  const phrase = summonPhrases[Math.floor(Math.random() * summonPhrases.length)];
+  showTempBubble(`✨ ${phrase}`, 3000);
 });
 
 ipcRenderer.on('show-update-progress', (event, { percent, speed, text }) => {
