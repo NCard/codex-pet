@@ -189,6 +189,22 @@ Object.keys(els).forEach(key => {
   });
 });
 
+let prevShortcut = '';
+els.summonShortcut.addEventListener('focus', () => {
+  prevShortcut = els.summonShortcut.value;
+  els.summonShortcut.value = '請按下快捷鍵...';
+  els.summonShortcut.style.backgroundColor = '#e3f2fd';
+  els.summonShortcut.style.color = '#1976d2';
+});
+
+els.summonShortcut.addEventListener('blur', () => {
+  if (els.summonShortcut.value === '請按下快捷鍵...') {
+    els.summonShortcut.value = prevShortcut;
+  }
+  els.summonShortcut.style.backgroundColor = '#f5f5f5';
+  els.summonShortcut.style.color = '';
+});
+
 els.summonShortcut.addEventListener('keydown', (e) => {
   e.preventDefault();
   const key = e.key;
