@@ -130,7 +130,9 @@ function registerGlobalShortcut() {
 
   if (shortcut) {
     try {
-      globalShortcut.register(shortcut, () => {
+      // Electron needs CommandOrControl instead of Ctrl
+      const electronShortcut = shortcut.replace(/Ctrl/g, 'CommandOrControl');
+      globalShortcut.register(electronShortcut, () => {
         if (mainWindow) {
           const point = screen.getCursorScreenPoint();
           const [width, height] = mainWindow.getSize();

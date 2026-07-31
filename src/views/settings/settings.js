@@ -14,7 +14,7 @@ const defaultSettings = {
   apiKey: '',
   aiPersonality: 'default',
   aiCustomPrompt: '',
-  summonShortcut: 'CommandOrControl+Shift+K'
+  summonShortcut: 'Ctrl+Shift+K'
 };
 
 let petState = {};
@@ -25,6 +25,9 @@ let pendingClose = false;
 try {
   if (fs.existsSync(statePath)) {
     petState = JSON.parse(fs.readFileSync(statePath, 'utf8'));
+    if (petState.settings && petState.settings.summonShortcut) {
+      petState.settings.summonShortcut = petState.settings.summonShortcut.replace(/CommandOrControl/g, 'Ctrl');
+    }
   }
 } catch (e) {
   console.error('Error reading state:', e);
@@ -165,6 +168,9 @@ function revertSettings() {
     if (fs.existsSync(statePath)) {
       const savedState = JSON.parse(fs.readFileSync(statePath, 'utf8'));
       if (savedState.settings) {
+        if (savedState.settings.summonShortcut) {
+          savedState.settings.summonShortcut = savedState.settings.summonShortcut.replace(/CommandOrControl/g, 'Ctrl');
+        }
         petState.settings = savedState.settings;
       }
     }
@@ -215,7 +221,7 @@ els.summonShortcut.addEventListener('keydown', (e) => {
     els.summonShortcut.value = '';
   } else {
     const modifiers = [];
-    if (e.ctrlKey || e.metaKey) modifiers.push('CommandOrControl');
+    if (e.ctrlKey || e.metaKey) modifiers.push('Ctrl');
     if (e.altKey) modifiers.push('Alt');
     if (e.shiftKey) modifiers.push('Shift');
     
