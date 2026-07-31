@@ -362,9 +362,11 @@ app.whenReady().then(() => {
   
 
   isManualCheck = false;
-  try {
-    autoUpdater.checkForUpdates();
-  } catch (e) {}
+  setTimeout(() => {
+    try {
+      autoUpdater.checkForUpdates();
+    } catch (e) {}
+  }, 5000);
 });
 
 let isManualCheck = false;
