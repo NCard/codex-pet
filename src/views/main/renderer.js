@@ -1049,98 +1049,12 @@ setInterval(() => {
   }
 }, 5000);
 
-// 每隔一段時間隨機走動
-setInterval(() => {
-  // 只有在 idle 狀態且未開啟雷射筆時才能決定是否走動
-  if (laser.getIsLaserGameActive() || currentAction !== 'idle' || kiwi.classList.contains('sleeping') || isWorking) return;
-  if (chatBubble.style.display === 'block' || chatInput.style.display === 'block') return;
-
-  // 40% 機率決定走動
-  if (Math.random() < 0.4) {
-    currentAction = 'moving';
-    
-    // 拖曳後視窗位置會改變，必須在每次移動前重新抓取當前真實位置
-    const currentPos = getRealWindowPos();
-    x = currentPos.x;
-    y = currentPos.y;
-    
-    const scale = getResolutionScale();
-
-    // 5% 機率進行遠距離散步 (隨螢幕解析度動態縮放)
-    let rangeX = 300 * scale;
-    let rangeY = 100 * scale;
-    if (Math.random() < 0.05) {
-      rangeX = 1500 * scale;
-      rangeY = 500 * scale;
-    }
-    
-    // 決定移動距離
-    const moveX = (Math.random() - 0.5) * rangeX;
-    const moveY = (Math.random() - 0.5) * rangeY;
-    
-    let targetX = x + moveX;
-    let targetY = y + moveY;
-    
-    // 取得當前視窗所在螢幕的邊界 (支援多螢幕)
-    // 因視窗總高度為 550px，奇異鳥位於視窗底部 (上方約有 330px 的對話框區域)
-    // 當奇異鳥靠在螢幕頂端時，視窗 Y 座標約為 -330px，因此 minY 必須允許負值，否則會觸發向下瞬移 Bug
-    const screenAvailTop = window.screen.availTop || 0;
-    const screenAvailLeft = window.screen.availLeft || 0;
-    
-    const minX = screenAvailLeft - 20;
-    const minY = screenAvailTop - 330; 
-    const maxX = screenAvailLeft + window.screen.availWidth - 230;
-    const maxY = screenAvailTop + window.screen.availHeight - 520;
-    
-    // 防止跑出當前螢幕外
-    targetX = Math.max(minX, Math.min(targetX, maxX));
-    targetY = Math.max(minY, Math.min(targetY, maxY));
-
-    // 翻轉圖片方向 (利用 CSS 變數)
-    // 註：如果圖片預設朝左，而往左走卻翻轉了，請將 1 與 -1 互換！
-    const direction = (targetX < x) ? -1 : 1; 
-    document.getElementById('kiwi-wrapper').style.setProperty('--flip', direction);
-
-    // 加上走路動畫 class (身體晃動)
-    kiwi.classList.add('walking');
-
-    // 計算實際移動距離與步數，保持視覺移動速度一致 (基於 Full HD 2.5px * scale)
-    const dx = targetX - x;
-    const dy = targetY - y;
-    const distance = Math.sqrt(dx * dx + dy * dy);
-    const stepSpeed = 2.5 * scale;
-    const steps = Math.max(10, Math.round(distance / stepSpeed));
-    
-    let currentStep = 0;
-    
-    const stepX = dx / steps;
-    const stepY = dy / steps;
-
-    const moveInterval = setInterval(() => {
-      // 如果走到一半狀態改變了 (例如被強制餵食)，中斷移動
-      if (currentAction !== 'moving') {
-        clearInterval(moveInterval);
-        kiwi.classList.remove('walking');
-        return;
-      }
-
-      x += stepX;
-      y += stepY;
-      ipcRenderer.send('window-move', Math.round(x), Math.round(y)); // 更新視窗位置
-      currentStep++;
-
-      // 到達目的地時停止
-      if (currentStep >= steps) {
-        clearInterval(moveInterval);
-        x = targetX;
-        y = targetY;
-        kiwi.classList.remove('walking');
-        if (currentAction === 'moving') currentAction = 'idle'; // 恢復閒置
-      }
-    }, 16); // 每 16 毫秒走一步，約 60fps
-  }
-}, 3000);
-
+const wandering = require('./modules/wandering');
+wandering.init({
+  laser, getCurrentAction: () => currentAction, setCurrentAction: (action) => currentAction = action,
+  kiwi, getIsWorking: () => isWorking, chatBubble, chatInput, getRealWindowPos, getResolutionScale,
+  ipcRenderer, setWindowPos: (newX, newY) => { x = newX; y = newY; }
+});
 // CPU 監控與狀態隨時間遞減
 let lastCpu = os.cpus();
 setInterval(() => {
