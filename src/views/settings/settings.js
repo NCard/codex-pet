@@ -175,6 +175,9 @@ function revertSettings() {
 
 // 監聽變更
 Object.keys(els).forEach(key => {
+  if (key === 'summonShortcut') {
+    return; // 獨立處理
+  }
   els[key].addEventListener('input', () => {
     if (key === 'aiPersonality') {
       document.getElementById('custom-personality-group').style.display = els.aiPersonality.value === 'custom' ? 'block' : 'none';
@@ -183,6 +186,35 @@ Object.keys(els).forEach(key => {
     checkDirty();
     previewBroadcast(); // 即時預覽
   });
+});
+
+els.summonShortcut.addEventListener('keydown', (e) => {
+  e.preventDefault();
+  const key = e.key;
+  if (['Control', 'Shift', 'Alt', 'Meta'].includes(key)) {
+    return;
+  }
+  if (key === 'Backspace' || key === 'Escape') {
+    els.summonShortcut.value = '';
+  } else {
+    const modifiers = [];
+    if (e.ctrlKey || e.metaKey) modifiers.push('CommandOrControl');
+    if (e.altKey) modifiers.push('Alt');
+    if (e.shiftKey) modifiers.push('Shift');
+    
+    let electronKey = key.length === 1 ? key.toUpperCase() : key;
+    if (electronKey === ' ') electronKey = 'Space';
+    // Electron's globalShortcut formatting expects specific key names, but single chars work fine.
+    
+    if (modifiers.length > 0) {
+      els.summonShortcut.value = modifiers.join('+') + '+' + electronKey;
+    } else {
+      els.summonShortcut.value = electronKey;
+    }
+  }
+  updateLabels();
+  checkDirty();
+  previewBroadcast();
 });
 
 // 3. 床鋪編輯模式開關
