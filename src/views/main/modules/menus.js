@@ -7,7 +7,7 @@ function init({
     menuSleep, menuHistory, menuAlarm, menuClose, menuLaser,
     outfitContainer
   },
-  laser
+  laser, interaction
 }) {
   // 右鍵點擊奇異鳥，顯示自訂右鍵選單
   kiwi.addEventListener('contextmenu', (e) => {

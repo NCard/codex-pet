@@ -153,25 +153,30 @@ posY.addEventListener('input', sendPosUpdate);
 scale.addEventListener('input', sendPosUpdate);
 
 // Receive live position updates from main renderer (when user drags on pet)
-ipcRenderer.on('outfit-pos-updated', (event, { x, y, scale: s }) => {
+ipcRenderer.on('outfit-pos-updated', (event, { outfit, x, y, scale: s }) => {
   if (!petState.outfitConfigs) petState.outfitConfigs = {};
-  if (!petState.outfitConfigs[currentOutfit]) petState.outfitConfigs[currentOutfit] = {};
+  if (!petState.outfitConfigs[outfit]) petState.outfitConfigs[outfit] = {};
 
-  if (x !== undefined) {
-    posX.value = x;
-    valX.textContent = x;
-    petState.outfitConfigs[currentOutfit].x = x;
+  // 只更新當前正在編輯的飾品控制面板（如果它就是正在被拖曳的）
+  if (outfit === editingOutfit) {
+    if (x !== undefined) {
+      posX.value = x;
+      valX.textContent = x;
+    }
+    if (y !== undefined) {
+      posY.value = y;
+      valY.textContent = y;
+    }
+    if (s !== undefined) {
+      scale.value = s;
+      valScale.textContent = s;
+    }
   }
-  if (y !== undefined) {
-    posY.value = y;
-    valY.textContent = y;
-    petState.outfitConfigs[currentOutfit].y = y;
-  }
-  if (s !== undefined) {
-    scale.value = s;
-    valScale.textContent = s;
-    petState.outfitConfigs[currentOutfit].scale = s;
-  }
+
+  // 但永遠要在狀態中更新它
+  if (x !== undefined) petState.outfitConfigs[outfit].x = x;
+  if (y !== undefined) petState.outfitConfigs[outfit].y = y;
+  if (s !== undefined) petState.outfitConfigs[outfit].scale = s;
 });
 
 // Initial load
