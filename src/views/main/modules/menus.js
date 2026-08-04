@@ -81,15 +81,21 @@ function init({
 
   menuPet.addEventListener('click', () => {
     customMenu.style.display = 'none';
-    petState.mood = Math.min(100, petState.mood + 20);
-    savePetState();
-    showTempBubble('咕啾～好舒服～(⁎˃ᴗ˂⁎) 心情變好了！');
-    // 顯示愛心特效
-    kiwiAccessory.innerText = '❤️';
-    kiwiAccessory.style.display = 'block';
-    setTimeout(() => { if(!getIsWorking()) kiwiAccessory.style.display = 'none'; }, 2000);
-    kiwi.classList.add('jumping');
-    setTimeout(() => { kiwi.classList.remove('jumping'); }, 500);
+    
+    // Instead of instantly petting, we start the petting mode
+    if (interaction && interaction.startPettingMode) {
+      interaction.startPettingMode();
+      showTempBubble('好喔！來摸摸吧～(๑>◡<๑)');
+    } else {
+      petState.mood = Math.min(100, petState.mood + 20);
+      savePetState();
+      showTempBubble('咕啾～好舒服～(⁎˃ᴗ˂⁎) 心情變好了！');
+      kiwiAccessory.innerText = '❤️';
+      kiwiAccessory.style.display = 'block';
+      setTimeout(() => { if(!getIsWorking()) kiwiAccessory.style.display = 'none'; }, 2000);
+      kiwi.classList.add('jumping');
+      setTimeout(() => { kiwi.classList.remove('jumping'); }, 500);
+    }
   });
 
   menuOutfit.addEventListener('click', () => {

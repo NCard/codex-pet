@@ -981,7 +981,10 @@ interaction.init({
   setCurrentAction: (action) => currentAction = action,
   physics,
   getIsDraggingOutfit: () => typeof isDraggingOutfit !== 'undefined' ? isDraggingOutfit : false,
-  getIsDraggingBed: () => typeof isDraggingBed !== 'undefined' ? isDraggingBed : false
+  getIsDraggingBed: () => typeof isDraggingBed !== 'undefined' ? isDraggingBed : false,
+  petState,
+  savePetState,
+  showTempBubble
 });
 
 // 滑鼠穿透判定邏輯 (優化：快取狀態避免重複 IPC 造成拖曳抖動與延遲)
@@ -1019,5 +1022,5 @@ menus.init({
     menuSleep, menuHistory, menuAlarm, menuClose, menuLaser,
     outfitContainer
   },
-  laser
+  laser, interaction
 });
