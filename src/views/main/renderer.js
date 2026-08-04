@@ -28,6 +28,22 @@ const outfits = ['', '🎩', '🕶️', '🎀', '👑', '🌸', '🎓', '🎃', 
 const defaultOutfitConfigs = {
   '🎩': { x: 62, y: -31, scale: 60 },
   '🕶️': { x: 76, y: 17, scale: 51 },
+
+const menus = require('./modules/menus');
+menus.init({
+  kiwi, customMenu, ipcRenderer, petState, savePetState, 
+  getCurrentAction: () => currentAction, setCurrentAction: (act) => currentAction = act, 
+  showTempBubble, kiwiAccessory, getIsWorking: () => isWorking,
+  setOutfitEditMode: (v) => isOutfitEditMode = v, 
+  setIgnoreWakeup: (v) => ignoreWakeup = v,
+  elements: {
+    menuTodo, menuFeed, menuPet, menuOutfit, menuSettings,
+    menuSleep, menuHistory, menuAlarm, menuClose, menuLaser,
+    outfitContainer
+  },
+  laser
+});
+
   '🎀': { x: 79, y: 75, scale: 40 },
   '👑': { x: 59, y: -38, scale: 60 },
   '🌸': { x: 80, y: -18, scale: 20 },
@@ -524,100 +540,6 @@ ${personaText}
 });
 
 // 右鍵點擊奇異鳥，顯示自訂右鍵選單
-kiwi.addEventListener('contextmenu', (e) => {
-  e.preventDefault();
-  
-  // 先顯示選單，才能取得實際寬高
-  customMenu.style.display = 'flex';
-  
-  let menuWidth = customMenu.offsetWidth;
-  let menuHeight = customMenu.offsetHeight;
-  
-  let left = e.clientX + 10;
-  let top = e.clientY - 10;
-  
-  // 防止選單超出 250x250 的視窗邊界而被切掉
-  if (left + menuWidth > 250) {
-    left = e.clientX - menuWidth - 10;
-  }
-  if (top + menuHeight > 250) {
-    top = e.clientY - menuHeight - 10;
-  }
-  
-  // 終極防線：確保絕對不會掉出左邊和上面的邊界 (小於 0)
-  if (left < 5) left = 5;
-  if (top < 5) top = 5;
-  
-  customMenu.style.left = left + 'px';
-  customMenu.style.top = top + 'px';
-});
-
-// 點擊其他地方關閉選單
-window.addEventListener('click', (e) => {
-  if (e.target.className !== 'menu-item') {
-    customMenu.style.display = 'none';
-  }
-});
-
-// 綁定選單功能
-menuTodo.addEventListener('click', () => {
-  customMenu.style.display = 'none';
-  ipcRenderer.send('open-todo');
-});
-
-menuFeed.addEventListener('click', () => {
-  if (currentAction !== 'idle' && currentAction !== 'moving') return; // 只有閒置或走動時可以餵食
-  
-  customMenu.style.display = 'none';
-  petState.hunger = Math.min(100, petState.hunger + 30);
-  savePetState();
-  
-  currentAction = 'eating'; // 進入吃飯狀態
-  
-  const character = document.getElementById('kiwi-character');
-  const food = document.getElementById('kiwi-food');
-  
-  character.classList.add('kiwi-pecking');
-  food.style.display = 'block';
-  
-  setTimeout(() => {
-    character.classList.remove('kiwi-pecking');
-    food.style.display = 'none';
-    showTempBubble('好飽好飽！嗝～🥝');
-    kiwi.classList.add('jumping');
-    setTimeout(() => { 
-      kiwi.classList.remove('jumping'); 
-      if (currentAction === 'eating') currentAction = 'idle'; // 恢復閒置
-    }, 500);
-  }, 2000);
-});
-
-menuPet.addEventListener('click', () => {
-  customMenu.style.display = 'none';
-  petState.mood = Math.min(100, petState.mood + 20);
-  savePetState();
-  showTempBubble('咕啾～好舒服～(⁎˃ᴗ˂⁎) 心情變好了！');
-  // 顯示愛心特效
-  kiwiAccessory.innerText = '❤️';
-  kiwiAccessory.style.display = 'block';
-  setTimeout(() => { if(!isWorking) kiwiAccessory.style.display = 'none'; }, 2000);
-  kiwi.classList.add('jumping');
-setTimeout(() => { kiwi.classList.remove('jumping'); }, 500);
-});
-
-menuOutfit.addEventListener('click', () => {
-  customMenu.style.display = 'none';
-  ipcRenderer.send('open-outfit');
-  isOutfitEditMode = true;
-  if (outfitContainer) {
-    Array.from(outfitContainer.children).forEach(child => {
-      child.style.pointerEvents = 'auto';
-      child.style.cursor = 'grab';
-    });
-  }
-  kiwi.style.animation = 'none'; // 換裝模式暫停呼吸動畫，避免座標跳動
-});
-
 let isSettingsEditMode = false;
 let isDraggingBed = false;
 let bedDragStartX = 0;
@@ -625,10 +547,6 @@ let bedDragStartY = 0;
 let bedStartMarginLeft = 0;
 let bedStartMarginBottom = 0;
 
-menuSettings.addEventListener('click', () => {
-  customMenu.style.display = 'none';
-  ipcRenderer.send('open-settings');
-});
 
 ipcRenderer.on('toggle-bed-edit', (event, isEditing) => {
   if (isEditing) {
@@ -881,53 +799,6 @@ kiwiBed.addEventListener('wheel', (e) => {
   ipcRenderer.send('settings-dragged', { bedScale: currentScale });
 });
 
-menuSleep.addEventListener('click', () => {
-  customMenu.style.display = 'none';
-  currentAction = 'sleeping';
-  kiwi.classList.add('sleeping');
-  const zzz = document.getElementById('kiwi-zzz');
-  if (zzz) zzz.style.display = 'block';
-  document.getElementById('kiwi-img').src = '../../../assets/images/kiwi_sleep.png';
-  document.getElementById('kiwi-bed').style.display = 'block';
-  if (typeof outfitContainer !== 'undefined' && outfitContainer) outfitContainer.style.display = 'none';
-  
-  showTempBubble('晚安... Zzz...');
-
-  // 延遲解除忽略喚醒，避免點擊選單後滑鼠微動立刻喚醒
-  ignoreWakeup = true;
-  setTimeout(() => { ignoreWakeup = false; }, 1000);
-});
-
-menuHistory.addEventListener('click', () => {
-  customMenu.style.display = 'none';
-  ipcRenderer.send('open-history');
-});
-
-menuAlarm.addEventListener('click', () => {
-  customMenu.style.display = 'none';
-  ipcRenderer.send('open-alarm');
-});
-
-menuClose.addEventListener('click', () => {
-  customMenu.style.display = 'none';
-  ipcRenderer.send('request-close-confirm');
-});
-laser.init({
-  ipcRenderer, kiwi, laserDot: document.getElementById('laser-dot'),
-  customMenu: document.getElementById('custom-menu'),
-  showTempBubble, getRealWindowPos, physics,
-  setCurrentAction: (action) => currentAction = action,
-  getCurrentAction: () => currentAction,
-  setWindowPos: (newX, newY) => { x = newX; y = newY; }
-});
-
-if (menuLaser) {
-  menuLaser.addEventListener('click', () => {
-    laser.toggleLaserGame();
-  });
-}
-// 簡單的隨機移動邏輯 (在桌面範圍內隨機移動視窗)
-// 這裡展示如何透過 renderer 控制 window 的位置
 function getRealWindowPos() {
   try {
     const pos = ipcRenderer.sendSync('get-window-pos');
