@@ -1,7 +1,6 @@
 
 let bubbleTimeout = null;
 let isAlarmActive = false;
-let snoozedAlarms = [];
 let pomodoroTimer = null;
 
 function init({
@@ -12,8 +11,6 @@ function init({
   laser, ai, mcpClient, geminiTools, crypto,
   saveChatHistory, clearChatHistory, resetIdle, ipcRenderer
 }) {
-  const chatContent = document.getElementById('chat-content');
-  const chatClose = document.getElementById('chat-close');
   
   // 點擊關閉按鈕隱藏泡泡
   chatClose.addEventListener('click', () => {
@@ -32,7 +29,6 @@ function init({
   });
   
   // 設定名稱前綴的 HTML
-  const namePrefix = '<span style="color: #c97a2e; font-weight: 900;">Wiki Wiki：</span>';
   
 
   function showTempBubble(text, duration = 5000) {
@@ -90,7 +86,7 @@ function init({
 
 
   
-  function showAlarmBubble(alarm) {
+  function showAlarmBubble(alarm, onSnooze) {
     isAlarmActive = true;
     chatBubble.style.display = 'block';
     if (bubbleTimeout) clearTimeout(bubbleTimeout);
@@ -101,8 +97,8 @@ function init({
       ${namePrefix}⏰ 提醒：<br>
       <div style="margin: 5px 0; word-break: break-all;">${alarm.message}</div>
       <div style="display: flex; gap: 5px; margin-top: 8px;">
-        <button id="btn-alarm-ok" style="flex:1; padding: 4px; border: none; background: #4caf50; color: white; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold;">我知道了</button>
-        <button id="btn-alarm-snooze" style="flex:1; padding: 4px; border: none; background: #ff9800; color: white; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold;">貪睡 ${snoozeMins}分</button>
+        <button id="btn-alarm-ok" style="flex:1; padding: 4px; border: none; background: #4caf50; color: white; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; white-space: nowrap;">我知道了</button>
+        <button id="btn-alarm-snooze" style="flex:1; padding: 4px; border: none; background: #ff9800; color: white; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; white-space: nowrap;">稍後提醒 ${snoozeMins}分</button>
       </div>
     `;
     
@@ -114,25 +110,12 @@ function init({
     document.getElementById('btn-alarm-snooze').onclick = () => {
       isAlarmActive = false;
       chatBubble.style.display = 'none';
-      const triggerTime = Date.now() + snoozeMins * 60000;
-      snoozedAlarms.push({ ...alarm, triggerTime });
+      if (onSnooze) onSnooze(alarm, snoozeMins);
     };
   }
   
   
-  const physicsCtx = {
-    get kiwi() { return kiwi; },
-    get kiwiAccessory() { return kiwiAccessory; },
-    get chatInput() { return chatInput; },
-    get chatEscHint() { return typeof chatEscHint !== 'undefined' ? chatEscHint : null; },
-    get chatBubble() { return chatBubble; },
-    getCurrentAction: () => currentAction,
-    setCurrentAction: (val) => { currentAction = val; },
-    setPos: (newX, newY) => { x = newX; y = newY; },
-    getPetState: () => petState
-  };
   
-  physics.initDragging(physicsCtx);
   
   
   // 全域監聽 ESC 鍵關閉對話

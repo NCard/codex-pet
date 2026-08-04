@@ -1,12 +1,14 @@
 require('../../utils/logger');
-window.onerror = function(message, source, lineno, colno, error) {
+window.onerror = function (message, source, lineno, colno, error) {
   console.error('[Renderer Global Error]:', message, 'at', lineno + ':' + colno, error);
 };
-window.addEventListener('unhandledrejection', function(event) {
+window.addEventListener('unhandledrejection', function (event) {
   console.error('[Renderer UnhandledRejection]:', event.reason);
 });
 const kiwi = document.getElementById('kiwi-sprite-wrapper');
 const chatBubble = document.getElementById('chat-bubble');
+const chatContent = document.getElementById('chat-content');
+const chatClose = document.getElementById('chat-close');
 const chatInput = document.getElementById('chat-input');
 const chatEscHint = document.getElementById('chat-esc-hint');
 const customMenu = document.getElementById('custom-menu');
@@ -78,13 +80,13 @@ async function initMCP() {
     args: [path.join(__dirname, '../../mcp/mcp-server.js')],
     env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' }
   });
-  
+
   mcpClient = new Client({ name: "wiki-wiki-client", version: "1.0.0" }, { capabilities: {} });
   await mcpClient.connect(transport);
-  
+
   const toolsRes = await mcpClient.listTools();
   mcpToolsList = toolsRes.tools;
-  
+
   if (mcpToolsList.length > 0) {
     geminiTools = [{
       functionDeclarations: mcpToolsList.map(t => ({
@@ -174,7 +176,7 @@ ipcRenderer.on('settings-closed', () => {
   kiwiBed.style.pointerEvents = 'none';
   kiwiBed.style.cursor = 'default';
   kiwi.style.pointerEvents = 'auto';
-  
+
   if (currentAction !== 'sleeping') {
     kiwiBed.style.display = 'none';
     kiwi.classList.remove('sleeping');
@@ -226,7 +228,7 @@ ipcRenderer.on('update-outfit-pos', (event, { outfit, x, y, scale }) => {
   if (x !== undefined) petState.outfitConfigs[outfit].x = x;
   if (y !== undefined) petState.outfitConfigs[outfit].y = y;
   if (scale !== undefined) petState.outfitConfigs[outfit].scale = scale;
-  
+
   savePetState();
   applyOutfitPos();
 });
@@ -244,12 +246,12 @@ function applyOutfitPos() {
   if (!outfitContainer) return;
   outfitContainer.innerHTML = '';
   if (!petState.outfits) petState.outfits = [];
-  
+
   petState.outfits.forEach(outfit => {
-    const config = (petState.outfitConfigs && petState.outfitConfigs[outfit]) 
-                   || defaultOutfitConfigs[outfit] 
-                   || { x: 45, y: -10, scale: 60 };
-    
+    const config = (petState.outfitConfigs && petState.outfitConfigs[outfit])
+      || defaultOutfitConfigs[outfit]
+      || { x: 45, y: -10, scale: 60 };
+
     const div = document.createElement('div');
     div.innerText = outfit;
     div.style.position = 'absolute';
@@ -259,26 +261,26 @@ function applyOutfitPos() {
     div.style.pointerEvents = isOutfitEditMode ? 'auto' : 'none';
     div.style.cursor = isOutfitEditMode ? 'grab' : 'default';
     div.style.zIndex = '5';
-    
+
     div.addEventListener('mousedown', (e) => {
       if (!isOutfitEditMode) return;
       isDraggingOutfit = true;
       activeDraggingOutfit = outfit;
       activeDraggingElement = div;
-      
+
       outfitDragStartX = e.clientX;
       outfitDragStartY = e.clientY;
       div.style.cursor = 'grabbing';
-      
+
       const rect = outfitContainer.getBoundingClientRect();
       const outfitRect = div.getBoundingClientRect();
       outfitStartLeft = outfitRect.left - rect.left;
       outfitStartTop = outfitRect.top - rect.top;
-      
+
       e.preventDefault();
       e.stopPropagation();
     });
-    
+
     div.addEventListener('wheel', (e) => {
       if (!isOutfitEditMode) return;
       e.preventDefault();
@@ -290,17 +292,17 @@ function applyOutfitPos() {
       }
       if (currentScale < 10) currentScale = 10;
       if (currentScale > 150) currentScale = 150;
-      
+
       div.style.fontSize = `${currentScale}px`;
-      
+
       if (!petState.outfitConfigs) petState.outfitConfigs = {};
       if (!petState.outfitConfigs[outfit]) petState.outfitConfigs[outfit] = {};
       petState.outfitConfigs[outfit].scale = currentScale;
       savePetState();
-      
+
       ipcRenderer.send('outfit-pos-updated', { outfit, scale: currentScale });
     });
-    
+
     outfitContainer.appendChild(div);
   });
 }
@@ -311,11 +313,11 @@ kiwiBed.addEventListener('mousedown', (e) => {
   bedDragStartX = e.clientX;
   bedDragStartY = e.clientY;
   kiwiBed.style.cursor = 'grabbing';
-  
+
   if (!petState.settings) petState.settings = {};
   bedStartMarginLeft = petState.settings.bedX ?? -4;
   bedStartMarginBottom = petState.settings.bedY ?? -15;
-  
+
   e.preventDefault();
   e.stopPropagation();
 });
@@ -329,7 +331,7 @@ window.addEventListener('mousemove', (e) => {
     const dy = (e.clientY - outfitDragStartY);
     let newLeft = outfitStartLeft + dx;
     let newTop = outfitStartTop + dy;
-    
+
     activeDraggingElement.style.left = `${newLeft}px`;
     activeDraggingElement.style.top = `${newTop}px`;
     ipcRenderer.send('outfit-pos-updated', { outfit: activeDraggingOutfit, x: newLeft, y: newTop });
@@ -339,10 +341,10 @@ window.addEventListener('mousemove', (e) => {
     const dy = (e.clientY - bedDragStartY);
     const newBedX = bedStartMarginLeft + dx;
     const newBedY = bedStartMarginBottom - dy; // margin-bottom direction
-    
+
     petState.settings.bedX = newBedX;
     petState.settings.bedY = newBedY;
-    
+
     applySettings(petState.settings);
     ipcRenderer.send('settings-dragged', { bedX: newBedX, bedY: newBedY });
   }
@@ -352,19 +354,19 @@ window.addEventListener('mouseup', (e) => {
   if (isDraggingOutfit && activeDraggingElement) {
     isDraggingOutfit = false;
     activeDraggingElement.style.cursor = 'grab';
-    
+
     const currentLeft = parseInt(activeDraggingElement.style.left || 0);
     const currentTop = parseInt(activeDraggingElement.style.top || 0);
     const currentScale = parseInt(activeDraggingElement.style.fontSize || 60);
-    
+
     if (!petState.outfitConfigs) petState.outfitConfigs = {};
     if (!petState.outfitConfigs[activeDraggingOutfit]) petState.outfitConfigs[activeDraggingOutfit] = {};
-    
+
     petState.outfitConfigs[activeDraggingOutfit].x = currentLeft;
     petState.outfitConfigs[activeDraggingOutfit].y = currentTop;
     petState.outfitConfigs[activeDraggingOutfit].scale = currentScale;
     savePetState();
-    
+
     activeDraggingElement = null;
     activeDraggingOutfit = null;
   } else if (isDraggingBed) {
@@ -379,10 +381,10 @@ window.addEventListener('mouseup', (e) => {
 kiwiBed.addEventListener('wheel', (e) => {
   if (!isSettingsEditMode) return;
   e.preventDefault();
-  
+
   if (!petState.settings) petState.settings = {};
   let currentScale = petState.settings.bedScale ?? 170;
-  
+
   if (e.deltaY < 0) {
     currentScale += 5;
   } else {
@@ -390,11 +392,11 @@ kiwiBed.addEventListener('wheel', (e) => {
   }
   if (currentScale < 50) currentScale = 50;
   if (currentScale > 300) currentScale = 300;
-  
+
   petState.settings.bedScale = currentScale;
   applySettings(petState.settings);
   savePetState();
-  
+
   ipcRenderer.send('settings-dragged', { bedScale: currentScale });
 });
 
@@ -404,7 +406,7 @@ function getRealWindowPos() {
     if (pos && typeof pos.x === 'number' && !isNaN(pos.x) && typeof pos.y === 'number' && !isNaN(pos.y)) {
       return { x: Math.round(pos.x), y: Math.round(pos.y) };
     }
-  } catch(e) {}
+  } catch (e) { }
   const sx = Math.round(Number(window.screenX)) || 0;
   const sy = Math.round(Number(window.screenY)) || 0;
   return { x: sx, y: sy };
@@ -412,7 +414,7 @@ function getRealWindowPos() {
 
 function getResolutionScale() {
   const width = window.screen.bounds ? window.screen.bounds.width : window.screen.width;
-  return width / 1920; 
+  return width / 1920;
 }
 
 const initialPos = getRealWindowPos();
@@ -457,75 +459,7 @@ setInterval(() => {
   }
 }, 1000);
 
-let triggeredAlarms = {};
 
-function triggerAlarm(alarm, alarmKey) {
-  if (!triggeredAlarms[alarmKey]) {
-    triggeredAlarms[alarmKey] = true;
-    if (laser.getIsLaserGameActive()) {
-      laser.toggleLaserGame(false);
-    }
-    resetIdle();
-    showAlarmBubble(alarm);
-    kiwi.classList.add('jumping');
-    setTimeout(() => { kiwi.classList.remove('jumping'); }, 500);
-  }
-}
-
-setInterval(() => {
-  const nowMs = Date.now();
-  // 檢查貪睡清單
-  for (let i = snoozedAlarms.length - 1; i >= 0; i--) {
-    const sAlarm = snoozedAlarms[i];
-    if (nowMs >= sAlarm.triggerTime) {
-      snoozedAlarms.splice(i, 1);
-      triggerAlarm(sAlarm, sAlarm.id + '-snooze-' + nowMs);
-    }
-  }
-
-  if (fs.existsSync(alarmsPath)) {
-    try {
-      const data = fs.readFileSync(alarmsPath, 'utf8');
-      const alarms = JSON.parse(data);
-      const now = new Date();
-      alarms.forEach(alarm => {
-        if (!alarm.enabled) return;
-        
-        const currentHHMM = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
-        if (alarm.time !== currentHHMM) return;
-        
-        let shouldTrigger = false;
-        if (alarm.type === 'date') {
-          const todayStr = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
-          if (alarm.date === todayStr) {
-            shouldTrigger = true;
-          }
-        } else {
-          // weekly or legacy
-          const currentDay = now.getDay();
-          if (!alarm.days || alarm.days.includes(currentDay)) {
-            shouldTrigger = true;
-          }
-        }
-        
-        if (shouldTrigger) {
-          const alarmKey = alarm.id + '-' + now.toDateString() + '-' + currentHHMM;
-          triggerAlarm(alarm, alarmKey);
-          
-          if (alarm.type === 'date') {
-            alarm.enabled = false;
-            try {
-              fs.writeFileSync(alarmsPath, JSON.stringify(alarms, null, 2), 'utf8');
-              ipcRenderer.send('reload-data'); // Optional: tell other windows to reload if they are listening
-            } catch(e) {}
-          }
-        }
-      });
-    } catch (e) {
-      console.error('Failed to parse alarms:', e);
-    }
-  }
-}, 5000);
 
 const wandering = require('./modules/wandering');
 wandering.init({
@@ -577,7 +511,7 @@ setInterval(() => {
       img.classList.remove('kiwi-tired');
     }
   }
-  
+
   // 定期自動存檔
   if (Math.random() < 0.2) savePetState();
 }, 10000);
@@ -603,7 +537,7 @@ window.addEventListener('mousemove', (event) => {
 
   const isInteractive = !!event.target.closest('.chat-bubble, #chat-input, #custom-menu, #kiwi-sprite-wrapper, #kiwi-bed, #chat-close');
   const ignore = !isInteractive;
-  
+
   if (lastIgnoreState !== ignore) {
     lastIgnoreState = ignore;
     ipcRenderer.send('set-ignore-mouse-events', ignore, { forward: true });
@@ -612,6 +546,20 @@ window.addEventListener('mousemove', (event) => {
 
 
 
+
+
+const physicsCtx = {
+  get kiwi() { return kiwi; },
+  get kiwiAccessory() { return kiwiAccessory; },
+  get chatInput() { return chatInput; },
+  get chatEscHint() { return typeof chatEscHint !== 'undefined' ? chatEscHint : null; },
+  get chatBubble() { return chatBubble; },
+  getCurrentAction: () => currentAction,
+  setCurrentAction: (val) => { currentAction = val; },
+  setPos: (newX, newY) => { x = newX; y = newY; },
+  getPetState: () => petState
+};
+physics.initDragging(physicsCtx);
 
 const chat = require('./modules/chat');
 const { showTempBubble, showAlarmBubble } = chat.init({
@@ -626,11 +574,22 @@ const { showTempBubble, showAlarmBubble } = chat.init({
 });
 
 // Update menus and interaction dependency injections
+const menus = require('./modules/menus');
+const interaction = require('./modules/interaction');
+
+laser.init({
+  ipcRenderer, kiwi, laserDot,
+  customMenu, showTempBubble, getRealWindowPos, physics,
+  setCurrentAction: (action) => currentAction = action,
+  getCurrentAction: () => currentAction,
+  setWindowPos: (newX, newY) => { x = newX; y = newY; }
+});
+
 menus.init({
-  kiwi, customMenu, ipcRenderer, petState, savePetState, 
-  getCurrentAction: () => currentAction, setCurrentAction: (act) => currentAction = act, 
+  kiwi, customMenu, ipcRenderer, petState, savePetState,
+  getCurrentAction: () => currentAction, setCurrentAction: (act) => currentAction = act,
   showTempBubble, kiwiAccessory, getIsWorking: () => isWorking,
-  setOutfitEditMode: (v) => isOutfitEditMode = v, 
+  setOutfitEditMode: (v) => isOutfitEditMode = v,
   setIgnoreWakeup: (v) => ignoreWakeup = v,
   elements: {
     menuTodo, menuFeed, menuPet, menuOutfit, menuSettings,
@@ -651,3 +610,7 @@ interaction.init({
   savePetState,
   showTempBubble
 });
+
+
+const alarmModule = require('./modules/alarm');
+alarmModule.init({ alarmsPath, laser, resetIdle, showAlarmBubble, kiwi, ipcRenderer });
