@@ -29,21 +29,6 @@ const defaultOutfitConfigs = {
   '🎩': { x: 62, y: -31, scale: 60 },
   '🕶️': { x: 76, y: 17, scale: 51 },
 
-const menus = require('./modules/menus');
-menus.init({
-  kiwi, customMenu, ipcRenderer, petState, savePetState, 
-  getCurrentAction: () => currentAction, setCurrentAction: (act) => currentAction = act, 
-  showTempBubble, kiwiAccessory, getIsWorking: () => isWorking,
-  setOutfitEditMode: (v) => isOutfitEditMode = v, 
-  setIgnoreWakeup: (v) => ignoreWakeup = v,
-  elements: {
-    menuTodo, menuFeed, menuPet, menuOutfit, menuSettings,
-    menuSleep, menuHistory, menuAlarm, menuClose, menuLaser,
-    outfitContainer
-  },
-  laser
-});
-
   '🎀': { x: 79, y: 75, scale: 40 },
   '👑': { x: 59, y: -38, scale: 60 },
   '🌸': { x: 80, y: -18, scale: 20 },
@@ -1020,3 +1005,19 @@ window.addEventListener('mousemove', (event) => {
   }
 });
 
+
+
+const menus = require('./modules/menus');
+menus.init({
+  kiwi, customMenu, ipcRenderer, petState, savePetState, 
+  getCurrentAction: () => currentAction, setCurrentAction: (act) => currentAction = act, 
+  showTempBubble, kiwiAccessory, getIsWorking: () => isWorking,
+  setOutfitEditMode: (v) => isOutfitEditMode = v, 
+  setIgnoreWakeup: (v) => ignoreWakeup = v,
+  elements: {
+    menuTodo, menuFeed, menuPet, menuOutfit, menuSettings,
+    menuSleep, menuHistory, menuAlarm, menuClose, menuLaser,
+    outfitContainer
+  },
+  laser
+});
