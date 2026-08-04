@@ -1118,46 +1118,14 @@ setTimeout(() => {
   ipcRenderer.send('set-ignore-mouse-events', true, { forward: true });
 }, 100);
 
-// --- 滑鼠撫摸反應 (Mouse Petting) ---
-let petScore = 0;
-let lastPetTime = 0;
-let pettingTimeout = null;
-let isPetting = false;
-
-kiwi.addEventListener('mousemove', (e) => {
-  if (currentAction === 'sleeping' || physics.getIsDragging() || isDraggingOutfit || isDraggingBed) return;
-  
-  const now = Date.now();
-  if (now - lastPetTime > 500) {
-    petScore = 0;
-  }
-  // 累加滑鼠移動距離
-  petScore += Math.abs(e.movementX) + Math.abs(e.movementY);
-  lastPetTime = now;
-  
-  // 累積移動超過 2000 像素才算作撫摸
-  if (petScore > 2000 && !isPetting) {
-    isPetting = true;
-    const oldAction = currentAction;
-    currentAction = 'petting';
-    kiwi.classList.remove('kiwi-pecking');
-    kiwi.classList.add('kiwi-petting');
-    
-    const heart = document.getElementById('kiwi-heart');
-    heart.style.display = 'block';
-    heart.style.animation = 'none';
-    heart.offsetHeight; // trigger reflow
-    heart.style.animation = 'floatHeart 1s ease-out forwards';
-    
-    if (pettingTimeout) clearTimeout(pettingTimeout);
-    pettingTimeout = setTimeout(() => {
-      isPetting = false;
-      petScore = 0;
-      kiwi.classList.remove('kiwi-petting');
-      heart.style.display = 'none';
-      if (currentAction === 'petting') currentAction = oldAction === 'eating' ? 'idle' : oldAction; 
-    }, 1500);
-  }
+const interaction = require('./modules/interaction');
+interaction.init({
+  kiwi,
+  getCurrentAction: () => currentAction,
+  setCurrentAction: (action) => currentAction = action,
+  physics,
+  getIsDraggingOutfit: () => typeof isDraggingOutfit !== 'undefined' ? isDraggingOutfit : false,
+  getIsDraggingBed: () => typeof isDraggingBed !== 'undefined' ? isDraggingBed : false
 });
 
 // 滑鼠穿透判定邏輯 (優化：快取狀態避免重複 IPC 造成拖曳抖動與延遲)
