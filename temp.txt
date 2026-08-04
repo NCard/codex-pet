@@ -1,0 +1,140 @@
+﻿const chatContent = document.getElementById('chat-content');
+const chatClose = document.getElementById('chat-close');
+
+// 暺??????梯?瘜⊥部
+chatClose.addEventListener('click', () => {
+  chatBubble.style.display = 'none';
+});
+
+// ?? ESC 銋隞仿??蝔格筑???(?典???)
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    if (customMenu.style.display !== 'none') {
+      customMenu.style.display = 'none';
+    } else if (chatBubble.style.display === 'block') {
+      chatBubble.style.display = 'none';
+    }
+  }
+});
+
+// 閮剖??迂?韌??HTML
+const namePrefix = '<span style="color: #c97a2e; font-weight: 900;">Wiki Wiki嚗?/span>';
+
+let bubbleTimeout = null;
+function showTempBubble(text, duration = 5000) {
+  if (isAlarmActive) return; // 銝?閬???瘞?部
+  chatBubble.style.display = 'block';
+  chatContent.innerHTML = `${namePrefix}${text}`;
+  
+  if (bubbleTimeout) clearTimeout(bubbleTimeout);
+  bubbleTimeout = setTimeout(() => {
+    chatBubble.style.display = 'none';
+  }, duration);
+}
+
+ipcRenderer.on('summon-kiwi', () => {
+  if (laser.getIsLaserGameActive()) {
+    laser.toggleLaserGame(false);
+  }
+  resetIdle();
+
+  const heart = document.getElementById('kiwi-heart');
+  if (heart) {
+    heart.style.display = 'block';
+    heart.style.animation = 'none';
+    heart.offsetHeight;
+    heart.style.animation = 'floatHeart 1s ease-out forwards';
+    setTimeout(() => { heart.style.display = 'none'; }, 1000);
+  }
+  
+  kiwi.classList.add('jumping');
+  setTimeout(() => { kiwi.classList.remove('jumping'); }, 500);
+
+  const summonPhrases = [
+    '銝颱犖嚗?(?銨)??,
+    '??靘嚗?佽簪??兜翅?',
+    '?賢?榆?? 鄔凌卄卄?鄔?,
+    '??鈭?(頩西歲) 朁(???)?',
+    '?餅嚗??箇?佗? 漈?鉆'廘'鉆?漈?
+  ];
+  const phrase = summonPhrases[Math.floor(Math.random() * summonPhrases.length)];
+  showTempBubble(`??${phrase}`, 3000);
+});
+
+ipcRenderer.on('show-update-progress', (event, { percent, speed, text }) => {
+  if (isAlarmActive) return;
+  chatBubble.style.display = 'block';
+  if (bubbleTimeout) clearTimeout(bubbleTimeout);
+  
+  if (text) {
+    chatContent.innerHTML = text;
+  } else {
+    chatContent.innerHTML = `? 甇?銝??湔... <b>${percent}%</b><br><span style="font-size:11px; color:#555;">(${speed})</span>`;
+  }
+});
+
+let isAlarmActive = false;
+let snoozedAlarms = [];
+
+function showAlarmBubble(alarm) {
+  isAlarmActive = true;
+  chatBubble.style.display = 'block';
+  if (bubbleTimeout) clearTimeout(bubbleTimeout);
+  
+  const snoozeMins = alarm.snoozeInterval || 5;
+  
+  chatContent.innerHTML = `
+    ${namePrefix}????嚗?br>
+    <div style="margin: 5px 0; word-break: break-all;">${alarm.message}</div>
+    <div style="display: flex; gap: 5px; margin-top: 8px;">
+      <button id="btn-alarm-ok" style="flex:1; padding: 4px; border: none; background: #4caf50; color: white; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold;">???</button>
+      <button id="btn-alarm-snooze" style="flex:1; padding: 4px; border: none; background: #ff9800; color: white; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold;">鞎芰 ${snoozeMins}??/button>
+    </div>
+  `;
+  
+  document.getElementById('btn-alarm-ok').onclick = () => {
+    isAlarmActive = false;
+    chatBubble.style.display = 'none';
+  };
+  
+  document.getElementById('btn-alarm-snooze').onclick = () => {
+    isAlarmActive = false;
+    chatBubble.style.display = 'none';
+    const triggerTime = Date.now() + snoozeMins * 60000;
+    snoozedAlarms.push({ ...alarm, triggerTime });
+  };
+}
+
+
+const physicsCtx = {
+  get kiwi() { return kiwi; },
+  get kiwiAccessory() { return kiwiAccessory; },
+  get chatInput() { return chatInput; },
+  get chatEscHint() { return typeof chatEscHint !== 'undefined' ? chatEscHint : null; },
+  get chatBubble() { return chatBubble; },
+  getCurrentAction: () => currentAction,
+  setCurrentAction: (val) => { currentAction = val; },
+  setPos: (newX, newY) => { x = newX; y = newY; },
+  getPetState: () => petState
+};
+
+physics.initDragging(physicsCtx);
+
+
+// ?典??? ESC ?菟???閰?
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    if (chatInput.style.display !== 'none' || chatBubble.style.display !== 'none') {
+      chatInput.style.display = 'none';
+      if(typeof chatEscHint !== 'undefined') chatEscHint.style.display = 'none';
+      chatBubble.style.display = 'none';
+      chatInput.value = '';
+    }
+  }
+});
+
+// ??頛詨獢? Enter ?萎?隞塚??澆 Gemini
+chatInput.addEventListener('keydown', async (e) => {
+  if (e.key === 'Tab') {
+    const text = chatInput.value;
+    if (text.startsWith('/')) {
