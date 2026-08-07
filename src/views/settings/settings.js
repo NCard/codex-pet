@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const { petStatePath: statePath } = require('../../utils/paths');
 require('dotenv').config({ path: path.resolve(__dirname, '../../../.env') });
+const { AIProviderFactory } = require('../../services/ai_provider');
 
 // 預設設定
 const defaultSettings = {
@@ -105,7 +106,59 @@ function initUI() {
   updateLabels();
   updateBedEditUI();
   setDirty(false);
+  
+  // 嘗試載入可用模型
+  refreshModels();
 }
+
+async function refreshModels() {
+  const apiKey = els.apiKey.value || process.env.GEMINI_API_KEY;
+  if (!apiKey) return;
+  
+  const btnRefreshModels = document.getElementById('btn-refresh-models');
+  if (btnRefreshModels) {
+    btnRefreshModels.disabled = true;
+    btnRefreshModels.innerText = '載入中...';
+  }
+  
+  try {
+    const provider = AIProviderFactory.create('gemini', apiKey, '');
+    const models = await provider.getAvailableModels();
+    
+    if (models && models.length > 0) {
+      const currentVal = els.aiModel.value;
+      els.aiModel.innerHTML = '';
+      models.forEach(m => {
+        const opt = document.createElement('option');
+        opt.value = m.id;
+        opt.innerText = m.displayName;
+        els.aiModel.appendChild(opt);
+      });
+      const hasCurrent = models.some(m => m.id === currentVal);
+      if (hasCurrent) {
+        els.aiModel.value = currentVal;
+      } else {
+        els.aiModel.value = petState.settings.aiModel || models[0].id;
+      }
+    }
+  } catch (e) {
+    console.error('Failed to fetch models', e);
+    alert('獲取失敗: ' + (e.message || String(e)));
+  } finally {
+    if (btnRefreshModels) {
+      btnRefreshModels.disabled = false;
+      btnRefreshModels.innerText = '🔄 重新整理';
+    }
+  }
+}
+
+document.getElementById('btn-refresh-models')?.addEventListener('click', () => {
+  if (!els.apiKey.value && !process.env.GEMINI_API_KEY) {
+    alert('請先填寫 API Key 才能獲取模型列表！');
+    return;
+  }
+  refreshModels();
+});
 
 function updateLabels() {
   vals.bedX.innerText = els.bedX.value + 'px';

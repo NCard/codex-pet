@@ -329,7 +329,7 @@ ${personaText}
         
         sessionContext.push({ role: 'user', parts: [{ text: text }] });
         
-        let response = await ai.models.generateContent({
+        let response = await ai.generateContent({
           model: petState.settings?.aiModel || 'gemini-3.5-flash-lite',
           contents: sessionContext,
           config: { 
@@ -381,7 +381,7 @@ ${personaText}
           sessionContext.push({ role: 'model', parts: response.candidates[0].content.parts });
           sessionContext.push({ role: 'user', parts: functionResponses });
           
-          response = await ai.models.generateContent({
+          response = await ai.generateContent({
              model: petState.settings?.aiModel || 'gemini-3.5-flash-lite',
              contents: sessionContext,
              config: { 

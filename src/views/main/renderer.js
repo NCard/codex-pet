@@ -38,7 +38,7 @@ const crypto = require('crypto');
 const os = require('os');
 const { ipcRenderer } = require('electron');
 require('dotenv').config({ path: path.resolve(__dirname, '../../../.env') });
-const { GoogleGenAI } = require('@google/genai');
+const { AIProviderFactory } = require('../../services/ai_provider');
 const cryptoUtils = require('../../utils/crypto_utils');
 const { spawn } = require('child_process');
 const { Client } = require("@modelcontextprotocol/sdk/client/index.js");
@@ -114,7 +114,7 @@ let ai = null;
 function initAI() {
   const apiKey = (petState.settings && petState.settings.apiKey) ? petState.settings.apiKey : process.env.GEMINI_API_KEY;
   if (apiKey) {
-    ai = new GoogleGenAI({ apiKey: apiKey });
+    ai = AIProviderFactory.create('gemini', apiKey, petState.settings?.aiModel || 'gemini-3.5-flash-lite');
   } else {
     ai = null;
   }

@@ -28,12 +28,13 @@
       </div>
       <div class="control-group" style="margin-top: 15px;">
         <label>AI 模型選擇 (Model)</label>
-        <select id="setting-aiModel" style="width: 100%; margin-top: 5px; padding: 6px; border-radius: 5px; border: 1px solid #ccc;">
-          <option value="gemini-3.6-flash">gemini-3.6-flash (最新推薦：速度快)</option>
-          <option value="gemini-3.1-pro">gemini-3.1-pro (推理強)</option>
-          <option value="gemini-3.5-flash-lite">gemini-3.5-flash-lite (最快/低成本)</option>
-        </select>
-        <div style="font-size: 11px; color: #666; margin-top: 5px;">* 選擇與您 API 金鑰相符支援的模型，若發生 503 或 404 錯誤，請嘗試切換模型。</div>
+        <div style="display: flex; gap: 10px; margin-top: 5px; align-items: center;">
+          <select id="setting-aiModel" style="flex: 1; padding: 6px; border-radius: 5px; border: 1px solid #ccc; min-width: 0;">
+            <option value="gemini-3.5-flash-lite">gemini-3.5-flash-lite (預設)</option>
+          </select>
+          <button id="btn-refresh-models" style="flex-shrink: 0; white-space: nowrap; padding: 6px 12px; background: #29b6f6; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 13px;" title="重新抓取可用模型">🔄 重新整理</button>
+        </div>
+        <div style="font-size: 11px; color: #666; margin-top: 5px;">* 點擊「重新整理」可根據您的 API Key 動態載入可用模型。若發生 503 或 404 錯誤，請切換模型。</div>
       </div>
     </div>
 
