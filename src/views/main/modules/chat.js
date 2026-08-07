@@ -290,7 +290,7 @@ function init({
         ];
         
         let response = await ai.models.generateContent({
-          model: 'gemini-3.5-flash',
+          model: 'gemini-2.5-flash',
           contents,
           config: { tools: geminiTools.length > 0 ? geminiTools : undefined }
         });
@@ -339,7 +339,7 @@ function init({
           contents.push({ role: 'user', parts: functionResponses });
           
           response = await ai.models.generateContent({
-             model: 'gemini-3.5-flash',
+             model: 'gemini-2.5-flash',
              contents,
              config: { tools: geminiTools.length > 0 ? geminiTools : undefined }
           });
