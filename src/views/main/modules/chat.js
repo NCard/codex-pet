@@ -18,6 +18,24 @@ function init({
   saveChatHistory, clearChatHistory, resetIdle, ipcRenderer
 }) {
   
+  // 監聽對話框狀態，更新父容器樣式以提高效能
+  const container = chatBubble.parentElement;
+  const updateContainerStyles = () => {
+    const bVisible = chatBubble.style.display !== 'none';
+    const iVisible = chatInput.style.display !== 'none';
+    
+    if (bVisible || iVisible) container.classList.add('show-arrow');
+    else container.classList.remove('show-arrow');
+    
+    if (bVisible && iVisible) container.classList.add('unified-chat');
+    else container.classList.remove('unified-chat');
+  };
+  
+  const observer = new MutationObserver(updateContainerStyles);
+  observer.observe(chatBubble, { attributes: true, attributeFilter: ['style'] });
+  observer.observe(chatInput, { attributes: true, attributeFilter: ['style'] });
+  updateContainerStyles();
+  
   // 點擊關閉按鈕隱藏泡泡
   chatClose.addEventListener('click', () => {
     chatBubble.style.display = 'none';

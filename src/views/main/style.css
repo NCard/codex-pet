@@ -110,8 +110,7 @@ body, html {
 }
 
 /* 將箭頭移至統一容器，並在顯示時啟動 */
-#chat-container:has(.chat-bubble[style*="display: block"])::after,
-#chat-container:has(#chat-input[style*="display: block"])::after {
+#chat-container.show-arrow::after {
   content: "";
   position: absolute;
   bottom: -15px;
@@ -123,11 +122,10 @@ body, html {
   z-index: 21;
 }
 
-#chat-container:has(.chat-bubble[style*="display: block"])::before,
-#chat-container:has(#chat-input[style*="display: block"])::before {
+#chat-container.show-arrow::before {
   content: "";
   position: absolute;
-  bottom: -12px;
+  bottom: -10px;
   left: 50%;
   transform: translateX(-50%);
   border-width: 12px 8px 0 8px;
@@ -137,13 +135,13 @@ body, html {
 }
 
 /* 方案A: 無縫合併樣式 */
-#chat-container:has(#chat-input[style*="display: block"]) .chat-bubble {
+#chat-container.unified-chat .chat-bubble {
   border-bottom-left-radius: 0;
   border-bottom-right-radius: 0;
   border-bottom: 1px dashed rgba(3, 169, 244, 0.4);
 }
 
-#chat-container:has(.chat-bubble[style*="display: block"]) #chat-input {
+#chat-container.unified-chat #chat-input {
   border-top-left-radius: 0;
   border-top-right-radius: 0;
   border-top: none;
