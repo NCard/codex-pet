@@ -127,10 +127,14 @@ function initDragging(ctx) {
     ctx.kiwi.classList.add('jumping');
     setTimeout(() => { ctx.kiwi.classList.remove('jumping'); }, 500);
 
-    ctx.chatInput.style.display = 'block';
-    if (ctx.chatEscHint) ctx.chatEscHint.style.display = 'block';
-    ctx.chatBubble.style.display = 'none';
-    ctx.chatInput.focus();
+    if (ctx.openChat) {
+      ctx.openChat();
+    } else {
+      ctx.chatInput.style.display = 'block';
+      if (ctx.chatEscHint) ctx.chatEscHint.style.display = 'block';
+      ctx.chatBubble.style.display = 'none';
+      ctx.chatInput.focus();
+    }
   });
 }
 

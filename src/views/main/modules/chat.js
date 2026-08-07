@@ -420,7 +420,33 @@ ${personaText}
       }
     }
   });
+  function openChat() {
+    const now = Date.now();
+    let hasMemory = false;
+    
+    // Check if memory has expired (5 mins)
+    if (now - lastInteractionTime > 5 * 60 * 1000) {
+      sessionContext = [];
+    } else if (sessionContext.length > 0) {
+      hasMemory = true;
+    }
+    
+    // If there is memory, show the bubble with the last response
+    if (hasMemory) {
+      chatBubble.style.display = 'block';
+    } else {
+      chatBubble.style.display = 'none';
+    }
+    
+    chatInput.style.display = 'block';
+    if (typeof chatEscHint !== 'undefined' && chatEscHint) {
+      chatEscHint.style.display = 'block';
+    }
+    chatInput.disabled = false;
+    chatInput.placeholder = '對話... (Shift+Enter 換行)';
+    chatInput.focus();
+  }
   
-  return { showTempBubble, showAlarmBubble };
+  return { showTempBubble, showAlarmBubble, openChat };
 }
 module.exports = { init };
