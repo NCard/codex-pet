@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>menu</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      background: transparent;
+      overflow: hidden;
+      width: max-content;
+      height: max-content;
+    }
+
+    /* 外層水平 flex 容器，讓主選單和子選單並排 */
+    #app-wrapper {
+      display: inline-flex;
+      flex-direction: row;
+      align-items: flex-start;
+      gap: 5px;
+    }
+
+    .card {
+      display: inline-flex;
+      flex-direction: column;
+      background-color: #fbfdf8;
+      background-image:
+        radial-gradient(circle at 100% 0%, rgba(139, 195, 74, 0.25) 0%, transparent 65%),
+        radial-gradient(circle at 0% 100%, rgba(174, 213, 129, 0.15) 0%, transparent 60%),
+        linear-gradient(145deg, #fbfdf8 0%, #f4f9ed 100%);
+      border: 1.5px solid #aed581;
+      border-radius: 14px;
+      padding: 8px;
+      box-shadow: 0 10px 30px rgba(46, 125, 50, 0.15), 0 2px 8px rgba(0, 0, 0, 0.06);
+      gap: 2px;
+      user-select: none;
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Microsoft JhengHei', sans-serif;
+    }
+
+    #menu-root {
+      min-width: 170px;
+      animation: menuFadeIn 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+      transform-origin: top left;
+    }
+
+    /* 子選單面板，預設隱藏 */
+    #side-panel {
+      display: none;
+      min-width: 145px;
+      animation: menuFadeIn 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+      transform-origin: top left;
+    }
+    #side-panel.visible {
+      display: inline-flex;
+    }
+
+    @keyframes menuFadeIn {
+      from { opacity: 0; transform: scale(0.92) translateX(-6px); }
+      to   { opacity: 1; transform: scale(1) translateX(0); }
+    }
+
+    .menu-item {
+      padding: 8px 14px;
+      cursor: pointer;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: bold;
+      white-space: nowrap;
+      color: #37474f;
+      text-align: left;
+      transition: background 0.15s, color 0.15s, transform 0.15s;
+      display: flex;
+      align-items: center;
+    }
+    .menu-item:hover {
+      background: #e8f5e9;
+      color: #2e7d32;
+      transform: translateX(3px);
+    }
+    .menu-item.active {
+      background: #e8f5e9;
+      color: #2e7d32;
+    }
+    .menu-item.danger:hover {
+      background: #ffebee;
+      color: #d32f2f;
+    }
+
+    .menu-separator {
+      height: 1px;
+      background: rgba(197, 225, 165, 0.5);
+      margin: 3px 4px;
+    }
+
+    .menu-group-title {
+      font-size: 11px;
+      color: #90a4ae;
+      text-align: center;
+      padding: 4px 0 2px 0;
+      pointer-events: none;
+      font-weight: bold;
+      letter-spacing: 0.5px;
+    }
+
+    .submenu-arrow {
+      font-size: 10px;
+      opacity: 0.6;
+      margin-left: auto;
+      padding-left: 10px;
+      transition: transform 0.2s;
+    }
+    .menu-item.active .submenu-arrow {
+      transform: rotate(90deg);
+    }
+
+    .menu-footer-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 4px;
+    }
+    .menu-footer-btn {
+      flex: 1;
+      justify-content: center;
+      padding: 8px 0;
+      font-size: 12px;
+      background: rgba(120, 144, 156, 0.1);
+      color: #546e7a;
+      border-radius: 10px;
+    }
+    .menu-footer-btn:hover {
+      transform: none;
+    }
+
+    /* 子選單標題 */
+    #side-panel-title {
+      font-size: 11px;
+      color: #90a4ae;
+      text-align: center;
+      padding: 4px 0 2px 0;
+      font-weight: bold;
+      letter-spacing: 0.5px;
+    }
+  </style>
+</head>
+<body>
+  <div id="app-wrapper">
+    <!-- 主選單 -->
+    <div id="menu-root" class="card">
+      <div class="menu-group-title">— 效率工具 —</div>
+      <div class="menu-item" data-action="todo">📋 待辦事項</div>
+      <div class="menu-item" data-action="alarm">⏰ 鬧鐘排程</div>
+      <div class="menu-item" data-action="history">📜 歷史對話</div>
+
+      <div class="menu-separator"></div>
+
+      <div class="menu-item" id="submenu-trigger">
+        ✨ 互動玩耍
+        <span class="submenu-arrow">▶</span>
+      </div>
+
+      <div class="menu-separator"></div>
+
+      <div class="menu-group-title">— 系統設定 —</div>
+      <div class="menu-item" data-action="outfit">🎩 換裝衣櫥</div>
+      <div class="menu-item" data-action="settings">⚙️ 設定</div>
+
+      <div class="menu-separator"></div>
+
+      <div class="menu-footer-row">
+        <div class="menu-item menu-footer-btn" data-action="cancel">取消</div>
+        <div class="menu-item menu-footer-btn danger" data-action="quit">結束</div>
+      </div>
+    </div>
+
+    <!-- 子選單面板（橫向展開） -->
+    <div id="side-panel" class="card">
+      <div id="side-panel-title">— 互動玩耍 —</div>
+      <div class="menu-item" data-action="feed">🍎 餵食</div>
+      <div class="menu-item" data-action="pet">✋ 摸摸</div>
+      <div class="menu-item" data-action="sleep">💤 睡覺</div>
+      <div class="menu-item" data-action="laser">🔴 開啟雷射筆</div>
+    </div>
+  </div>
+
+  <script src="menu.js"></script>
+</body>
+</html>

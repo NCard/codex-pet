@@ -9,40 +9,10 @@ function init({
   },
   laser, interaction
 }) {
-  // 右鍵點擊奇異鳥，顯示自訂右鍵選單
+  // 右鍵點擊奇異鳥，顯示自訂選單視窗
   kiwi.addEventListener('contextmenu', (e) => {
     e.preventDefault();
-    
-    // 先顯示選單，才能取得實際寬高
-    customMenu.style.display = 'flex';
-    
-    let menuWidth = customMenu.offsetWidth;
-    let menuHeight = customMenu.offsetHeight;
-    
-    let left = e.clientX + 10;
-    let top = e.clientY - 10;
-    
-    // 防止選單超出 250x250 的視窗邊界而被切掉
-    if (left + menuWidth > 250) {
-      left = e.clientX - menuWidth - 10;
-    }
-    if (top + menuHeight > 250) {
-      top = e.clientY - menuHeight - 10;
-    }
-    
-    // 終極防線：確保絕對不會掉出左邊和上面的邊界 (小於 0)
-    if (left < 5) left = 5;
-    if (top < 5) top = 5;
-    
-    customMenu.style.left = left + 'px';
-    customMenu.style.top = top + 'px';
-  });
-
-  // 點擊其他地方關閉選單
-  window.addEventListener('click', (e) => {
-    if (e.target.className !== 'menu-item') {
-      customMenu.style.display = 'none';
-    }
+    ipcRenderer.send('show-context-menu', e.screenX, e.screenY);
   });
 
   // 綁定選單功能

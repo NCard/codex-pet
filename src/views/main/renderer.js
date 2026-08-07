@@ -477,3 +477,17 @@ interaction.init({
 
 const alarmModule = require('./modules/alarm');
 alarmModule.init({ alarmsPath, laser, resetIdle, showAlarmBubble, kiwi, ipcRenderer });
+
+ipcRenderer.on('menu-action', (event, action) => {
+  switch (action) {
+    case 'todo': document.getElementById('menu-todo')?.click(); break;
+    case 'alarm': document.getElementById('menu-alarm')?.click(); break;
+    case 'history': document.getElementById('menu-history')?.click(); break;
+    case 'feed': document.getElementById('menu-feed')?.click(); break;
+    case 'pet': document.getElementById('menu-pet')?.click(); break;
+    case 'sleep': document.getElementById('menu-sleep')?.click(); break;
+    case 'laser': document.getElementById('menu-laser')?.click(); break;
+    case 'outfit': document.getElementById('menu-outfit')?.click(); break;
+    case 'settings': document.getElementById('menu-settings')?.click(); break;
+  }
+});
