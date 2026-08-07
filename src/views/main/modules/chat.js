@@ -5,6 +5,7 @@ let pomodoroTimer = null;
 
 let sessionContext = [];
 let lastInteractionTime = 0;
+let lastRealReply = '';
 const MAX_HISTORY_MESSAGES = 20;
 
 
@@ -25,6 +26,7 @@ function init({
   if (chatClear) {
     chatClear.addEventListener('click', () => {
       sessionContext = [];
+      lastRealReply = '';
       chatContent.innerHTML = `${namePrefix}記憶已清除，請隨時開啟新話題！`;
     });
   }
@@ -268,6 +270,7 @@ function init({
           reply = '這是什麼奇怪的指令呀？Wiki Wiki 聽不懂 (歪頭)<br>試試看 /help 吧！';
         }
         
+        lastRealReply = reply;
         chatContent.innerHTML = `${namePrefix}${reply}`;
         saveChatHistory('kiwi', reply);
         
@@ -286,6 +289,7 @@ function init({
       const now = Date.now();
       if (now - lastInteractionTime > 5 * 60 * 1000) {
         sessionContext = [];
+        lastRealReply = '';
       }
       lastInteractionTime = now;
 
@@ -381,6 +385,7 @@ ${personaText}
   
         // 避免 AI 回答包含 HTML 標籤破壞畫面
         const safeText = (response.text || "").replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        lastRealReply = safeText;
         chatContent.innerHTML = `${namePrefix}${safeText}`;
         
         // 儲存奇異鳥回答
@@ -432,7 +437,8 @@ ${personaText}
     }
     
     // If there is memory, show the bubble with the last response
-    if (hasMemory) {
+    if (hasMemory && lastRealReply) {
+      chatContent.innerHTML = `${namePrefix}${lastRealReply}`;
       chatBubble.style.display = 'block';
     } else {
       chatBubble.style.display = 'none';
