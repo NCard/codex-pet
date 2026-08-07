@@ -120,7 +120,7 @@ body, html {
   border-width: 15px 10px 0 10px;
   border-style: solid;
   border-color: #29b6f6 transparent transparent transparent;
-  z-index: 9;
+  z-index: 21;
 }
 
 #chat-container:has(.chat-bubble[style*="display: block"])::before,
@@ -133,7 +133,7 @@ body, html {
   border-width: 12px 8px 0 8px;
   border-style: solid;
   border-color: #e1f5fe transparent transparent transparent;
-  z-index: 11;
+  z-index: 22;
 }
 
 /* 方案A: 無縫合併樣式 */
