@@ -105,7 +105,13 @@ body, html {
 }
 
 /* 對話泡泡的尾巴 (指向下方的奇異鳥) */
-.chat-bubble::after {
+.chat-bubble::after, .chat-bubble::before {
+  display: none !important;
+}
+
+/* 將箭頭移至統一容器，並在顯示時啟動 */
+#chat-container:has(.chat-bubble[style*="display: block"])::after,
+#chat-container:has(#chat-input[style*="display: block"])::after {
   content: "";
   position: absolute;
   bottom: -15px;
@@ -116,7 +122,9 @@ body, html {
   border-color: #29b6f6 transparent transparent transparent;
   z-index: 9;
 }
-.chat-bubble::before {
+
+#chat-container:has(.chat-bubble[style*="display: block"])::before,
+#chat-container:has(#chat-input[style*="display: block"])::before {
   content: "";
   position: absolute;
   bottom: -12px;
@@ -126,6 +134,19 @@ body, html {
   border-style: solid;
   border-color: #e1f5fe transparent transparent transparent;
   z-index: 11;
+}
+
+/* 方案A: 無縫合併樣式 */
+#chat-container:has(#chat-input[style*="display: block"]) .chat-bubble {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  border-bottom: 1px dashed rgba(3, 169, 244, 0.4);
+}
+
+#chat-container:has(.chat-bubble[style*="display: block"]) #chat-input {
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  border-top: none;
 }
 
 #chat-content {
