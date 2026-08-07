@@ -3,8 +3,13 @@ let bubbleTimeout = null;
 let isAlarmActive = false;
 let pomodoroTimer = null;
 
+let sessionContext = [];
+let lastInteractionTime = 0;
+const MAX_HISTORY_MESSAGES = 20;
+
+
 function init({
-  chatBubble, chatContent, chatClose, chatInput, chatEscHint, customMenu,
+  chatBubble, chatContent, chatClose, chatClear, chatInput, chatEscHint, customMenu,
   kiwi, kiwiAccessory, namePrefix,
   petState, savePetState, loadPetState, applyOutfitPos,
   getIsWorking, setIsWorking,
@@ -16,6 +21,13 @@ function init({
   chatClose.addEventListener('click', () => {
     chatBubble.style.display = 'none';
   });
+  
+  if (chatClear) {
+    chatClear.addEventListener('click', () => {
+      sessionContext = [];
+      chatContent.innerHTML = `${namePrefix}記憶已清除，請隨時開啟新話題！`;
+    });
+  }
   
   // 按下 ESC 也可以隱藏各種浮動面板 (全域監聽)
   window.addEventListener('keydown', (e) => {
@@ -270,29 +282,38 @@ function init({
         return;
       }
       
+      // 判斷是否逾時重置上下文 (5分鐘 = 300,000 毫秒)
+      const now = Date.now();
+      if (now - lastInteractionTime > 5 * 60 * 1000) {
+        sessionContext = [];
+      }
+      lastInteractionTime = now;
+
       try {
         const p = petState.settings.aiPersonality || 'default';
         const customP = petState.settings.aiCustomPrompt || '';
-        let personaText = "請用簡短、活潑、賣萌的語氣回答問題（回答請盡量在 50 字以內，可以加上顏文字）。";
+        let personaText = "請用簡短、活潑、賣萌的語氣說話（回答控制在 50 字以內，可以加上顏文字）。";
         if (p === 'bard') {
-          personaText = "請扮演西方奇幻風格的吟遊詩人。你的說話方式必須充滿「押韻」與「詩意」，像是在唱歌或朗誦詩歌一樣，充滿音樂感與節奏感，但不要使用中國古詩詞（回答請盡量在 50 字以內，一定要押韻或帶有音樂般的節奏）。";
+          personaText = "請扮演西式奇幻風格的「吟遊詩人」，說話方式必須充滿「押韻」與「詩意」，像是唱歌或吟誦詩歌一般。充滿節奏感，但不准使用中國古詩詞。請盡量在 50 字以內，一定要押韻並帶有音樂般的節奏感。";
         } else if (p === 'grumpy') {
-          personaText = "請扮演一隻傲嬌、覺得人類很麻煩但又不得不幫忙的奇異鳥。語氣稍微慵懶、嫌麻煩，但其實內心還是關心對方的，不要有攻擊性或真的生氣，有點像傲嬌或懶散的性格（回答請盡量在 50 字以內）。";
+          personaText = "請扮演一隻傲嬌、覺得人類很麻煩但又不得不幫忙的奇異鳥。稍微慵懶、怕麻煩，但其實還是會幫對方，不能有攻擊性或壞脾氣，帶點可愛的懶散性格（回答控制在 50 字以內）。";
         } else if (p === 'custom' && customP) {
-          personaText = `請遵循以下特別個性設定來回答問題：「${customP}」（回答請盡量在 50 字以內）。`;
+          personaText = `請遵循以下特殊個性設定來回覆：\n${customP}\n（請盡量在 50 字以內）`;
         }
   
-        let contents = [
-          { role: 'user', parts: [{ text: `你現在是一隻生活在電腦桌面上的可愛奇異鳥助手，名字叫做「Wiki Wiki」。
-  ${personaText}
-  【重要指示】：若使用者要求設定、更換服裝，或「查詢目前有哪些鬧鐘/待辦事項」，你必須優先呼叫系統提供的工具 (Tools)。在工具回傳結果之前，請勿輸出任何回覆文字！絕對不能發明假造的工具名稱。
-  使用者說：${text}` }] }
-        ];
+        const sysInstruction = `你現在是一隻生活在電腦桌面上的奇異鳥助理，名字叫 Wiki Wiki。
+${personaText}
+【重要指示】當使用者要求設定、更改裝扮或「查詢目前/今天的鬧鐘/待辦事項」時，你必須優先呼叫系統提供的工具 (Tools)。在工具回傳結果之前，不要輸出任何回覆文字，絕不能憑空捏造工具名稱。`;
+        
+        sessionContext.push({ role: 'user', parts: [{ text: text }] });
         
         let response = await ai.models.generateContent({
-          model: 'gemini-2.5-flash',
-          contents,
-          config: { tools: geminiTools.length > 0 ? geminiTools : undefined }
+          model: petState.settings?.aiModel || 'gemini-3.5-flash-lite',
+          contents: sessionContext,
+          config: { 
+            systemInstruction: sysInstruction,
+            tools: geminiTools.length > 0 ? geminiTools : undefined 
+          }
         });
         
         if (response.functionCalls && response.functionCalls.length > 0) {
@@ -335,14 +356,27 @@ function init({
              }
           }
           
-          contents.push(response.candidates[0].content);
-          contents.push({ role: 'user', parts: functionResponses });
+          sessionContext.push({ role: 'model', parts: response.candidates[0].content.parts });
+          sessionContext.push({ role: 'user', parts: functionResponses });
           
           response = await ai.models.generateContent({
-             model: 'gemini-2.5-flash',
-             contents,
-             config: { tools: geminiTools.length > 0 ? geminiTools : undefined }
+             model: petState.settings?.aiModel || 'gemini-3.5-flash-lite',
+             contents: sessionContext,
+             config: { 
+               systemInstruction: sysInstruction,
+               tools: geminiTools.length > 0 ? geminiTools : undefined 
+             }
           });
+        }
+        
+        sessionContext.push({ role: 'model', parts: response.candidates[0].content.parts });
+        
+        // 確保不超過 MAX_HISTORY_MESSAGES
+        while (sessionContext.length > MAX_HISTORY_MESSAGES) {
+          sessionContext.shift(); // 移除 user
+          if (sessionContext.length > 0 && sessionContext[0].role === 'model') {
+            sessionContext.shift(); // 同時移除對應的 model
+          }
         }
   
         // 避免 AI 回答包含 HTML 標籤破壞畫面
@@ -363,7 +397,13 @@ function init({
         kiwi.classList.add('jumping');
         setTimeout(() => { kiwi.classList.remove('jumping'); }, 500);
       } catch (err) {
+        // 如果 API 呼叫失敗，移除剛剛加入的 user 訊息，避免下次變成連續兩個 user 訊息
+        if (sessionContext.length > 0 && sessionContext[sessionContext.length - 1].role === 'user') {
+          sessionContext.pop();
+        }
+        
         console.error(err);
+        try { require('fs').writeFileSync('chat_error.log', err.stack || err.message || JSON.stringify(err)); } catch(e){}
         // 判斷是否為額度用盡的錯誤 (429 / RESOURCE_EXHAUSTED) 或 伺服器忙碌 (503)
         if (err.status === 429 || err.status === 'RESOURCE_EXHAUSTED' || (err.message && (err.message.includes('429') || err.message.includes('quota')))) {
           chatContent.innerHTML = `${namePrefix}嗚嗚，主人的 API 額度好像用完了 😭 沒飯吃了，快去申請新的鑰匙餵我！`;

@@ -12,6 +12,7 @@ const defaultSettings = {
   bedZ: -1,
   animSpeed: 1.0,
   apiKey: '',
+  aiModel: 'gemini-3.5-flash-lite',
   aiPersonality: 'default',
   aiCustomPrompt: '',
   summonShortcut: 'Ctrl+Shift+K'
@@ -44,6 +45,7 @@ const els = {
   bedZ: document.getElementById('bed-z'),
   animSpeed: document.getElementById('anim-speed'),
   apiKey: document.getElementById('setting-apiKey'),
+  aiModel: document.getElementById('setting-aiModel'),
   aiPersonality: document.getElementById('ai-personality'),
   aiCustomPrompt: document.getElementById('custom-personality-input'),
   summonShortcut: document.getElementById('setting-shortcut')
@@ -80,6 +82,7 @@ function initUI() {
   els.bedZ.value = s.bedZ ?? defaultSettings.bedZ;
   els.animSpeed.value = s.animSpeed ?? defaultSettings.animSpeed;
   els.apiKey.value = s.apiKey || process.env.GEMINI_API_KEY || '';
+  els.aiModel.value = s.aiModel ?? defaultSettings.aiModel;
   els.aiPersonality.value = s.aiPersonality ?? defaultSettings.aiPersonality;
   els.aiCustomPrompt.value = s.aiCustomPrompt ?? defaultSettings.aiCustomPrompt;
   els.summonShortcut.value = s.summonShortcut ?? defaultSettings.summonShortcut;
@@ -121,6 +124,7 @@ function checkDirty() {
     current.bedZ !== (s.bedZ ?? defaultSettings.bedZ) ||
     current.animSpeed !== (s.animSpeed ?? defaultSettings.animSpeed) ||
     current.apiKey !== (s.apiKey ?? defaultSettings.apiKey) ||
+    current.aiModel !== (s.aiModel ?? defaultSettings.aiModel) ||
     current.aiPersonality !== (s.aiPersonality ?? defaultSettings.aiPersonality) ||
     current.aiCustomPrompt !== (s.aiCustomPrompt ?? defaultSettings.aiCustomPrompt) ||
     current.summonShortcut !== (s.summonShortcut ?? defaultSettings.summonShortcut)
@@ -144,6 +148,7 @@ function getFormValues() {
     bedZ: parseInt(els.bedZ.value),
     animSpeed: parseFloat(els.animSpeed.value),
     apiKey: els.apiKey.value.trim(),
+    aiModel: els.aiModel.value,
     aiPersonality: els.aiPersonality.value,
     aiCustomPrompt: els.aiCustomPrompt.value.trim(),
     summonShortcut: els.summonShortcut.value.trim()

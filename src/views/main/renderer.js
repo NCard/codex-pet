@@ -9,6 +9,7 @@ const kiwi = document.getElementById('kiwi-sprite-wrapper');
 const chatBubble = document.getElementById('chat-bubble');
 const chatContent = document.getElementById('chat-content');
 const chatClose = document.getElementById('chat-close');
+const chatClear = document.getElementById('chat-clear');
 const chatInput = document.getElementById('chat-input');
 const chatEscHint = document.getElementById('chat-esc-hint');
 const customMenu = document.getElementById('custom-menu');
@@ -424,7 +425,7 @@ physics.initDragging(physicsCtx);
 
 const chat = require('./modules/chat');
 const { showTempBubble, showAlarmBubble } = chat.init({
-  chatBubble, chatContent, chatClose, chatInput, chatEscHint, customMenu,
+  chatBubble, chatContent, chatClose, chatClear, chatInput, chatEscHint, customMenu,
   kiwi, kiwiAccessory, namePrefix: '<span style="color: #c97a2e; font-weight: 900;">Wiki Wiki：</span>',
   petState, savePetState, loadPetState, applyOutfitPos,
   getIsWorking: () => isWorking, setIsWorking: (v) => isWorking = v,
