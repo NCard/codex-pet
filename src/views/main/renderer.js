@@ -88,10 +88,6 @@ async function initMCP() {
 // MCP 在背景初始化，不阻塞主要 UI
 initMCP().catch(console.error);
 
-// 通知 main.js 同步初始化已完成，可以關閉 Splash 並顯示主視窗
-// (MCP 會繼續在背景跑，準備好時自動可用)
-ipcRenderer.send('app-ready');
-
 const stateManager = require('./state.js');
 let petState = stateManager.petState;
 
@@ -482,6 +478,9 @@ interaction.init({
 
 const alarmModule = require('./modules/alarm');
 alarmModule.init({ alarmsPath, laser, resetIdle, showAlarmBubble, kiwi, ipcRenderer });
+
+// 所有模組初始化完成，通知 main.js 關閉 Splash 並顯示主視窗
+ipcRenderer.send('app-ready');
 
 ipcRenderer.on('menu-action', (event, action) => {
   switch (action) {
