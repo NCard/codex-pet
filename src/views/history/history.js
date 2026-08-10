@@ -262,15 +262,25 @@ function renderHistory() {
   updateFloatingDatePill();
 }
 
+let lastHistoryData = null;
+
 function loadHistory() {
   if (!fs.existsSync(historyPath)) {
-    allHistory = [];
-    updateDateSelectOptions();
-    renderHistory();
+    if (lastHistoryData !== null) {
+      lastHistoryData = null;
+      allHistory = [];
+      updateDateSelectOptions();
+      renderHistory();
+    }
     return;
   }
   try {
     const data = fs.readFileSync(historyPath, 'utf8');
+    if (data === lastHistoryData) {
+      return; // Data hasn't changed, skip re-rendering
+    }
+    lastHistoryData = data;
+    
     if (data && data.trim() !== '') {
       try {
         const decrypted = cryptoUtils.decryptData(data);
