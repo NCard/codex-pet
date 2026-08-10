@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Loading...</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      background: transparent;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      font-family: 'Segoe UI', 'Microsoft JhengHei', sans-serif;
+    }
+
+    .kiwi-wrap {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 18px;
+    }
+
+    /* 奇異鳥圖片 — 漂浮 + 搖晃 + 縮放呼吸 */
+    .kiwi-img {
+      width: 120px;
+      image-rendering: pixelated;
+      filter: drop-shadow(0 12px 20px rgba(0,0,0,0.25));
+      animation: floatBounce 1.8s ease-in-out infinite,
+                 wiggle 3.2s ease-in-out infinite;
+      transform-origin: bottom center;
+    }
+
+    @keyframes floatBounce {
+      0%   { transform: translateY(0px) scale(1); }
+      40%  { transform: translateY(-14px) scale(1.04); }
+      60%  { transform: translateY(-14px) scale(1.04); }
+      100% { transform: translateY(0px) scale(1); }
+    }
+
+    @keyframes wiggle {
+      0%,100% { filter: drop-shadow(0 12px 20px rgba(0,0,0,0.25)) rotate(0deg); }
+      25%     { filter: drop-shadow(0 12px 20px rgba(0,0,0,0.25)) rotate(-4deg); }
+      75%     { filter: drop-shadow(0 12px 20px rgba(0,0,0,0.25)) rotate(4deg); }
+    }
+
+    /* 陰影 — 跟著奇異鳥縮放 */
+    .kiwi-shadow {
+      width: 70px;
+      height: 12px;
+      background: radial-gradient(ellipse, rgba(0,0,0,0.22) 0%, transparent 70%);
+      border-radius: 50%;
+      animation: shadowPulse 1.8s ease-in-out infinite;
+      margin-top: -4px;
+    }
+
+    @keyframes shadowPulse {
+      0%,100% { transform: scaleX(1);   opacity: 0.7; }
+      40%,60% { transform: scaleX(0.6); opacity: 0.3; }
+    }
+
+    /* 三個跳動的圓點（載入指示） */
+    .dots {
+      display: flex;
+      gap: 7px;
+      margin-top: 4px;
+    }
+    .dots span {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #8bc34a;
+      animation: dotBounce 1.2s ease-in-out infinite;
+    }
+    .dots span:nth-child(1) { animation-delay: 0s; }
+    .dots span:nth-child(2) { animation-delay: 0.18s; }
+    .dots span:nth-child(3) { animation-delay: 0.36s; }
+
+    @keyframes dotBounce {
+      0%,80%,100% { transform: translateY(0); opacity: 0.5; }
+      40%         { transform: translateY(-8px); opacity: 1; }
+    }
+
+    /* 文字 */
+    .loading-text {
+      font-size: 13px;
+      font-weight: 600;
+      color: #5a7a3a;
+      letter-spacing: 1px;
+      opacity: 0.85;
+      animation: textFade 2s ease-in-out infinite;
+    }
+
+    @keyframes textFade {
+      0%,100% { opacity: 0.55; }
+      50%     { opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+  <div class="kiwi-wrap">
+    <img class="kiwi-img" src="../../../assets/images/kiwi.png" alt="Wiki Wiki">
+    <div class="kiwi-shadow"></div>
+    <div class="loading-text">Wiki Wiki 正在醒來...</div>
+    <div class="dots">
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+  </div>
+</body>
+</html>

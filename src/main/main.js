@@ -35,6 +35,48 @@ let todoWin = null;
 let historyWin = null;
 let settingsWindow = null;
 
+let splashWindow = null;
+const SPLASH_MIN_MS = 500; // Splash 最短顯示時間
+let splashShownAt = 0;
+let mainReady = false;
+
+function createSplashWindow() {
+  const primaryDisplay = screen.getPrimaryDisplay();
+  const { width: sw, height: sh } = primaryDisplay.workAreaSize;
+  const splashW = 200;
+  const splashH = 240;
+
+  splashWindow = new BrowserWindow({
+    width: splashW,
+    height: splashH,
+    x: Math.round((sw - splashW) / 2),
+    y: Math.round((sh - splashH) / 2),
+    transparent: true,
+    frame: false,
+    alwaysOnTop: true,
+    skipTaskbar: true,
+    resizable: false,
+    movable: false,
+    webPreferences: { nodeIntegration: false, contextIsolation: true }
+  });
+  splashWindow.loadFile(path.join(__dirname, '../views/splash/splash.html'));
+  splashShownAt = Date.now();
+}
+
+function closeSplashAndShowMain() {
+  const elapsed = Date.now() - splashShownAt;
+  const remaining = Math.max(0, SPLASH_MIN_MS - elapsed);
+  setTimeout(() => {
+    if (splashWindow && !splashWindow.isDestroyed()) {
+      splashWindow.close();
+      splashWindow = null;
+    }
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.show();
+    }
+  }, remaining);
+}
+
 function createWindow() {
   const primaryDisplay = screen.getPrimaryDisplay();
   const { width: screenWidth, height: screenHeight } = primaryDisplay.workAreaSize;
@@ -54,6 +96,7 @@ function createWindow() {
     frame: false,
     alwaysOnTop: true,
     resizable: false,
+    show: false,   // 先隱藏，等 renderer 完成初始化後再顯示
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false
@@ -149,7 +192,13 @@ function registerGlobalShortcut() {
   }
 }
 
+// Renderer 完成初始化後，關閉 Splash 顯示主視窗
+ipcMain.once('app-ready', () => {
+  closeSplashAndShowMain();
+});
+
 app.whenReady().then(() => {
+  createSplashWindow();
   registerGlobalShortcut();
   createWindow();
 

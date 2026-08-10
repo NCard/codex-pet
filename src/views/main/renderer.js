@@ -85,7 +85,12 @@ async function initMCP() {
   console.log("MCP Client initialized, tools:", mcpToolsList.map(t => t.name));
 }
 
+// MCP 在背景初始化，不阻塞主要 UI
 initMCP().catch(console.error);
+
+// 通知 main.js 同步初始化已完成，可以關閉 Splash 並顯示主視窗
+// (MCP 會繼續在背景跑，準備好時自動可用)
+ipcRenderer.send('app-ready');
 
 const stateManager = require('./state.js');
 let petState = stateManager.petState;
