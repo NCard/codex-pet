@@ -324,18 +324,19 @@ app.whenReady().then(() => {
       return;
     }
     historyWin = new BrowserWindow({
-    icon: path.join(__dirname, '../../assets/images/kiwi.png'),
+      icon: path.join(__dirname, '../../assets/images/kiwi.png'),
       width: 600,
       height: 800,
       title: 'Wiki Wiki 歷史對話紀錄',
+      show: false,
       webPreferences: {
         nodeIntegration: true,
         contextIsolation: false
       }
     });
-    // hide menu bar
     historyWin.setMenu(null);
     historyWin.loadFile(path.join(__dirname, '../views/history/history.html'));
+    historyWin.once('ready-to-show', () => historyWin.show());
     historyWin.on('closed', () => historyWin = null);
   });
 
@@ -345,10 +346,11 @@ app.whenReady().then(() => {
       return;
     }
     alarmWin = new BrowserWindow({
-    icon: path.join(__dirname, '../../assets/images/kiwi.png'),
+      icon: path.join(__dirname, '../../assets/images/kiwi.png'),
       width: 500,
       height: 650,
       title: 'Wiki Wiki 鬧鐘排程',
+      show: false,
       webPreferences: {
         nodeIntegration: true,
         contextIsolation: false
@@ -356,6 +358,7 @@ app.whenReady().then(() => {
     });
     alarmWin.setMenu(null);
     alarmWin.loadFile(path.join(__dirname, '../views/alarm/alarm.html'));
+    alarmWin.once('ready-to-show', () => alarmWin.show());
     alarmWin.on('closed', () => alarmWin = null);
   });
 
@@ -365,10 +368,11 @@ app.whenReady().then(() => {
       return;
     }
     todoWin = new BrowserWindow({
-    icon: path.join(__dirname, '../../assets/images/kiwi.png'),
+      icon: path.join(__dirname, '../../assets/images/kiwi.png'),
       width: 500,
       height: 650,
       title: 'Wiki Wiki 待辦事項',
+      show: false,
       webPreferences: {
         nodeIntegration: true,
         contextIsolation: false
@@ -376,6 +380,7 @@ app.whenReady().then(() => {
     });
     todoWin.setMenu(null);
     todoWin.loadFile(path.join(__dirname, '../views/todo/todo.html'));
+    todoWin.once('ready-to-show', () => todoWin.show());
     todoWin.on('closed', () => { todoWin = null; });
   });
 
@@ -385,10 +390,11 @@ app.whenReady().then(() => {
       return;
     }
     outfitWin = new BrowserWindow({
-    icon: path.join(__dirname, '../../assets/images/kiwi.png'),
+      icon: path.join(__dirname, '../../assets/images/kiwi.png'),
       width: 400,
       height: 550,
       title: 'Wiki Wiki 的衣櫥',
+      show: false,
       webPreferences: {
         nodeIntegration: true,
         contextIsolation: false
@@ -396,7 +402,7 @@ app.whenReady().then(() => {
     });
     outfitWin.setMenu(null);
     outfitWin.loadFile(path.join(__dirname, '../views/outfit/outfit.html'));
-    
+    outfitWin.once('ready-to-show', () => outfitWin.show());
     outfitWin.on('closed', () => {
       outfitWin = null;
       if (mainWindow) mainWindow.webContents.send('outfit-closed');
@@ -486,17 +492,19 @@ app.whenReady().then(() => {
       return;
     }
     settingsWindow = new BrowserWindow({
-    icon: path.join(__dirname, '../../assets/images/kiwi.png'),
+      icon: path.join(__dirname, '../../assets/images/kiwi.png'),
       width: 350,
       height: 500,
       title: 'Wiki Wiki 設定中心',
       autoHideMenuBar: true,
+      show: false,
       webPreferences: {
         nodeIntegration: true,
         contextIsolation: false
       }
     });
     settingsWindow.loadFile(path.join(__dirname, '../views/settings/settings.html'));
+    settingsWindow.once('ready-to-show', () => settingsWindow.show());
     settingsWindow.on('closed', () => {
       settingsWindow = null;
       if (mainWindow) mainWindow.webContents.send('settings-closed');
