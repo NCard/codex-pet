@@ -97,7 +97,7 @@ body, html {
   border-radius: 15px;
   padding: 12px 25px 12px 28px;
   color: #0277bd;
-  font-family: 'Microsoft JhengHei', sans-serif;
+  font-family: var(--theme-font-main);
   font-size: 14px;
   box-shadow: 0px 4px 8px rgba(3, 169, 244, 0.3);
   -webkit-app-region: no-drag; /* 讓對話框不可拖曳視窗 */
@@ -178,7 +178,7 @@ body, html {
   background: #e1f5fe;
   color: #0277bd;
   outline: none;
-  font-family: 'Microsoft JhengHei', sans-serif;
+  font-family: var(--theme-font-main);
   font-size: 14px;
   box-shadow: 0 4px 6px rgba(3, 169, 244, 0.2);
   z-index: 20;
@@ -206,7 +206,7 @@ body, html {
   flex-direction: column;
   gap: 4px;
   user-select: none;
-  font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Microsoft JhengHei', sans-serif;
+  font-family: var(--theme-font-main);
   min-width: 160px;
   animation: menuFadeIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
   transform-origin: top left;
@@ -393,7 +393,7 @@ body, html {
   border-radius: 10px;
   box-shadow: 0 4px 10px rgba(0,0,0,0.1);
   padding: 10px;
-  font-family: 'Microsoft JhengHei', sans-serif;
+  font-family: var(--theme-font-main);
   z-index: 500;
   -webkit-app-region: no-drag;
 }

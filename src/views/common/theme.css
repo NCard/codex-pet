@@ -1,4 +1,11 @@
 /* 🎨 Codex Pet (Wiki Wiki) 全局主題 Token 系統 */
+@font-face {
+  font-family: 'jf-openhuninn';
+  src: url('../../../assets/fonts/jf-openhuninn-2.0.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
 :root,
 :root[data-theme="kiwi"] {
   --theme-bg-color: #f7faf3;
@@ -41,7 +48,7 @@
   --theme-shadow-card: 0 10px 30px rgba(46, 125, 50, 0.08), 0 2px 8px rgba(0, 0, 0, 0.03);
   --theme-shadow-hover: 0 14px 36px rgba(46, 125, 50, 0.14), 0 4px 12px rgba(0, 0, 0, 0.05);
 
-  --theme-font-main: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Microsoft JhengHei', sans-serif;
+  --theme-font-main: 'jf-openhuninn', 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Microsoft JhengHei', sans-serif;
   --theme-transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
 
   /* 主題圖示路徑 Tokens */
