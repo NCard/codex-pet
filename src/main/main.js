@@ -153,33 +153,17 @@ app.whenReady().then(() => {
   registerGlobalShortcut();
   createWindow();
 
+  // ── 右鍵選單：預先建立隱藏視窗，避免每次開啟都要載入造成延遲 ──
   let contextMenuWin = null;
+  let contextMenuReady = false;
 
-  ipcMain.on('show-context-menu', (event, screenX, screenY) => {
-    // 若已有選單視窗，先關閉
-    if (contextMenuWin && !contextMenuWin.isDestroyed()) {
-      contextMenuWin.close();
-      contextMenuWin = null;
-    }
-
-    const { width: sw, height: sh } = screen.getPrimaryDisplay().workAreaSize;
-
-    // 先以較大的預估尺寸開窗，等選單測量完後 menu-resize 再縮小
-    const estimatedW = 200;
-    const estimatedH = 360;
-
-    // 決定選單位置（靠左還是靠右、靠上還是靠下）
-    let x = screenX + 5;
-    let y = screenY - 10;
-    if (x + estimatedW > sw) x = screenX - estimatedW - 5;
-    if (y + estimatedH > sh) y = sh - estimatedH - 10;
-    if (x < 0) x = 0;
-    if (y < 0) y = 0;
+  function createContextMenuWin() {
+    if (contextMenuWin && !contextMenuWin.isDestroyed()) return;
 
     contextMenuWin = new BrowserWindow({
-      x, y,
-      width: estimatedW,
-      height: estimatedH,
+      width: 200,
+      height: 360,
+      show: false,             // 預先建立但隱藏
       transparent: true,
       frame: false,
       alwaysOnTop: true,
@@ -196,35 +180,83 @@ app.whenReady().then(() => {
     contextMenuWin.loadFile(path.join(__dirname, '../views/context_menu/menu.html'));
     contextMenuWin.setAlwaysOnTop(true, 'pop-up-menu');
 
+    contextMenuWin.once('ready-to-show', () => {
+      contextMenuReady = true;
+    });
+
     contextMenuWin.on('closed', () => {
       contextMenuWin = null;
+      contextMenuReady = false;
+      // 自動重建，保持預載狀態
+      setTimeout(createContextMenuWin, 500);
     });
+
+    contextMenuWin.on('blur', () => {
+      if (contextMenuWin && !contextMenuWin.isDestroyed()) {
+        contextMenuWin.hide();
+      }
+    });
+  }
+
+  // 啟動時就預建選單視窗（後台載入，右鍵時秒開）
+  createContextMenuWin();
+
+  ipcMain.on('show-context-menu', (event, screenX, screenY) => {
+    if (!contextMenuWin || contextMenuWin.isDestroyed()) {
+      createContextMenuWin();
+      return; // 第一次還在載入中，忽略（通常不會到這，因為 createWindow 後就預建了）
+    }
+
+    // 取得滑鼠所在的螢幕（支援多螢幕）
+    const display = screen.getDisplayNearestPoint({ x: screenX, y: screenY });
+    const { x: dx, y: dy, width: dw, height: dh } = display.workArea;
+
+    const estimatedW = 200;
+    const estimatedH = 360;
+
+    let x = screenX + 5;
+    let y = screenY - 10;
+
+    // 防止超出當前螢幕邊界
+    if (x + estimatedW > dx + dw) x = screenX - estimatedW - 5;
+    if (y + estimatedH > dy + dh) y = dy + dh - estimatedH - 10;
+    if (x < dx) x = dx;
+    if (y < dy) y = dy;
+
+    contextMenuWin.setPosition(Math.round(x), Math.round(y));
+    contextMenuWin.show();
+    contextMenuWin.focus();
   });
 
   // 選單測量自己的尺寸後回報，讓視窗精確縮放
   ipcMain.on('menu-resize', (event, w, h) => {
     const win = BrowserWindow.fromWebContents(event.sender);
     if (!win || win.isDestroyed()) return;
-    
+
     const newW = Math.ceil(w);
     const newH = Math.ceil(h);
     const [curX, curY] = win.getPosition();
-    const { width: sw, height: sh } = screen.getPrimaryDisplay().workAreaSize;
-    
+
+    const display = screen.getDisplayNearestPoint({ x: curX, y: curY });
+    const { x: dx, y: dy, width: dw, height: dh } = display.workArea;
+
     let x = curX;
     let y = curY;
-    // 若視窗展開後會超出螢幕，往反方向調整
-    if (x + newW > sw) x = sw - newW - 5;
-    if (y + newH > sh) y = sh - newH - 5;
-    if (x < 0) x = 0;
-    if (y < 0) y = 0;
-    
-    win.setPosition(x, y);
+    if (x + newW > dx + dw) x = dx + dw - newW - 5;
+    if (y + newH > dy + dh) y = dy + dh - newH - 5;
+    if (x < dx) x = dx;
+    if (y < dy) y = dy;
+
+    win.setPosition(Math.round(x), Math.round(y));
     win.setSize(newW, newH);
   });
 
   // 選單項目被點擊
   ipcMain.on('menu-item-clicked', (event, action) => {
+    // 先隱藏選單（hide 比 close 快，也不會造成孤兒視窗）
+    if (contextMenuWin && !contextMenuWin.isDestroyed()) {
+      contextMenuWin.hide();
+    }
     if (action === 'quit') {
       app.quit();
       return;
@@ -234,13 +266,7 @@ app.whenReady().then(() => {
         mainWindow.webContents.send('menu-action', action);
       }
     }
-    // 關閉選單視窗
-    if (contextMenuWin && !contextMenuWin.isDestroyed()) {
-      contextMenuWin.close();
-      contextMenuWin = null;
-    }
   });
-
 
 
   ipcMain.on('open-history', () => {
