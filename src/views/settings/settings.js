@@ -16,6 +16,7 @@ const defaultSettings = {
   aiModel: 'gemini-3.5-flash-lite',
   aiPersonality: 'default',
   aiCustomPrompt: '',
+  contextTimeout: 5,
   summonShortcut: 'Ctrl+Shift+K'
 };
 
@@ -49,6 +50,7 @@ const els = {
   aiModel: document.getElementById('setting-aiModel'),
   aiPersonality: document.getElementById('ai-personality'),
   aiCustomPrompt: document.getElementById('custom-personality-input'),
+  contextTimeout: document.getElementById('setting-contextTimeout'),
   summonShortcut: document.getElementById('setting-shortcut')
 };
 
@@ -86,6 +88,7 @@ function initUI() {
   els.aiModel.value = s.aiModel ?? defaultSettings.aiModel;
   els.aiPersonality.value = s.aiPersonality ?? defaultSettings.aiPersonality;
   els.aiCustomPrompt.value = s.aiCustomPrompt ?? defaultSettings.aiCustomPrompt;
+  els.contextTimeout.value = s.contextTimeout ?? defaultSettings.contextTimeout;
   els.summonShortcut.value = s.summonShortcut ?? defaultSettings.summonShortcut;
   
   if (els.aiPersonality.value === 'custom') {
@@ -180,6 +183,7 @@ function checkDirty() {
     current.aiModel !== (s.aiModel ?? defaultSettings.aiModel) ||
     current.aiPersonality !== (s.aiPersonality ?? defaultSettings.aiPersonality) ||
     current.aiCustomPrompt !== (s.aiCustomPrompt ?? defaultSettings.aiCustomPrompt) ||
+    current.contextTimeout !== (s.contextTimeout ?? defaultSettings.contextTimeout) ||
     current.summonShortcut !== (s.summonShortcut ?? defaultSettings.summonShortcut)
   );
   setDirty(hasChanged);
@@ -204,6 +208,7 @@ function getFormValues() {
     aiModel: els.aiModel.value,
     aiPersonality: els.aiPersonality.value,
     aiCustomPrompt: els.aiCustomPrompt.value.trim(),
+    contextTimeout: parseInt(els.contextTimeout.value, 10),
     summonShortcut: els.summonShortcut.value.trim()
   };
 }

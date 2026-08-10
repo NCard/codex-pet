@@ -54,6 +54,19 @@
         <label>自訂個性描述 (限 15 字)</label>
         <input type="text" id="custom-personality-input" maxlength="15" placeholder="例如：講話喜歡加喵~" style="width: 100%; box-sizing: border-box; padding: 6px; border-radius: 5px; border: 1px solid #ccc;">
       </div>
+
+      <div class="control-group" style="margin-top: 14px;">
+        <label>🧠 上下文記憶時間</label>
+        <select id="setting-contextTimeout" style="width: 100%; padding: 6px; border-radius: 5px; border: 1px solid #ccc; margin-top: 5px;">
+          <option value="1">1 分鐘</option>
+          <option value="5" selected>5 分鐘（預設）</option>
+          <option value="15">15 分鐘</option>
+          <option value="30">30 分鐘</option>
+          <option value="60">1 小時</option>
+          <option value="0">永久保留（直到手動清除）</option>
+        </select>
+        <div style="font-size: 11px; color: #666; margin-top: 5px;">* 超過此時間沒有對話，Wiki Wiki 就會忘記當前話題。</div>
+      </div>
     </div>
 
     <div class="section">

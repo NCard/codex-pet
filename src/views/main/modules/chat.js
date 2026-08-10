@@ -303,9 +303,10 @@ function init({
         return;
       }
       
-      // 判斷是否逾時重置上下文 (5分鐘 = 300,000 毫秒)
+      // 判斷是否逾時重置上下文
       const now = Date.now();
-      if (now - lastInteractionTime > 5 * 60 * 1000) {
+      const timeoutMins = petState.settings.contextTimeout !== undefined ? petState.settings.contextTimeout : 5;
+      if (timeoutMins > 0 && now - lastInteractionTime > timeoutMins * 60 * 1000) {
         sessionContext = [];
         lastRealReply = '';
       }
@@ -447,8 +448,9 @@ ${personaText}
     const now = Date.now();
     let hasMemory = false;
     
-    // Check if memory has expired (5 mins)
-    if (now - lastInteractionTime > 5 * 60 * 1000) {
+    // Check if memory has expired
+    const timeoutMins = petState.settings.contextTimeout !== undefined ? petState.settings.contextTimeout : 5;
+    if (timeoutMins > 0 && now - lastInteractionTime > timeoutMins * 60 * 1000) {
       sessionContext = [];
     } else if (sessionContext.length > 0) {
       hasMemory = true;
