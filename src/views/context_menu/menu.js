@@ -45,4 +45,14 @@ window.addEventListener('DOMContentLoaded', () => {
   window.addEventListener('blur', () => {
     ipcRenderer.send('menu-item-clicked', 'cancel');
   });
+
+  // 接收重置選單動畫的指令
+  ipcRenderer.on('reset-menu', () => {
+    const root = document.getElementById('menu-root');
+    if (root) {
+      root.style.animation = 'none';
+      void root.offsetWidth; // 強制瀏覽器重繪 (Trigger reflow)
+      root.style.animation = null; // 恢復 CSS 中定義的 animation
+    }
+  });
 });

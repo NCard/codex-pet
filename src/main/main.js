@@ -25,7 +25,7 @@ if (!app.isPackaged) {
         /app\.log/
       ]
     });
-  } catch (_) {}
+  } catch (_) { }
 }
 
 let mainWindow = null;
@@ -82,7 +82,7 @@ function createWindow() {
   const { width: screenWidth, height: screenHeight } = primaryDisplay.workAreaSize;
   const winWidth = 250;
   const winHeight = 550;
-  
+
   const randomX = Math.floor(Math.random() * (screenWidth - winWidth));
   const randomY = Math.floor(Math.random() * (screenHeight - winHeight));
 
@@ -169,7 +169,7 @@ function registerGlobalShortcut() {
         shortcut = state.settings.summonShortcut;
       }
     }
-  } catch (e) {}
+  } catch (e) { }
 
   if (shortcut) {
     try {
@@ -186,7 +186,7 @@ function registerGlobalShortcut() {
           mainWindow.webContents.send('summon-kiwi');
         }
       });
-    } catch(err) {
+    } catch (err) {
       console.error('Failed to register shortcut', err);
     }
   }
@@ -217,6 +217,7 @@ app.whenReady().then(() => {
       frame: false,
       alwaysOnTop: true,
       skipTaskbar: true,
+      type: 'toolbar',
       resizable: false,
       movable: false,
       focusable: true,
@@ -243,14 +244,21 @@ app.whenReady().then(() => {
     contextMenuWin.on('blur', () => {
       if (contextMenuWin && !contextMenuWin.isDestroyed()) {
         contextMenuWin.hide();
+        contextMenuLastHideTime = Date.now();
       }
     });
   }
+
+  let contextMenuLastHideTime = 0;
 
   // 啟動時就預建選單視窗（後台載入，右鍵時秒開）
   createContextMenuWin();
 
   ipcMain.on('show-context-menu', (event, screenX, screenY) => {
+    if (Date.now() - contextMenuLastHideTime < 250) {
+      return; // 防止連點時因 blur 隱藏後立刻又被觸發顯示
+    }
+    
     if (!contextMenuWin || contextMenuWin.isDestroyed()) {
       createContextMenuWin();
       return; // 第一次還在載入中，忽略（通常不會到這，因為 createWindow 後就預建了）
@@ -272,7 +280,8 @@ app.whenReady().then(() => {
     if (x < dx) x = dx;
     if (y < dy) y = dy;
 
-    contextMenuWin.setPosition(Math.round(x), Math.round(y));
+    contextMenuWin.setBounds({ x: Math.round(x), y: Math.round(y), width: estimatedW, height: estimatedH });
+    contextMenuWin.webContents.send('reset-menu');
     contextMenuWin.show();
     contextMenuWin.focus();
   });
@@ -302,9 +311,10 @@ app.whenReady().then(() => {
 
   // 選單項目被點擊
   ipcMain.on('menu-item-clicked', (event, action) => {
-    // 先隱藏選單（hide 比 close 快，也不會造成孤兒視窗）
+    // 點擊後隱藏選單
     if (contextMenuWin && !contextMenuWin.isDestroyed()) {
       contextMenuWin.hide();
+      contextMenuLastHideTime = Date.now();
     }
     if (action === 'quit') {
       app.quit();
@@ -426,7 +436,7 @@ app.whenReady().then(() => {
 
     laserOverlayWindows = displays.map((display) => {
       const win = new BrowserWindow({
-    icon: path.join(__dirname, '../../assets/images/kiwi.png'),
+        icon: path.join(__dirname, '../../assets/images/kiwi.png'),
         width: display.bounds.width,
         height: display.bounds.height,
         x: display.bounds.x,
@@ -454,7 +464,7 @@ app.whenReady().then(() => {
     laserOverlayWindows.forEach(win => {
       try {
         if (win && !win.isDestroyed()) win.close();
-      } catch(e) {}
+      } catch (e) { }
     });
     laserOverlayWindows = [];
   }
@@ -477,11 +487,11 @@ app.whenReady().then(() => {
   screen.on('display-metrics-changed', () => {
     if (laserOverlayWindows.length > 0) createLaserOverlayWindows();
   });
-  
+
   ipcMain.on('update-outfit-pos', (event, data) => {
     if (mainWindow) mainWindow.webContents.send('update-outfit-pos', data);
   });
-  
+
   ipcMain.on('outfit-pos-updated', (event, data) => {
     if (outfitWin) outfitWin.webContents.send('outfit-pos-updated', data);
   });
@@ -523,7 +533,7 @@ app.whenReady().then(() => {
   ipcMain.on('settings-preview', (event, settingsData) => {
     if (mainWindow) mainWindow.webContents.send('preview-settings', settingsData);
   });
-  
+
   ipcMain.on('settings-dragged', (event, settingsData) => {
     if (settingsWindow) settingsWindow.webContents.send('update-settings-ui', settingsData);
   });
@@ -558,13 +568,13 @@ app.whenReady().then(() => {
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
-  
+
 
   isManualCheck = false;
   setTimeout(() => {
     try {
       autoUpdater.checkForUpdates();
-    } catch (e) {}
+    } catch (e) { }
   }, 5000);
 });
 
@@ -589,7 +599,7 @@ ipcMain.on('check-update-manual', () => {
       dialog.showErrorBox('檢查更新失敗', err.toString());
       if (settingsWindow) settingsWindow.webContents.send('update-check-done');
     });
-  } catch(e) {
+  } catch (e) {
     dialog.showErrorBox('檢查更新發生錯誤', e.toString());
     if (settingsWindow) settingsWindow.webContents.send('update-check-done');
   }
@@ -599,15 +609,15 @@ autoUpdater.on('update-available', (info) => {
   const version = info.version;
   let state = {};
   if (fs.existsSync(petStatePath)) {
-    try { state = JSON.parse(fs.readFileSync(petStatePath, 'utf8')); } catch(e){}
+    try { state = JSON.parse(fs.readFileSync(petStatePath, 'utf8')); } catch (e) { }
   }
-  
+
   if (!isManualCheck) {
     if (state.skippedVersion === version) return;
     const today = new Date().toISOString().split('T')[0];
     if (state.snoozedVersion === version && state.snoozeDate === today) return;
   }
-  
+
   dialog.showMessageBox({
     type: 'info',
     title: '檢查更新',
@@ -673,7 +683,7 @@ autoUpdater.on('update-downloaded', () => {
       text: '🎉 新版本下載完成！<br>即將自動安裝並重啟...'
     });
   }
-  
+
   dialog.showMessageBox({
     type: 'info',
     title: '更新完成',
