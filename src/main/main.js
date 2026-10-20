@@ -11,32 +11,25 @@ const fs = require('fs');
 const { petStatePath } = require('../utils/paths');
 const { autoUpdater } = require('electron-updater');
 
-// 單一實例鎖：防止重複開啟應用程式
-const gotTheLock = app.requestSingleInstanceLock();
-if (!gotTheLock) {
-  const errMsg = 'Wiki Wiki 已經在執行中囉！請勿重複啟動。\n若找不到視窗，請查看右下角系統匣或桌面。';
-  console.error('\n========================================');
-  console.error(`[Wiki Wiki] 啟動提示: ${errMsg}`);
-  console.error('========================================\n');
-  
-  try {
-    dialog.showErrorBox('Wiki Wiki 桌面寵物', errMsg);
-  } catch (_) {}
-
-  app.quit();
-  process.exit(0);
-}
-
-app.on('second-instance', (event, commandLine, workingDirectory) => {
-  // 當使用者試圖打開第二個實例時，聚焦到現有的主視窗
-  if (mainWindow) {
-    if (mainWindow.isMinimized()) mainWindow.restore();
-    mainWindow.show();
-    mainWindow.focus();
-    // 讓奇異鳥跳躍一下提示使用者「我已經在這裡囉！」
-    mainWindow.webContents.send('play-action', 'jump');
+// 單一實例鎖：僅在打包/安裝版啟用，防止使用者重複開啟多個實例
+if (app.isPackaged) {
+  const gotTheLock = app.requestSingleInstanceLock();
+  if (!gotTheLock) {
+    app.quit();
+    process.exit(0);
   }
-});
+
+  app.on('second-instance', (event, commandLine, workingDirectory) => {
+    // 當使用者在安裝版試圖打開第二個實例時，自動聚焦到現有的主視窗
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.show();
+      mainWindow.focus();
+      // 讓奇異鳥跳躍一下提示使用者「我已經在這裡囉！」
+      mainWindow.webContents.send('play-action', 'jump');
+    }
+  });
+}
 
 if (!app.isPackaged) {
   try {

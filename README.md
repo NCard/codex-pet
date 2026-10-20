@@ -45,6 +45,55 @@
 
 ---
 
+## 🔄 應用程式生命週期 (Application Lifecycle)
+
+Wiki Wiki 採用 **Splash 動畫先行 + 背景非同步預熱 (Background Preloading)** 架構，確保視窗啟動平滑無白屏、右鍵選單零延遲響應：
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant App as 啟動入口 (main.js)
+    participant Splash as 啟動畫面 (splash.html)
+    participant MainWin as 主視窗 (renderer.js)
+    participant Menu as 右鍵選單 (menu.html)
+    participant MCP as MCP Server (mcp-server.js)
+
+    App->>App: 單一實例鎖檢查 (安裝版自動聚焦現有實例)
+    App->>Splash: 1. 建立並顯示置中 Splash 動畫 ("Wiki Wiki 正在醒來...")
+    App->>MainWin: 2. 建立主視窗 (預設隱藏 show: false)
+    App->>Menu: 3. 背景預先建立右鍵選單視窗 (預載 DOM，右鍵即開)
+    
+    activate MainWin
+    MainWin->>MainWin: 載入設定、寵物狀態 (petState)
+    MainWin->>MCP: 背景啟動 Stdio MCP Transport
+    MainWin->>MainWin: 初始化物理引擎、拖曳、動畫與快捷鍵
+    MainWin->>App: 4. 發送 'app-ready' (初始化完成)
+    deactivate MainWin
+
+    Note over App: 5. 確保 Splash 播放達最短時間 (SPLASH_MIN_MS: 500ms)
+    App->>Splash: 關閉 Splash 視窗 (splash.close())
+    App->>MainWin: 6. 顯示主視窗 (mainWindow.show())
+    
+    opt 使用者重複點擊捷徑 (Second Instance)
+        App->>MainWin: 喚醒現有視窗 (show/focus) + 奇異鳥跳躍提示 (play-action: jump)
+    end
+```
+
+### 生命週期階段說明：
+1. **啟動前檢查 (Pre-launch & Single Instance Lock)**：
+   - 註冊未捕捉例外攔截 (`logger.js`)。
+   - **防重複開啟機制**：正式安裝版（`app.isPackaged`）執行單一實例鎖，若重複開啟，新行程安靜退出並自動聚焦原視窗，讓奇異鳥原地跳一下提示「我在這裡」。
+2. **啟動動畫階段 (Splash Window)**：
+   - 立即彈出置中、透明且帶有呼吸跳躍動畫與陰影脈動的 Splash 視窗，提供即時的視覺反饋。
+3. **背景預熱與非同步初始化 (Background Preloading)**：
+   - **主視窗 (MainWindow)**：在背景無白屏渲染，載入寵物狀態、樣式設定、衣櫥座標，並非同步連線 MCP Server。
+   - **右鍵選單 (ContextMenu)**：啟動時即在背景預先建立並隱藏，避免每次右鍵點擊時重新編譯 HTML 造成卡頓。
+4. **平滑過渡與顯示 (Transition to Main)**：
+   - 主視窗各模組就緒後發送 `app-ready`。
+   - 系統保證 Splash 至少展示 500ms（避免閃爍），接著關閉 Splash 並平滑呈現主視窗。
+
+---
+
 ## 📥 下載與安裝說明 (Installation Notice)
 
 您可以直接前往 [GitHub Releases](https://github.com/NCard/codex-pet/releases) 下載最新的 Windows 安裝檔 (`Wiki-Wiki-Setup-x.x.x.exe`)。
