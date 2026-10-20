@@ -76,11 +76,19 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       },
       {
         name: "change_outfit",
-        description: "為寵物更換服飾或配件",
+        description: "為寵物更換、穿戴或脫下服飾配件。可依語意選擇合適的 mode。",
         inputSchema: {
           type: "object",
           properties: {
-            outfit: { type: "string", description: "服飾的 emoji，支援 '🎩', '🕶️', '🎀', '👑'。若要脫下服飾，請傳入空字串 ''" }
+            outfit: {
+              type: "string",
+              description: "服飾的 emoji，支援 '🎩', '🕶️', '🎀', '👑', '🌸', '🎓', '🎃', '🎉', '🥽'。若要脫下所有服飾，請傳入空字串 ''"
+            },
+            mode: {
+              type: "string",
+              enum: ["add", "replace", "remove", "clear"],
+              description: "更換模式（務必依使用者語意選擇）：\n- 'add': 使用者說「戴上/穿上/加上XX」時使用，保留原有飾品並疊加新飾品。\n- 'replace': 使用者說「換成XX/只戴XX/改戴XX」時使用，移除其他飾品並僅保留該飾品。\n- 'remove': 使用者說「脫下/摘掉/拿下XX」時使用，只移除該特定飾品。\n- 'clear': 使用者說「脫掉全部/不穿了/全身脫光」時使用，清空所有飾品。"
+            }
           },
           required: ["outfit"],
         },
@@ -140,10 +148,30 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   
   if (name === "change_outfit") {
     const state = getPetState();
-    state.outfit = args.outfit || '';
+    if (!state.outfits) state.outfits = [];
+    const targetOutfit = args.outfit || '';
+    const mode = args.mode || 'replace';
+
+    if (!targetOutfit || mode === 'clear') {
+      state.outfits = [];
+      state.outfit = '';
+    } else if (mode === 'add') {
+      if (!state.outfits.includes(targetOutfit)) {
+        state.outfits.push(targetOutfit);
+      }
+      state.outfit = targetOutfit;
+    } else if (mode === 'remove') {
+      state.outfits = state.outfits.filter(o => o !== targetOutfit);
+      state.outfit = state.outfits.length > 0 ? state.outfits[state.outfits.length - 1] : '';
+    } else {
+      // replace (預設)
+      state.outfits = [targetOutfit];
+      state.outfit = targetOutfit;
+    }
+
     savePetState(state);
     return {
-      content: [{ type: "text", text: `成功更換服飾為: ${state.outfit || '無'}` }]
+      content: [{ type: "text", text: `成功更換服飾為: ${state.outfits.length > 0 ? state.outfits.join(', ') : '無'}` }]
     };
   }
   

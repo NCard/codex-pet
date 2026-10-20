@@ -14,9 +14,12 @@ function init({
   kiwi, kiwiAccessory, namePrefix,
   petState, savePetState, loadPetState, applyOutfitPos,
   getIsWorking, setIsWorking,
-  laser, ai, mcpClient, geminiTools, crypto,
+  laser, ai, getAI, mcpClient, getMcpClient, geminiTools, getGeminiTools, crypto,
   saveChatHistory, clearChatHistory, resetIdle, ipcRenderer
 }) {
+  const resolveAI = () => (typeof getAI === 'function' ? getAI() : ai);
+  const resolveMcpClient = () => (typeof getMcpClient === 'function' ? getMcpClient() : mcpClient);
+  const resolveGeminiTools = () => (typeof getGeminiTools === 'function' ? getGeminiTools() : geminiTools);
   
   // 監聽對話框狀態，更新父容器樣式以提高效能
   const container = chatBubble.parentElement;
@@ -182,8 +185,9 @@ function init({
       const text = chatInput.value.trim();
       if (!text) return;
       
+      const currentAI = resolveAI();
       // 防呆：如果沒有設定 API Key
-      if (!ai) {
+      if (!currentAI) {
         chatInput.value = '';
         chatInput.style.display = 'none';
         if(typeof chatEscHint !== 'undefined') chatEscHint.style.display = 'none';
@@ -326,16 +330,26 @@ function init({
   
         const sysInstruction = `你現在是一隻生活在電腦桌面上的奇異鳥助理，名字叫 Wiki Wiki。
 ${personaText}
-【重要指示】當使用者要求設定、更改裝扮或「查詢目前/今天的鬧鐘/待辦事項」時，你必須優先呼叫系統提供的工具 (Tools)。在工具回傳結果之前，不要輸出任何回覆文字，絕不能憑空捏造工具名稱。`;
+【重要指示】
+1. 當使用者要求設定、更換/穿戴飾品或「查詢目前/今天的鬧鐘/待辦事項」時，你必須優先呼叫系統提供的工具 (Tools)。在工具回傳結果之前，不要輸出任何回覆文字，絕不能憑空捏造工具名稱。
+2. 呼叫 change_outfit 工具時，請依使用者語意指定正確的 mode：
+   - 使用者說「戴上/穿上/加個XX」時，mode 請用 "add"（疊加保留現有飾品）。
+   - 使用者說「換成/只戴/改成XX」時，mode 請用 "replace"（換掉其他飾品）。
+   - 使用者說「脫下/摘掉/拿下XX」時，mode 請用 "remove"。
+   - 使用者說「全部脫掉/脫光」時，mode 請用 "clear"。`;
         
         sessionContext.push({ role: 'user', parts: [{ text: text }] });
         
-        let response = await ai.generateContent({
+        const activeAI = resolveAI();
+        const activeTools = resolveGeminiTools();
+        const activeMcpClient = resolveMcpClient();
+
+        let response = await activeAI.generateContent({
           model: petState.settings?.aiModel || 'gemini-3.5-flash-lite',
           contents: sessionContext,
           config: { 
             systemInstruction: sysInstruction,
-            tools: geminiTools.length > 0 ? geminiTools : undefined 
+            tools: (activeTools && activeTools.length > 0) ? activeTools : undefined 
           }
         });
         
@@ -344,7 +358,10 @@ ${personaText}
           for (const call of response.functionCalls) {
              console.log("Calling tool:", call.name, call.args);
               try {
-                const result = await mcpClient.callTool({ name: call.name, arguments: call.args });
+                if (!activeMcpClient) {
+                  throw new Error("MCP Client 尚未連線或未初始化完成");
+                }
+                const result = await activeMcpClient.callTool({ name: call.name, arguments: call.args });
                 const textResult = result.content ? result.content.map(c => c.text).join('\n') : "成功";
                 
                 const fnResp = {
@@ -360,9 +377,12 @@ ${personaText}
                // 即時反映本地狀態更新
                if (call.name === 'add_todo' || call.name === 'change_outfit') {
                   loadPetState();
-                   if (call.name === 'change_outfit') {
-                     if (petState.outfit) applyOutfitPos();
-                   }
+                  if (call.name === 'change_outfit') {
+                    if (typeof applyOutfitPos === 'function') {
+                      applyOutfitPos();
+                    }
+                    ipcRenderer.send('update-outfit', petState.outfits || []);
+                  }
                   ipcRenderer.send('pet-state-changed');
                }
                if (call.name === 'add_alarm') {
@@ -382,12 +402,12 @@ ${personaText}
           sessionContext.push({ role: 'model', parts: response.candidates[0].content.parts });
           sessionContext.push({ role: 'user', parts: functionResponses });
           
-          response = await ai.generateContent({
+          response = await activeAI.generateContent({
              model: petState.settings?.aiModel || 'gemini-3.5-flash-lite',
              contents: sessionContext,
              config: { 
                systemInstruction: sysInstruction,
-               tools: geminiTools.length > 0 ? geminiTools : undefined 
+               tools: (activeTools && activeTools.length > 0) ? activeTools : undefined 
              }
           });
         }

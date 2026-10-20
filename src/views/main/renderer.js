@@ -430,7 +430,11 @@ const { showTempBubble, showAlarmBubble, openChat } = chat.init({
   kiwi, kiwiAccessory, namePrefix: '<span style="color: #c97a2e; font-weight: 900;">Wiki Wiki：</span>',
   petState, savePetState, loadPetState, applyOutfitPos,
   getIsWorking: () => isWorking, setIsWorking: (v) => isWorking = v,
-  laser, ai, mcpClient, geminiTools, crypto,
+  laser,
+  getAI: () => ai,
+  getMcpClient: () => mcpClient,
+  getGeminiTools: () => geminiTools,
+  crypto,
   saveChatHistory: (role, message) => stateManager.saveChatHistory(role, message),
   clearChatHistory: () => stateManager.clearChatHistory(),
   resetIdle, ipcRenderer
