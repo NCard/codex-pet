@@ -187,6 +187,13 @@ ipcRenderer.on('reload-data', () => {
   loadPetState();
 });
 
+ipcRenderer.on('play-action', (event, action) => {
+  if (action === 'jump' && kiwi) {
+    kiwi.classList.add('jumping');
+    setTimeout(() => { kiwi.classList.remove('jumping'); }, 500);
+  }
+});
+
 
 
 

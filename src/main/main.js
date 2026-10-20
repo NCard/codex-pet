@@ -11,6 +11,25 @@ const fs = require('fs');
 const { petStatePath } = require('../utils/paths');
 const { autoUpdater } = require('electron-updater');
 
+// 單一實例鎖：防止重複開啟應用程式
+const gotTheLock = app.requestSingleInstanceLock();
+if (!gotTheLock) {
+  console.log('[Main]: 偵測到已有執行中的應用實例，退出當前新行程。');
+  app.quit();
+  process.exit(0);
+}
+
+app.on('second-instance', (event, commandLine, workingDirectory) => {
+  // 當使用者試圖打開第二個實例時，聚焦到現有的主視窗
+  if (mainWindow) {
+    if (mainWindow.isMinimized()) mainWindow.restore();
+    mainWindow.show();
+    mainWindow.focus();
+    // 讓奇異鳥跳躍一下提示使用者「我已經在這裡囉！」
+    mainWindow.webContents.send('play-action', 'jump');
+  }
+});
+
 if (!app.isPackaged) {
   try {
     const reloader = require('electron-reloader');
