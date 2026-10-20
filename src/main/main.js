@@ -14,7 +14,15 @@ const { autoUpdater } = require('electron-updater');
 // 單一實例鎖：防止重複開啟應用程式
 const gotTheLock = app.requestSingleInstanceLock();
 if (!gotTheLock) {
-  console.log('[Main]: 偵測到已有執行中的應用實例，退出當前新行程。');
+  const errMsg = 'Wiki Wiki 已經在執行中囉！請勿重複啟動。\n若找不到視窗，請查看右下角系統匣或桌面。';
+  console.error('\n========================================');
+  console.error(`[Wiki Wiki] 啟動提示: ${errMsg}`);
+  console.error('========================================\n');
+  
+  try {
+    dialog.showErrorBox('Wiki Wiki 桌面寵物', errMsg);
+  } catch (_) {}
+
   app.quit();
   process.exit(0);
 }
