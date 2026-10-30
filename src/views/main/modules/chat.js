@@ -7,6 +7,37 @@ let sessionContext = [];
 let lastInteractionTime = 0;
 let lastRealReply = '';
 const MAX_HISTORY_MESSAGES = 20;
+const MAX_AGENT_STEPS = 5;
+
+function getToolStatusHint(toolName) {
+  switch (toolName) {
+    case 'add_todo':
+      return '正在記下待辦事項... (•ө•)✎';
+    case 'add_alarm':
+      return '正在設定鬧鐘... ⏰';
+    case 'change_outfit':
+      return '正在挑選服飾配件... 🎀';
+    case 'get_pet_status':
+      return '正在確認我的狀態... (•ө•)?';
+    case 'get_alarms_and_todos':
+      return '正在翻閱鬧鐘與待辦清單... 📜';
+    default:
+      return `正在執行 ${toolName}... (•ө•)و`;
+  }
+}
+
+function trimSessionContext(context, maxMessages = MAX_HISTORY_MESSAGES) {
+  while (context.length > maxMessages) {
+    context.shift();
+  }
+  // 確保開頭是合法的 user 對話，避免遺留孤立的 functionResponse 導致 API 報錯
+  while (context.length > 0) {
+    const first = context[0];
+    const isUserTextMessage = first.role === 'user' && Array.isArray(first.parts) && first.parts.some(p => typeof p.text === 'string');
+    if (isUserTextMessage) break;
+    context.shift();
+  }
+}
 
 
 function init({
@@ -315,6 +346,7 @@ function init({
         lastRealReply = '';
       }
       lastInteractionTime = now;
+      const contextLengthBeforeTurn = sessionContext.length;
 
       try {
         const p = petState.settings.aiPersonality || 'default';
@@ -330,13 +362,15 @@ function init({
   
         const sysInstruction = `你現在是一隻生活在電腦桌面上的奇異鳥助理，名字叫 Wiki Wiki。
 ${personaText}
-【重要指示】
-1. 當使用者要求設定、更換/穿戴飾品或「查詢目前/今天的鬧鐘/待辦事項」時，你必須優先呼叫系統提供的工具 (Tools)。在工具回傳結果之前，不要輸出任何回覆文字，絕不能憑空捏造工具名稱。
-2. 呼叫 change_outfit 工具時，請依使用者語意指定正確的 mode：
+【Agent 行動準則】
+1. 你是一個具備自主規劃與執行能力的桌面寵物 Agent。面對主人的複雜需求（例如同時要記待辦、設定鬧鐘、更換飾品或查詢狀態），你可以自主規劃並分步驟呼叫工具來完成任務。
+2. 當需要操作或查詢系統資料時，必須優先呼叫系統提供的工具 (Tools)。
+3. 呼叫 change_outfit 工具時，請依使用者語意指定正確的 mode：
    - 使用者說「戴上/穿上/加個XX」時，mode 請用 "add"（疊加保留現有飾品）。
    - 使用者說「換成/只戴/改成XX」時，mode 請用 "replace"（換掉其他飾品）。
    - 使用者說「脫下/摘掉/拿下XX」時，mode 請用 "remove"。
-   - 使用者說「全部脫掉/脫光」時，mode 請用 "clear"。`;
+   - 使用者說「全部脫掉/脫光」時，mode 請用 "clear"。
+4. 完成所有步驟後，請用符合你個性的可愛語氣，向主人清晰且親切地彙整你的執行結果。`;
         
         sessionContext.push({ role: 'user', parts: [{ text: text }] });
         
@@ -344,91 +378,115 @@ ${personaText}
         const activeTools = resolveGeminiTools();
         const activeMcpClient = resolveMcpClient();
 
-        let response = await activeAI.generateContent({
-          model: petState.settings?.aiModel || 'gemini-3.5-flash-lite',
-          contents: sessionContext,
-          config: { 
-            systemInstruction: sysInstruction,
-            tools: (activeTools && activeTools.length > 0) ? activeTools : undefined 
-          }
-        });
-        
-        if (response.functionCalls && response.functionCalls.length > 0) {
-          const functionResponses = [];
-          for (const call of response.functionCalls) {
-             console.log("Calling tool:", call.name, call.args);
-              try {
-                if (!activeMcpClient) {
-                  throw new Error("MCP Client 尚未連線或未初始化完成");
-                }
-                const result = await activeMcpClient.callTool({ name: call.name, arguments: call.args });
-                const textResult = result.content ? result.content.map(c => c.text).join('\n') : "成功";
-                
-                const fnResp = {
-                  name: call.name,
-                  response: { result: textResult }
-                };
-                if (call.id) fnResp.id = call.id;
-                
-                functionResponses.push({
-                  functionResponse: fnResp
-                });
-               
-               // 即時反映本地狀態更新
-               if (call.name === 'add_todo' || call.name === 'change_outfit') {
-                  loadPetState();
-                  if (call.name === 'change_outfit') {
-                    if (typeof applyOutfitPos === 'function') {
-                      applyOutfitPos();
-                    }
-                    ipcRenderer.send('update-outfit', petState.outfits || []);
-                  }
-                  ipcRenderer.send('pet-state-changed');
-               }
-               if (call.name === 'add_alarm') {
-                  ipcRenderer.send('alarms-changed');
-               }
-             } catch (e) {
-               console.error("Tool execution error:", e);
-               functionResponses.push({
-                 functionResponse: {
-                   name: call.name,
-                   response: { error: e.message }
-                 }
-               });
-             }
-          }
-          
-          sessionContext.push({ role: 'model', parts: response.candidates[0].content.parts });
-          sessionContext.push({ role: 'user', parts: functionResponses });
-          
-          response = await activeAI.generateContent({
-             model: petState.settings?.aiModel || 'gemini-3.5-flash-lite',
-             contents: sessionContext,
-             config: { 
-               systemInstruction: sysInstruction,
-               tools: (activeTools && activeTools.length > 0) ? activeTools : undefined 
-             }
+        let stepCount = 0;
+        let finalResponseText = '';
+
+        while (stepCount < MAX_AGENT_STEPS) {
+          let response = await activeAI.generateContent({
+            model: petState.settings?.aiModel || 'gemini-3.5-flash-lite',
+            contents: sessionContext,
+            config: { 
+              systemInstruction: sysInstruction,
+              tools: (activeTools && activeTools.length > 0) ? activeTools : undefined 
+            }
           });
-        }
-        
-        sessionContext.push({ role: 'model', parts: response.candidates[0].content.parts });
-        
-        // 確保不超過 MAX_HISTORY_MESSAGES
-        while (sessionContext.length > MAX_HISTORY_MESSAGES) {
-          sessionContext.shift(); // 移除 user
-          if (sessionContext.length > 0 && sessionContext[0].role === 'model') {
-            sessionContext.shift(); // 同時移除對應的 model
+
+          const candidate = response.candidates && response.candidates[0];
+          const functionCalls = response.functionCalls || [];
+
+          if (functionCalls.length === 0) {
+            // 沒有工具需要呼叫，代表已得到最終思考與回覆
+            if (candidate && candidate.content && candidate.content.parts) {
+              sessionContext.push({ role: 'model', parts: candidate.content.parts });
+            }
+            finalResponseText = response.text || "";
+            break;
+          }
+
+          // 記錄模型輸出的 function calls
+          if (candidate && candidate.content && candidate.content.parts) {
+            sessionContext.push({ role: 'model', parts: candidate.content.parts });
+          }
+
+          stepCount++;
+          const functionResponses = [];
+
+          for (const call of functionCalls) {
+            console.log(`[Agent Step ${stepCount}] Calling tool:`, call.name, call.args);
+            const statusHint = getToolStatusHint(call.name);
+            chatContent.innerHTML = `${namePrefix}${statusHint}`;
+
+            try {
+              if (!activeMcpClient) {
+                throw new Error("MCP Client 尚未連線或未初始化完成");
+              }
+              const result = await activeMcpClient.callTool({ name: call.name, arguments: call.args });
+              const textResult = result.content ? result.content.map(c => c.text).join('\n') : "成功";
+              
+              const fnResp = {
+                name: call.name,
+                response: { result: textResult }
+              };
+              if (call.id) fnResp.id = call.id;
+
+              functionResponses.push({ functionResponse: fnResp });
+
+              // 即時反映本地狀態更新
+              if (call.name === 'add_todo' || call.name === 'change_outfit') {
+                loadPetState();
+                if (call.name === 'change_outfit') {
+                  if (typeof applyOutfitPos === 'function') {
+                    applyOutfitPos();
+                  }
+                  ipcRenderer.send('update-outfit', petState.outfits || []);
+                }
+                ipcRenderer.send('pet-state-changed');
+              }
+              if (call.name === 'add_alarm') {
+                ipcRenderer.send('alarms-changed');
+              }
+            } catch (e) {
+              console.error(`[Agent Step ${stepCount}] Tool execution error:`, e);
+              functionResponses.push({
+                functionResponse: {
+                  name: call.name,
+                  response: { error: e.message }
+                }
+              });
+            }
+          }
+
+          sessionContext.push({ role: 'user', parts: functionResponses });
+
+          // 如果達到最大步數，進行強制總結
+          if (stepCount >= MAX_AGENT_STEPS) {
+            console.warn(`[Agent] Reached MAX_AGENT_STEPS (${MAX_AGENT_STEPS}), summarizing...`);
+            chatContent.innerHTML = `${namePrefix}正在彙整最後結果... (•ө•)੭`;
+            const summaryResponse = await activeAI.generateContent({
+              model: petState.settings?.aiModel || 'gemini-3.5-flash-lite',
+              contents: sessionContext,
+              config: { 
+                systemInstruction: sysInstruction + "\n【重要指令】已完成所有可用步驟，請根據先前的執行結果做最後的完整結論與回覆，不要再調用任何工具。"
+              }
+            });
+            if (summaryResponse.candidates && summaryResponse.candidates[0]?.content?.parts) {
+              sessionContext.push({ role: 'model', parts: summaryResponse.candidates[0].content.parts });
+            }
+            finalResponseText = summaryResponse.text || "";
+            break;
           }
         }
+
+        // 確保不超過 MAX_HISTORY_MESSAGES 並維持 context 合法性
+        trimSessionContext(sessionContext, MAX_HISTORY_MESSAGES);
   
         // 避免 AI 回答包含 HTML 標籤破壞畫面
-        const safeText = (response.text || "").replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        const safeText = (finalResponseText || "").replace(/</g, '&lt;').replace(/>/g, '&gt;');
         lastRealReply = safeText;
         chatContent.innerHTML = `${namePrefix}${safeText}`;
         
         // 儲存奇異鳥回答
-        saveChatHistory('kiwi', response.text || "");
+        saveChatHistory('kiwi', finalResponseText || "");
         
         // 重新啟用輸入框
         chatInput.style.display = 'block';
@@ -441,8 +499,8 @@ ${personaText}
         kiwi.classList.add('jumping');
         setTimeout(() => { kiwi.classList.remove('jumping'); }, 500);
       } catch (err) {
-        // 如果 API 呼叫失敗，移除剛剛加入的 user 訊息，避免下次變成連續兩個 user 訊息
-        if (sessionContext.length > 0 && sessionContext[sessionContext.length - 1].role === 'user') {
+        // 如果 API 呼叫失敗，安全回滾未完成的對話狀態，避免留存不完整的 user / function 訊息
+        while (sessionContext.length > contextLengthBeforeTurn) {
           sessionContext.pop();
         }
         
