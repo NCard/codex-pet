@@ -11,6 +11,7 @@
   
   <div class="tabs">
     <button class="tab-btn active" data-tab="tab-general"><i class="theme-icon icon-gear"></i> 一般</button>
+    <button class="tab-btn" data-tab="tab-privacy">🛡️ 權限與隱私</button>
     <button class="tab-btn" data-tab="tab-bed"><i class="theme-icon icon-bed"></i> 床鋪</button>
     <button class="tab-btn" data-tab="tab-about"><i class="theme-icon icon-info"></i> 關於</button>
   </div>
@@ -88,25 +89,33 @@
         <div style="font-size: 11px; color: #666; margin-top: 5px;">* 點擊上方輸入框後，直接按下您想要的按鍵組合 (例如 Ctrl + K)。按 Backspace 可清除。</div>
       </div>
     </div>
+  </div>
 
+  <!-- 權限與隱私設定頁籤 -->
+  <div id="tab-privacy" class="tab-content">
     <div class="section">
-      <div class="section-title">🛡️ 系統權限與隱私 (Permissions & Privacy)</div>
+      <div class="section-title">🛡️ 系統權限規範 (Agent Permissions)</div>
+      <div style="font-size: 12px; color: #555; line-height: 1.6; margin-bottom: 12px;">
+        為維護使用者隱私與系統資訊安全，所有高敏感系統功能預設皆為關閉狀態。請依您的日常工作需求開啟相應權限。
+      </div>
+
       <div class="control-group">
         <label style="display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none;">
           <span style="font-weight: bold;">📋 允許讀取系統剪貼簿 (Clipboard Access)</span>
           <input type="checkbox" id="setting-enableClipboard" style="width: 18px; height: 18px; cursor: pointer;">
         </label>
         <div style="font-size: 11px; color: #666; margin-top: 5px;">
-          * 預設關閉。開啟後，Wiki Wiki Agent 才具有讀取您目前剪貼簿內容並進行智慧處理的權限。
+          * 預設關閉。開啟後，Wiki Wiki Agent 在對話時才具有存取您剪貼簿文字以回答問題的權限。
         </div>
       </div>
-      <div class="control-group" style="margin-top: 12px; padding-top: 10px; border-top: 1px dashed #e0e0e0;">
+
+      <div class="control-group" style="margin-top: 15px; padding-top: 12px; border-top: 1px dashed #e0e0e0;">
         <label style="display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none;">
-          <span style="font-weight: bold;">💡 剪貼簿主動感知提醒 (Smart Watcher)</span>
+          <span style="font-weight: bold;">💡 剪貼簿主動感知浮動提示 (Smart Watcher)</span>
           <input type="checkbox" id="setting-enableClipboardSmartWatch" style="width: 18px; height: 18px; cursor: pointer;">
         </label>
         <div style="font-size: 11px; color: #666; margin-top: 5px;">
-          * 預設關閉。開啟後，當複製程式報錯、JSON 或英文時，奇異鳥會浮現小燈泡/提示，點擊即可一鍵分析（本機零 Token 消耗）。
+          * 預設關閉。開啟後，當您複製程式報錯、JSON、代碼或英文段落時，奇異鳥會浮現小燈泡提示，點擊即可一鍵分析（純本機離線正則過濾，零額外 Token 費用）。
         </div>
       </div>
     </div>

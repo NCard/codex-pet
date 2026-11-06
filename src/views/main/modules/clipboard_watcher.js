@@ -5,12 +5,17 @@ let lastHandledText = '';
 let hideTimer = null;
 let currentPrompt = '';
 
+try {
+  const initial = clipboard.readText();
+  if (initial) lastSeenText = initial.trim();
+} catch (_) {}
+
 function detectClipboardIntent(rawText) {
   const text = (rawText || '').trim();
-  if (text.length < 15 || text.length > 5000) return null;
+  if (text.length < 5 || text.length > 5000) return null;
 
   // 1. 程式報錯 / Stack Trace 偵測
-  const errorRegex = /(?:Error:|Exception|at\s+[\w\d_.$<>]+\s+\(|Traceback\s+\(most\s+recent|SyntaxError|TypeError|ReferenceError|NullPointerException|FATAL|UnhandledPromiseRejection|failed\s+with\s+exit\s+code)/i;
+  const errorRegex = /(?:Error(?:\:|\b)|Exception(?:\:|\b)|at\s+[\w\d_.$<>]+\s+\(|Traceback\s+\(most\s+recent|SyntaxError|TypeError|ReferenceError|RangeError|NullPointerException|FATAL(?:\:|\b)|UnhandledPromiseRejection|failed\s+with\s+exit\s+code|npm\s+ERR\!|Cannot\s+find\s+module|\[ERROR\]|build\s+failed|compilation\s+failed|fatal(?:\:|\b))/i;
   if (errorRegex.test(text)) {
     return {
       icon: '🐞',
@@ -31,19 +36,41 @@ function detectClipboardIntent(rawText) {
     } catch (_) {}
   }
 
-  // 3. 英文段落翻譯偵測
-  if (text.length >= 25 && text.length <= 1200 && text.includes(' ')) {
+  // 3. 程式代碼片段偵測
+  const codeRegex = /(?:function\s+\w+|const\s+\w+\s*=|let\s+\w+\s*=|var\s+\w+\s*=|class\s+\w+|import\s+.*from|def\s+\w+\(|public\s+static\s+void|SELECT\s+.*FROM|<\/?(?:div|span|button|template|script)[\s>])/i;
+  if (codeRegex.test(text)) {
+    return {
+      icon: '💻',
+      label: '發現代碼！點我看說明',
+      prompt: `請幫我簡明扼要地解讀以下程式碼的主要邏輯與功能：\n\`\`\`\n${text.slice(0, 2000)}\n\`\`\``
+    };
+  }
+
+  // 4. 英文段落翻譯偵測
+  if (text.length >= 15 && text.length <= 1500 && text.includes(' ')) {
     const isUrl = /^https?:\/\//i.test(text);
     if (!isUrl) {
       const latinMatches = text.match(/[a-zA-Z]/g) || [];
       const latinRatio = latinMatches.length / text.length;
-      if (latinRatio > 0.65) {
+      if (latinRatio > 0.55) {
         return {
           icon: '📖',
           label: '發現英文！點擊翻譯成中文',
           prompt: `請幫我將以下英文內容流暢地翻譯成繁體中文：\n\n"${text.slice(0, 1000)}"`
         };
       }
+    }
+  }
+
+  // 5. 一般文字（有意義長度段落）
+  if (text.length >= 12 && text.length <= 1500) {
+    const isUrl = /^https?:\/\//i.test(text);
+    if (!isUrl) {
+      return {
+        icon: '✨',
+        label: '處理剪貼簿？點擊發問',
+        prompt: `針對以下內容，請問有什麼我可以協助您的？\n\n"${text.slice(0, 1000)}"`
+      };
     }
   }
 
@@ -106,7 +133,7 @@ function init({
     }
   });
 
-  // 每 1.5 秒安全輪詢剪貼簿變化（本機零 Token）
+  // 每 1.2 秒安全輪詢剪貼簿變化（本機零 Token）
   const pollInterval = setInterval(() => {
     try {
       const state = typeof getPetState === 'function' ? getPetState() : {};
@@ -135,7 +162,7 @@ function init({
     } catch (_) {
       // 容錯防護，避免剪貼簿存取例外中斷流程
     }
-  }, 1500);
+  }, 1200);
 
   return {
     hideBadge,

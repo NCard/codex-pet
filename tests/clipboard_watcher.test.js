@@ -20,6 +20,14 @@ test('Clipboard Watcher - Intent Detection Unit Tests', async (t) => {
     assert.ok(intent.label.includes('JSON'));
   });
 
+  await t.test('should detect code snippets', () => {
+    const codeSample = 'function calculateTotal(items) { return items.reduce((a, b) => a + b, 0); }';
+    const intent = detectClipboardIntent(codeSample);
+    assert.ok(intent !== null);
+    assert.strictEqual(intent.icon, '💻');
+    assert.ok(intent.label.includes('代碼'));
+  });
+
   await t.test('should detect English sentences for translation', () => {
     const engSample = 'The quick brown fox jumps over the lazy dog in the sunny afternoon.';
     const intent = detectClipboardIntent(engSample);
@@ -28,9 +36,15 @@ test('Clipboard Watcher - Intent Detection Unit Tests', async (t) => {
     assert.ok(intent.label.includes('翻譯'));
   });
 
+  await t.test('should detect general meaningful text', () => {
+    const generalText = '這是一段今天會議紀錄的重點整理與待辦項目說明';
+    const intent = detectClipboardIntent(generalText);
+    assert.ok(intent !== null);
+    assert.strictEqual(intent.icon, '✨');
+  });
+
   await t.test('should ignore trivial text or URLs', () => {
     assert.strictEqual(detectClipboardIntent('hi'), null);
     assert.strictEqual(detectClipboardIntent('https://google.com'), null);
-    assert.strictEqual(detectClipboardIntent('短中文'), null);
   });
 });

@@ -490,6 +490,8 @@ body, html {
   transition: transform 0.2s ease, box-shadow 0.2s ease;
   margin-bottom: 8px;
   pointer-events: auto;
+  -webkit-app-region: no-drag;
+  z-index: 50;
 }
 
 .clipboard-badge:hover {
