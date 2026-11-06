@@ -94,3 +94,4 @@ function renderMarkdown(rawText) {
 }
 
 module.exports = { renderMarkdown, escapeHtml };
+
