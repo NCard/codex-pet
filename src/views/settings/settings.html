@@ -12,11 +12,11 @@
   <div class="tabs">
     <button class="tab-btn active" data-tab="tab-general"><i class="theme-icon icon-gear"></i> 一般</button>
     <button class="tab-btn" data-tab="tab-privacy"><i class="theme-icon icon-shield"></i> 隱私</button>
-    <button class="tab-btn" data-tab="tab-bed"><i class="theme-icon icon-bed"></i> 床鋪</button>
+    <button class="tab-btn" data-tab="tab-appearance"><i class="theme-icon icon-bed"></i> 外觀</button>
     <button class="tab-btn" data-tab="tab-about"><i class="theme-icon icon-info"></i> 關於</button>
   </div>
 
-  <!-- 一般設定頁籤 -->
+  <!-- 一般設定頁籤 (專注 AI 核心、用量與個性) -->
   <div id="tab-general" class="tab-content active">
     <div class="section">
       <div class="section-title">🗝️ API 設置 (API Key & Model)</div>
@@ -39,8 +39,51 @@
       </div>
     </div>
 
+    <!-- AI 用量與額度監控儀表板卡片 -->
+    <div class="section quota-section">
+      <div class="section-title" style="display: flex; justify-content: space-between; align-items: center;">
+        <span>📊 AI 用量與配額監控 (Usage & Quota)</span>
+        <span id="quota-status-badge" class="quota-badge safe">正常 (15 RPM)</span>
+      </div>
+
+      <div style="margin-top: 8px;">
+        <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 5px;">
+          <span>今日請求次數</span>
+          <span id="quota-req-text" style="font-weight: bold; color: var(--theme-primary);">0 / 1,500 次 (剩餘 1,500)</span>
+        </div>
+        <div class="quota-progress-track">
+          <div id="quota-progress-bar" class="quota-progress-fill" style="width: 0%;"></div>
+        </div>
+      </div>
+
+      <div class="quota-metrics-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px;">
+        <div class="quota-metric-card">
+          <div class="metric-label">⏰ 每日重設時間</div>
+          <div id="quota-reset-time" class="metric-value">每日 15:00</div>
+          <div id="quota-reset-countdown" class="metric-sub">倒數 -- 小時 -- 分</div>
+        </div>
+        <div class="quota-metric-card">
+          <div class="metric-label">🪙 今日 Token 消耗</div>
+          <div id="quota-today-tokens" class="metric-value">0</div>
+          <div id="quota-total-tokens" class="metric-sub">累計 0</div>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 8px; margin-top: 12px;">
+        <button id="btn-refresh-quota" class="btn-secondary" style="flex: 1; padding: 6px; font-size: 12px; border-radius: 6px; cursor: pointer;" title="重新整理當前統計數據">
+          🔄 重新整理用量
+        </button>
+        <button id="btn-open-aistudio" class="btn-secondary" style="flex: 1; padding: 6px; font-size: 12px; border-radius: 6px; cursor: pointer;" title="在瀏覽器中前往 Google AI Studio 官方控制台">
+          🔗 官方控制台
+        </button>
+      </div>
+      <div style="font-size: 10.5px; color: #78909c; margin-top: 8px; line-height: 1.4;">
+        * Google 每日免費配額於太平洋時間 00:00 (台灣下午 15:00) 自動歸零重置。
+      </div>
+    </div>
+
     <div class="section">
-      <div class="section-title">💬 AI 個性設定 (Personality)</div>
+      <div class="section-title">💬 AI 個性與記憶 (Personality & Memory)</div>
       <div class="control-group">
         <label>選擇語氣與個性</label>
         <select id="ai-personality">
@@ -67,26 +110,6 @@
           <option value="0">永久保留（直到手動清除）</option>
         </select>
         <div style="font-size: 11px; color: #666; margin-top: 5px;">* 超過此時間沒有對話，Wiki Wiki 就會忘記當前話題。</div>
-      </div>
-    </div>
-
-    <div class="section">
-      <div class="section-title">⚡ 動畫速度 (Animation)</div>
-      <div class="control-group">
-        <label>呼吸速度倍率 <span id="val-anim-speed">1.0x</span></label>
-        <input type="range" id="anim-speed" min="0.5" max="3.0" step="0.1" value="1.0">
-      </div>
-    </div>
-
-    <div class="section">
-      <div class="section-title">⌨️ 全域快捷鍵 (Shortcuts)</div>
-      <div class="control-group">
-        <label>召喚咒語</label>
-        <div style="display: flex; gap: 10px; margin-top: 5px;">
-          <input type="text" id="setting-shortcut" readonly placeholder="點擊此處並按下快捷鍵..." value="Ctrl+Shift+K" style="flex: 1; box-sizing: border-box; padding: 6px; border-radius: 5px; border: 1px solid #ccc; cursor: pointer; text-align: center; font-weight: bold; background-color: #f5f5f5;">
-          <button id="btn-reset-shortcut" class="btn-secondary" style="padding: 6px 12px; border-radius: 5px;" title="還原預設快捷鍵">↺ 預設</button>
-        </div>
-        <div style="font-size: 11px; color: #666; margin-top: 5px;">* 點擊上方輸入框後，直接按下您想要的按鍵組合 (例如 Ctrl + K)。按 Backspace 可清除。</div>
       </div>
     </div>
   </div>
@@ -121,8 +144,8 @@
     </div>
   </div>
 
-  <!-- 床鋪設定頁籤 -->
-  <div id="tab-bed" class="tab-content">
+  <!-- 外觀與互動設定頁籤 (原床鋪升級擴充，整合動畫速度與快捷鍵) -->
+  <div id="tab-appearance" class="tab-content">
     <div class="section">
       <div class="section-title"><i class="theme-icon icon-bed"></i> 床鋪狀態控制</div>
       <button id="btn-toggle-bed-edit" class="bed-edit-btn">✏️ 開啟床鋪編輯模式 (小鳥坐床)</button>
@@ -158,6 +181,29 @@
           <option value="-1">小鳥下方 (背景)</option>
           <option value="15">小鳥上方 (前景)</option>
         </select>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">⚡ 動畫速度 (Animation)</div>
+      <div class="control-group">
+        <label>呼吸速度倍率 <span id="val-anim-speed">1.0x</span></label>
+        <input type="range" id="anim-speed" min="0.5" max="3.0" step="0.1" value="1.0">
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">⌨️ 全域快捷鍵 (Shortcuts)</div>
+      <div class="control-group">
+        <label>召喚咒語</label>
+        <div style="display: flex; gap: 10px; margin-top: 5px;">
+          <input type="text" id="setting-shortcut" readonly placeholder="點擊此處並按下快捷鍵..." value="Ctrl+Shift+K" style="flex: 1; box-sizing: border-box; padding: 6px; border-radius: 5px; border: 1px solid #ccc; cursor: pointer; text-align: center; font-weight: bold; background-color: #f5f5f5;">
+          <button id="btn-reset-shortcut" class="btn-secondary" style="padding: 6px 12px; border-radius: 5px;" title="還原預設快捷鍵">↺ 預設</button>
+        </div>
+        <div style="font-size: 11px; color: #666; margin-top: 5px;">* 點擊上方輸入框後，直接按下您想要的按鍵組合 (例如 Ctrl + K)。按 Backspace 可清除。</div>
+      </div>
+    </div>
+  </div>
       </div>
     </div>
   </div>

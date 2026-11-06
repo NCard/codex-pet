@@ -91,7 +91,7 @@ function isStructuredData(text) {
     try {
       JSON.parse(trimmed);
       return { type: 'json' };
-    } catch (_) {
+    } catch {
       // 容錯支援非嚴格 JSON (如 JS 物件字面量 { name: 'Wiki' })
       if (trimmed.length >= 8 && (trimmed.includes(':') || trimmed.includes(','))) {
         return { type: 'object' };
@@ -243,3 +243,4 @@ module.exports = {
   isNaturalEnglish,
   isEnglishWord
 };
+

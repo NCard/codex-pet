@@ -1,5 +1,6 @@
 
 const { renderMarkdown } = require('../../../utils/markdown');
+const { recordUsage, getUsageSummary } = require('../../../utils/usage_tracker');
 
 let bubbleTimeout = null;
 let isAlarmActive = false;
@@ -328,6 +329,10 @@ function init({
           }
         } else if (cmd === '/uuid') {
           reply = `送你一個熱騰騰的 UUID：<br><code>${crypto.randomUUID()}</code>`;
+        } else if (cmd === '/quota' || cmd === '/usage' || text.trim() === '額度' || text.trim() === '剩餘額度') {
+          const quotaSummary = getUsageSummary(petState.settings?.aiModel);
+          const r = quotaSummary.resetInfo;
+          reply = `📊 今日 AI 用量回報：<br>• 今日已用：<b>${quotaSummary.todayRequests} / ${quotaSummary.limitRPD} 次</b> (剩餘約 ${quotaSummary.remainingRequests} 次)<br>• 消耗 Token：<b>${Number(quotaSummary.todayTokens).toLocaleString()}</b><br>• 每日重設時間：<b>今日 ${r.resetTimeStr}</b> (倒數 ${r.remainingHours} 小時 ${r.remainingMinutes} 分)<br>• 當前頻率：<b>${quotaSummary.minuteRequests} / ${quotaSummary.limitRPM} RPM</b>`;
         } else if (cmd === '/calc') {
           try {
             // 簡易安全替換，避免注入
@@ -436,6 +441,16 @@ ${personaText}
             }
           });
 
+          if (response && response.usageMetadata) {
+            recordUsage({
+              promptTokens: response.usageMetadata.promptTokenCount || 0,
+              candidateTokens: response.usageMetadata.candidatesTokenCount || 0,
+              totalTokens: response.usageMetadata.totalTokenCount || 0
+            });
+          } else {
+            recordUsage();
+          }
+
           const candidate = response.candidates && response.candidates[0];
           const functionCalls = response.functionCalls || [];
 
@@ -540,6 +555,15 @@ ${personaText}
             if (summaryResponse.candidates && summaryResponse.candidates[0]?.content?.parts) {
               sessionContext.push({ role: 'model', parts: summaryResponse.candidates[0].content.parts });
             }
+            if (summaryResponse.usageMetadata) {
+              recordUsage({
+                promptTokens: summaryResponse.usageMetadata.promptTokenCount || 0,
+                candidateTokens: summaryResponse.usageMetadata.candidatesTokenCount || 0,
+                totalTokens: summaryResponse.usageMetadata.totalTokenCount || 0
+              });
+            } else {
+              recordUsage();
+            }
             finalResponseText = summaryResponse.text || "";
             break;
           }
@@ -577,7 +601,13 @@ ${personaText}
         try { require('fs').writeFileSync('chat_error.log', err.stack || err.message || JSON.stringify(err)); } catch(e){}
         // 判斷是否為額度用盡的錯誤 (429 / RESOURCE_EXHAUSTED) 或 伺服器忙碌 (503)
         if (err.status === 429 || err.status === 'RESOURCE_EXHAUSTED' || (err.message && (err.message.includes('429') || err.message.includes('quota')))) {
-          chatContent.innerHTML = `${namePrefix}嗚嗚，主人的 API 額度好像用完了 😭 沒飯吃了，快去申請新的鑰匙餵我！`;
+          const quotaSummary = getUsageSummary(petState.settings?.aiModel);
+          const r = quotaSummary.resetInfo;
+          if (quotaSummary.isRateLimitClose || (err.message && err.message.includes('minute'))) {
+            chatContent.innerHTML = `${namePrefix}咕啾！主人您問得太快啦 (•ө•) 每分鐘有 15 次頻率限制，請稍候 30 秒再跟我聊喔！`;
+          } else {
+            chatContent.innerHTML = `${namePrefix}嗚嗚，今天的免費額度好像用完了 😭 預計將於今日 ${r.resetTimeStr}（倒數約 ${r.remainingHours} 小時 ${r.remainingMinutes} 分）自動重設！也可以至設定中心更換 API Key 喔！`;
+          }
         } else if (err.status === 503 || err.status === 'UNAVAILABLE' || (err.message && err.message.includes('503'))) {
           chatContent.innerHTML = `${namePrefix}Google 伺服器現在大塞車，請等一下再跟我說話喔！ 😵‍💫`;
         } else {

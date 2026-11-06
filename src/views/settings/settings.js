@@ -2,6 +2,7 @@ const { ipcRenderer, shell } = require('electron');
 const fs = require('fs');
 const path = require('path');
 const { petStatePath: statePath } = require('../../utils/paths');
+const { getUsageSummary } = require('../../utils/usage_tracker');
 require('dotenv').config({ path: path.resolve(__dirname, '../../../.env') });
 const { AIProviderFactory } = require('../../services/ai_provider');
 
@@ -114,6 +115,7 @@ function initUI() {
 
   updateLabels();
   updateBedEditUI();
+  updateQuotaUI();
   setDirty(false);
   
   // 嘗試載入可用模型
@@ -167,6 +169,71 @@ document.getElementById('btn-refresh-models')?.addEventListener('click', () => {
     return;
   }
   refreshModels();
+});
+
+function updateQuotaUI() {
+  const currentModel = els.aiModel ? els.aiModel.value : 'gemini-3.5-flash-lite';
+  const summary = getUsageSummary(currentModel);
+  const reset = summary.resetInfo;
+
+  const reqText = document.getElementById('quota-req-text');
+  const progressBar = document.getElementById('quota-progress-bar');
+  const resetTime = document.getElementById('quota-reset-time');
+  const countdown = document.getElementById('quota-reset-countdown');
+  const todayTokens = document.getElementById('quota-today-tokens');
+  const totalTokens = document.getElementById('quota-total-tokens');
+  const badge = document.getElementById('quota-status-badge');
+
+  if (reqText) {
+    reqText.innerText = `${summary.todayRequests} / ${summary.limitRPD} 次 (剩餘 ${summary.remainingRequests})`;
+  }
+
+  if (progressBar) {
+    progressBar.style.width = `${summary.percentUsed}%`;
+    progressBar.className = 'quota-progress-fill';
+    if (summary.percentUsed >= 90) progressBar.classList.add('danger');
+    else if (summary.percentUsed >= 70) progressBar.classList.add('warning');
+  }
+
+  if (resetTime) {
+    resetTime.innerText = `每日 ${reset.resetTimeStr}`;
+  }
+
+  if (countdown) {
+    countdown.innerText = `倒數 ${reset.remainingHours} 小時 ${reset.remainingMinutes} 分`;
+  }
+
+  if (todayTokens) {
+    todayTokens.innerText = Number(summary.todayTokens).toLocaleString();
+  }
+
+  if (totalTokens) {
+    totalTokens.innerText = `累計 ${Number(summary.totalTokens).toLocaleString()}`;
+  }
+
+  if (badge) {
+    if (summary.isRateLimitClose) {
+      badge.className = 'quota-badge warning';
+      badge.innerText = `頻率高 (${summary.minuteRequests}/${summary.limitRPM} RPM)`;
+    } else {
+      badge.className = 'quota-badge safe';
+      badge.innerText = `正常 (${summary.minuteRequests}/${summary.limitRPM} RPM)`;
+    }
+  }
+}
+
+document.getElementById('btn-refresh-quota')?.addEventListener('click', () => {
+  updateQuotaUI();
+  const btn = document.getElementById('btn-refresh-quota');
+  if (btn) {
+    const orig = btn.innerText;
+    btn.innerText = '✅ 已更新';
+    setTimeout(() => { btn.innerText = orig; }, 1000);
+  }
+});
+
+document.getElementById('btn-open-aistudio')?.addEventListener('click', () => {
+  shell.openExternal('https://aistudio.google.com/app/plan_and_billing');
 });
 
 function updateLabels() {
@@ -276,6 +343,10 @@ els.enableClipboard.addEventListener('change', () => {
 els.enableClipboardSmartWatch.addEventListener('change', () => {
   checkDirty();
   previewBroadcast();
+});
+
+els.aiModel.addEventListener('change', () => {
+  updateQuotaUI();
 });
 
 let prevShortcut = '';

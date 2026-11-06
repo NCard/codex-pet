@@ -1,5 +1,5 @@
 const { clipboard } = require('electron');
-const { analyzeClipboardText, detectClipboardIntent } = require('../../../utils/clipboard_analyzer');
+const { detectClipboardIntent } = require('../../../utils/clipboard_analyzer');
 
 let lastSeenText = '';
 let lastHandledText = '';
