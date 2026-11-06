@@ -523,8 +523,10 @@ app.whenReady().then(() => {
     }
     settingsWindow = new BrowserWindow({
       icon: path.join(__dirname, '../../assets/images/kiwi.png'),
-      width: 350,
-      height: 500,
+      width: 380,
+      height: 520,
+      minWidth: 360,
+      minHeight: 480,
       title: 'Wiki Wiki 設定中心',
       autoHideMenuBar: true,
       show: false,

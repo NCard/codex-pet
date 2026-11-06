@@ -26,11 +26,18 @@ body {
   padding: 4px;
   margin-bottom: 16px;
   box-shadow: var(--theme-shadow-card);
+  gap: 2px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.tabs::-webkit-scrollbar {
+  display: none;
 }
 
 .tab-btn {
   flex: 1;
-  padding: 8px 12px;
+  padding: 7px 4px;
   background: transparent;
   border: none;
   border-radius: 16px;
@@ -41,9 +48,16 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 4px;
   white-space: nowrap;
+  min-width: 0;
   transition: var(--theme-transition);
+}
+
+.tab-btn .theme-icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
 }
 
 .tab-btn:hover {
@@ -54,6 +68,10 @@ body {
   background: var(--theme-btn-primary-bg);
   color: #ffffff;
   box-shadow: var(--theme-btn-primary-shadow);
+}
+
+.tab-btn.active .theme-icon {
+  filter: brightness(0) invert(1);
 }
 
 .tab-content {

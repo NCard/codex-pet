@@ -64,6 +64,7 @@
   --theme-icon-add: url('../../assets/images/themes/kiwi/icons/add.svg');
   --theme-icon-bell: url('../../assets/images/themes/kiwi/icons/bell.svg');
   --theme-icon-gear: url('../../assets/images/themes/kiwi/icons/gear.svg');
+  --theme-icon-shield: url('../../assets/images/themes/kiwi/icons/shield.svg');
   --theme-icon-bed: url('../../assets/images/themes/kiwi/icons/bed.svg');
   --theme-icon-info: url('../../assets/images/themes/kiwi/icons/info.svg');
   --theme-icon-save: url('../../assets/images/themes/kiwi/icons/save.svg');
@@ -149,6 +150,10 @@ body {
 
 .theme-icon.icon-gear {
   background-image: var(--theme-icon-gear);
+}
+
+.theme-icon.icon-shield {
+  background-image: var(--theme-icon-shield);
 }
 
 .theme-icon.icon-bed {
