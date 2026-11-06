@@ -100,8 +100,8 @@ function closeSplashAndShowMain() {
 function createWindow() {
   const primaryDisplay = screen.getPrimaryDisplay();
   const { width: screenWidth, height: screenHeight } = primaryDisplay.workAreaSize;
-  const winWidth = 250;
-  const winHeight = 550;
+  const winWidth = 320;
+  const winHeight = 580;
 
   const randomX = Math.floor(Math.random() * (screenWidth - winWidth));
   const randomY = Math.floor(Math.random() * (screenHeight - winHeight));
@@ -368,6 +368,35 @@ app.whenReady().then(() => {
     historyWin.loadFile(path.join(__dirname, '../views/history/history.html'));
     historyWin.once('ready-to-show', () => historyWin.show());
     historyWin.on('closed', () => historyWin = null);
+  });
+
+  let inspectorWin = null;
+  ipcMain.on('open-inspector', (event, data) => {
+    if (inspectorWin && !inspectorWin.isDestroyed()) {
+      inspectorWin.focus();
+      inspectorWin.webContents.send('set-inspector-data', data);
+      return;
+    }
+    inspectorWin = new BrowserWindow({
+      icon: path.join(__dirname, '../../assets/images/kiwi.png'),
+      width: 540,
+      height: 680,
+      minWidth: 420,
+      minHeight: 450,
+      title: 'Wiki Wiki Agent 檢閱板',
+      autoHideMenuBar: true,
+      show: false,
+      webPreferences: {
+        nodeIntegration: true,
+        contextIsolation: false
+      }
+    });
+    inspectorWin.loadFile(path.join(__dirname, '../views/inspector/inspector.html'));
+    inspectorWin.once('ready-to-show', () => {
+      inspectorWin.show();
+      inspectorWin.webContents.send('set-inspector-data', data);
+    });
+    inspectorWin.on('closed', () => { inspectorWin = null; });
   });
 
   ipcMain.on('open-alarm', () => {

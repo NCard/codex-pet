@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <title>Wiki Wiki Agent 檢閱板</title>
+  <link rel="stylesheet" href="../common/theme.css">
+  <link rel="stylesheet" href="inspector.css">
+</head>
+<body>
+  <div class="inspector-header">
+    <div class="header-left">
+      <div class="header-title">
+        <span class="kiwi-avatar">🐦</span>
+        <span>Wiki Wiki Agent 完整檢閱板</span>
+      </div>
+      <div class="header-meta" id="header-meta">
+        <span id="meta-time">剛剛</span> • <span id="meta-chars">0 字元</span>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button id="btn-copy-all" class="action-btn primary" title="複製全部回覆內容">
+        📋 複製全部
+      </button>
+      <button id="btn-close" class="action-btn" title="關閉檢閱板 (ESC)">
+        ✕ 關閉
+      </button>
+    </div>
+  </div>
+
+  <div class="inspector-body">
+    <div id="inspector-content" class="inspector-content">
+      <!-- 完整渲染後的 Markdown 內容 -->
+    </div>
+  </div>
+
+  <script src="inspector.js"></script>
+</body>
+</html>

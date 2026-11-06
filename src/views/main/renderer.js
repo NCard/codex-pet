@@ -409,7 +409,7 @@ window.addEventListener('mousemove', (event) => {
     return;
   }
 
-  const isInteractive = !!event.target.closest('.chat-bubble, #chat-input, #custom-menu, #kiwi-sprite-wrapper, #kiwi-bed, #chat-close, #clipboard-badge, .clipboard-badge');
+  const isInteractive = !!event.target.closest('.chat-bubble, #chat-input, #custom-menu, #kiwi-sprite-wrapper, #kiwi-bed, #chat-close, #chat-expand-btn, .chat-action-btn, #clipboard-badge, .clipboard-badge');
   const ignore = !isInteractive;
 
   if (lastIgnoreState !== ignore) {

@@ -1,4 +1,6 @@
 
+const { renderMarkdown } = require('../../../utils/markdown');
+
 let bubbleTimeout = null;
 let isAlarmActive = false;
 let pomodoroTimer = null;
@@ -6,6 +8,7 @@ let pomodoroTimer = null;
 let sessionContext = [];
 let lastInteractionTime = 0;
 let lastRealReply = '';
+let lastRealReplyRaw = '';
 const MAX_HISTORY_MESSAGES = 20;
 const MAX_AGENT_STEPS = 5;
 
@@ -76,11 +79,44 @@ function init({
   chatClose.addEventListener('click', () => {
     chatBubble.style.display = 'none';
   });
+
+  const chatExpandBtn = document.getElementById('chat-expand-btn');
+  if (chatExpandBtn) {
+    chatExpandBtn.addEventListener('click', () => {
+      const textToInspect = lastRealReplyRaw || chatContent.innerText || '';
+      ipcRenderer.send('open-inspector', {
+        title: 'Agent 回覆檢閱板',
+        content: textToInspect,
+        timestamp: Date.now()
+      });
+    });
+  }
+
+  // 代碼區塊內部一鍵複製按鈕委派
+  chatContent.addEventListener('click', (e) => {
+    const copyBtn = e.target.closest('.md-code-copy-btn');
+    if (!copyBtn) return;
+    const rawCode = decodeURIComponent(copyBtn.getAttribute('data-code') || '');
+    if (rawCode) {
+      try {
+        const { clipboard } = require('electron');
+        clipboard.writeText(rawCode);
+        const originalText = copyBtn.innerText;
+        copyBtn.innerText = '✅ 已複製！';
+        copyBtn.style.color = '#86efac';
+        setTimeout(() => {
+          copyBtn.innerText = originalText;
+          copyBtn.style.color = '#cbd5e1';
+        }, 1500);
+      } catch (_) {}
+    }
+  });
   
   if (chatClear) {
     chatClear.addEventListener('click', () => {
       sessionContext = [];
       lastRealReply = '';
+      lastRealReplyRaw = '';
       chatContent.innerHTML = `${namePrefix}記憶已清除，請隨時開啟新話題！`;
     });
   }
@@ -512,10 +548,11 @@ ${personaText}
         // 確保不超過 MAX_HISTORY_MESSAGES 並維持 context 合法性
         trimSessionContext(sessionContext, MAX_HISTORY_MESSAGES);
   
-        // 避免 AI 回答包含 HTML 標籤破壞畫面
-        const safeText = (finalResponseText || "").replace(/</g, '&lt;').replace(/>/g, '&gt;');
-        lastRealReply = safeText;
-        chatContent.innerHTML = `${namePrefix}${safeText}`;
+        // 格式化 Markdown 排版（支援加粗、代碼塊、清單、段落分行）
+        lastRealReplyRaw = finalResponseText || "";
+        const formattedHtml = renderMarkdown(lastRealReplyRaw);
+        lastRealReply = formattedHtml;
+        chatContent.innerHTML = formattedHtml;
         
         // 儲存奇異鳥回答
         saveChatHistory('kiwi', finalResponseText || "");
@@ -568,7 +605,7 @@ ${personaText}
     
     // If there is memory, show the bubble with the last response
     if (hasMemory && lastRealReply) {
-      chatContent.innerHTML = `${namePrefix}${lastRealReply}`;
+      chatContent.innerHTML = lastRealReply;
       chatBubble.style.display = 'block';
     } else {
       chatBubble.style.display = 'none';
