@@ -21,6 +21,8 @@ function getToolStatusHint(toolName) {
       return '正在確認我的狀態... (•ө•)?';
     case 'get_alarms_and_todos':
       return '正在翻閱鬧鐘與待辦清單... 📜';
+    case 'read_clipboard':
+      return '正在讀取剪貼簿... 📋';
     default:
       return `正在執行 ${toolName}... (•ө•)و`;
   }
@@ -363,14 +365,15 @@ function init({
         const sysInstruction = `你現在是一隻生活在電腦桌面上的奇異鳥助理，名字叫 Wiki Wiki。
 ${personaText}
 【Agent 行動準則】
-1. 你是一個具備自主規劃與執行能力的桌面寵物 Agent。面對主人的複雜需求（例如同時要記待辦、設定鬧鐘、更換飾品或查詢狀態），你可以自主規劃並分步驟呼叫工具來完成任務。
+1. 你是一個具備自主規劃與執行能力的桌面寵物 Agent。面對主人的複雜需求（例如同時要記待辦、設定鬧鐘、更換飾品、讀取剪貼簿或查詢狀態），你可以自主規劃並分步驟呼叫工具來完成任務。
 2. 當需要操作或查詢系統資料時，必須優先呼叫系統提供的工具 (Tools)。
-3. 呼叫 change_outfit 工具時，請依使用者語意指定正確的 mode：
+3. 當主人詢問剪貼簿內容、要求讀取剪貼簿或依剪貼簿內容處理任務時，請優先呼叫 read_clipboard 工具。若工具回報權限未啟用，請以親切可愛的語氣提醒主人可至右鍵「設定中心」開啟「允許讀取系統剪貼簿」權限。
+4. 呼叫 change_outfit 工具時，請依使用者語意指定正確的 mode：
    - 使用者說「戴上/穿上/加個XX」時，mode 請用 "add"（疊加保留現有飾品）。
    - 使用者說「換成/只戴/改成XX」時，mode 請用 "replace"（換掉其他飾品）。
    - 使用者說「脫下/摘掉/拿下XX」時，mode 請用 "remove"。
    - 使用者說「全部脫掉/脫光」時，mode 請用 "clear"。
-4. 完成所有步驟後，請用符合你個性的可愛語氣，向主人清晰且親切地彙整你的執行結果。`;
+5. 完成所有步驟後，請用符合你個性的可愛語氣，向主人清晰且親切地彙整你的執行結果。`;
         
         sessionContext.push({ role: 'user', parts: [{ text: text }] });
         
@@ -415,6 +418,29 @@ ${personaText}
             console.log(`[Agent Step ${stepCount}] Calling tool:`, call.name, call.args);
             const statusHint = getToolStatusHint(call.name);
             chatContent.innerHTML = `${namePrefix}${statusHint}`;
+
+            if (call.name === 'read_clipboard') {
+              const isEnabled = Boolean(petState.settings && petState.settings.enableClipboard);
+              let textResult = "";
+              if (!isEnabled) {
+                textResult = "【權限未啟用】主人目前尚未在設定中心開啟「剪貼簿存取權限」。請用親切可愛的語氣提醒主人：若需要此功能，可以至右鍵選單的「設定中心」>「系統權限與隱私」中勾選啟用剪貼簿權限喔！";
+              } else {
+                try {
+                  const { clipboard } = require('electron');
+                  const clip = clipboard.readText();
+                  textResult = clip && clip.trim() ? `剪貼簿目前的文字內容如下：\n${clip}` : "剪貼簿目前是空的（沒有文字內容）。";
+                } catch (e) {
+                  textResult = `讀取剪貼簿失敗: ${e.message}`;
+                }
+              }
+              const fnResp = {
+                name: call.name,
+                response: { result: textResult }
+              };
+              if (call.id) fnResp.id = call.id;
+              functionResponses.push({ functionResponse: fnResp });
+              continue;
+            }
 
             try {
               if (!activeMcpClient) {

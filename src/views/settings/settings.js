@@ -17,7 +17,8 @@ const defaultSettings = {
   aiPersonality: 'default',
   aiCustomPrompt: '',
   contextTimeout: 5,
-  summonShortcut: 'Ctrl+Shift+K'
+  summonShortcut: 'Ctrl+Shift+K',
+  enableClipboard: false
 };
 
 let petState = {};
@@ -51,7 +52,8 @@ const els = {
   aiPersonality: document.getElementById('ai-personality'),
   aiCustomPrompt: document.getElementById('custom-personality-input'),
   contextTimeout: document.getElementById('setting-contextTimeout'),
-  summonShortcut: document.getElementById('setting-shortcut')
+  summonShortcut: document.getElementById('setting-shortcut'),
+  enableClipboard: document.getElementById('setting-enableClipboard')
 };
 
 const vals = {
@@ -90,6 +92,7 @@ function initUI() {
   els.aiCustomPrompt.value = s.aiCustomPrompt ?? defaultSettings.aiCustomPrompt;
   els.contextTimeout.value = s.contextTimeout ?? defaultSettings.contextTimeout;
   els.summonShortcut.value = s.summonShortcut ?? defaultSettings.summonShortcut;
+  els.enableClipboard.checked = s.enableClipboard !== undefined ? Boolean(s.enableClipboard) : defaultSettings.enableClipboard;
   
   if (els.aiPersonality.value === 'custom') {
     document.getElementById('custom-personality-group').style.display = 'block';
@@ -184,7 +187,8 @@ function checkDirty() {
     current.aiPersonality !== (s.aiPersonality ?? defaultSettings.aiPersonality) ||
     current.aiCustomPrompt !== (s.aiCustomPrompt ?? defaultSettings.aiCustomPrompt) ||
     current.contextTimeout !== (s.contextTimeout ?? defaultSettings.contextTimeout) ||
-    current.summonShortcut !== (s.summonShortcut ?? defaultSettings.summonShortcut)
+    current.summonShortcut !== (s.summonShortcut ?? defaultSettings.summonShortcut) ||
+    current.enableClipboard !== (s.enableClipboard ?? defaultSettings.enableClipboard)
   );
   setDirty(hasChanged);
 }
@@ -209,7 +213,8 @@ function getFormValues() {
     aiPersonality: els.aiPersonality.value,
     aiCustomPrompt: els.aiCustomPrompt.value.trim(),
     contextTimeout: parseInt(els.contextTimeout.value, 10),
-    summonShortcut: els.summonShortcut.value.trim()
+    summonShortcut: els.summonShortcut.value.trim(),
+    enableClipboard: Boolean(els.enableClipboard.checked)
   };
 }
 
@@ -256,6 +261,11 @@ Object.keys(els).forEach(key => {
     checkDirty();
     previewBroadcast(); // 即時預覽
   });
+});
+
+els.enableClipboard.addEventListener('change', () => {
+  checkDirty();
+  previewBroadcast();
 });
 
 let prevShortcut = '';

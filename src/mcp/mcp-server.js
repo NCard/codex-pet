@@ -105,6 +105,11 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         name: "get_alarms_and_todos",
         description: "取得所有已設定的鬧鐘排程與待辦事項清單",
         inputSchema: { type: "object", properties: {} }
+      },
+      {
+        name: "read_clipboard",
+        description: "讀取使用者目前的系統剪貼簿文字內容。注意：此為高權限工具，需使用者在設定中啟用權限。",
+        inputSchema: { type: "object", properties: {} }
       }
     ],
   };
@@ -204,6 +209,33 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     }
     
     return { content: [{ type: "text", text: resultText }] };
+  }
+
+  if (name === "read_clipboard") {
+    const state = getPetState();
+    if (!state.settings || !state.settings.enableClipboard) {
+      return {
+        content: [{
+          type: "text",
+          text: "【權限未啟用】主人目前尚未在設定中開啟「剪貼簿存取權限」。請用親切可愛的語氣提醒主人：若需要此功能，可以至右鍵選單的「設定中心」>「系統權限與隱私」中勾選啟用剪貼簿權限喔！"
+        }]
+      };
+    }
+    let text = "";
+    try {
+      if (process.platform === 'win32') {
+        text = require('child_process').execSync('powershell.exe -NoProfile -Command "Get-Clipboard"', { encoding: 'utf8' }).trim();
+      } else if (process.platform === 'darwin') {
+        text = require('child_process').execSync('pbpaste', { encoding: 'utf8' }).trim();
+      } else {
+        text = require('child_process').execSync('xclip -selection clipboard -o', { encoding: 'utf8' }).trim();
+      }
+    } catch (e) {
+      return { content: [{ type: "text", text: `讀取剪貼簿失敗: ${e.message}` }] };
+    }
+    return {
+      content: [{ type: "text", text: text ? `剪貼簿內容為：\n${text}` : "剪貼簿目前是空的。" }]
+    };
   }
 
   throw new Error(`Unknown tool: ${name}`);

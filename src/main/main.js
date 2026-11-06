@@ -590,12 +590,14 @@ app.whenReady().then(() => {
   });
 
 
-  isManualCheck = false;
-  setTimeout(() => {
-    try {
-      autoUpdater.checkForUpdates();
-    } catch (e) { }
-  }, 5000);
+  if (app.isPackaged) {
+    isManualCheck = false;
+    setTimeout(() => {
+      try {
+        autoUpdater.checkForUpdates().catch(() => {});
+      } catch (e) { }
+    }, 5000);
+  }
 });
 
 let isManualCheck = false;

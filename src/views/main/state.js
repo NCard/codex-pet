@@ -42,6 +42,10 @@ class StateManager {
             this.petState.settings.aiModel = 'gemini-3.5-flash-lite';
           }
         }
+        if (!this.petState.settings) this.petState.settings = {};
+        if (this.petState.settings.enableClipboard === undefined) {
+          this.petState.settings.enableClipboard = false;
+        }
       }
     } catch (e) {
       console.error('載入寵物狀態失敗:', e);
