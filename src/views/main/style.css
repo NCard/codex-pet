@@ -473,3 +473,66 @@ body, html {
   100% { transform: translateY(0) scale(1); }
 }
 
+/* 智慧剪貼簿主動感知 Badge */
+.clipboard-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.95);
+  border: 2px solid #29b6f6;
+  border-radius: 20px;
+  padding: 6px 12px;
+  box-shadow: 0 4px 15px rgba(41, 182, 246, 0.35);
+  cursor: pointer;
+  user-select: none;
+  animation: floatBadge 2s ease-in-out infinite, popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  backdrop-filter: blur(4px);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  margin-bottom: 8px;
+  pointer-events: auto;
+}
+
+.clipboard-badge:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 20px rgba(41, 182, 246, 0.5);
+  background: #ffffff;
+}
+
+.clipboard-badge .badge-icon {
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.clipboard-badge .badge-text {
+  font-size: 11px;
+  font-weight: bold;
+  color: #0277bd;
+  white-space: nowrap;
+  font-family: var(--theme-font-main, sans-serif);
+}
+
+.clipboard-badge .badge-close {
+  font-size: 11px;
+  color: #9e9e9e;
+  padding: 0 4px;
+  margin-left: 2px;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.clipboard-badge .badge-close:hover {
+  color: #d32f2f;
+  background: rgba(0, 0, 0, 0.08);
+}
+
+@keyframes floatBadge {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+@keyframes popIn {
+  from { opacity: 0; transform: scale(0.6) translateY(10px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+

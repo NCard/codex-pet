@@ -12,6 +12,10 @@ const chatClose = document.getElementById('chat-close');
 const chatClear = document.getElementById('chat-clear');
 const chatInput = document.getElementById('chat-input');
 const chatEscHint = document.getElementById('chat-esc-hint');
+const clipboardBadge = document.getElementById('clipboard-badge');
+const clipboardBadgeIcon = document.getElementById('clipboard-badge-icon');
+const clipboardBadgeText = document.getElementById('clipboard-badge-text');
+const clipboardBadgeClose = document.getElementById('clipboard-badge-close');
 const customMenu = document.getElementById('custom-menu');
 const menuSleep = document.getElementById('menu-sleep');
 const menuClose = document.getElementById('menu-close');
@@ -432,7 +436,7 @@ const physicsCtx = {
 physics.initDragging(physicsCtx);
 
 const chat = require('./modules/chat');
-const { showTempBubble, showAlarmBubble, openChat } = chat.init({
+const { showTempBubble, showAlarmBubble, openChat, sendMessage } = chat.init({
   chatBubble, chatContent, chatClose, chatClear, chatInput, chatEscHint, customMenu,
   kiwi, kiwiAccessory, namePrefix: '<span style="color: #c97a2e; font-weight: 900;">Wiki Wiki：</span>',
   petState, savePetState, loadPetState, applyOutfitPos,
@@ -447,6 +451,18 @@ const { showTempBubble, showAlarmBubble, openChat } = chat.init({
   resetIdle, ipcRenderer
 });
 physicsCtx.openChat = openChat;
+
+// 啟動智慧剪貼簿主動感知模組
+const clipboardWatcher = require('./modules/clipboard_watcher');
+clipboardWatcher.init({
+  badgeEl: clipboardBadge,
+  badgeIconEl: clipboardBadgeIcon,
+  badgeTextEl: clipboardBadgeText,
+  badgeCloseEl: clipboardBadgeClose,
+  getPetState: () => petState,
+  sendMessage,
+  kiwi
+});
 
 // Update menus and interaction dependency injections
 const menus = require('./modules/menus');

@@ -46,6 +46,9 @@ class StateManager {
         if (this.petState.settings.enableClipboard === undefined) {
           this.petState.settings.enableClipboard = false;
         }
+        if (this.petState.settings.enableClipboardSmartWatch === undefined) {
+          this.petState.settings.enableClipboardSmartWatch = false;
+        }
       }
     } catch (e) {
       console.error('載入寵物狀態失敗:', e);

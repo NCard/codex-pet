@@ -212,34 +212,40 @@ function init({
       }
       return;
     }
-  
+
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault(); // 防止 textarea 換行
       const text = chatInput.value.trim();
       if (!text) return;
-      
-      const currentAI = resolveAI();
-      // 防呆：如果沒有設定 API Key
-      if (!currentAI) {
-        chatInput.value = '';
-        chatInput.style.display = 'none';
-        if(typeof chatEscHint !== 'undefined') chatEscHint.style.display = 'none';
-        chatBubble.innerHTML = `${namePrefix}請先至「設定面板」輸入 Gemini API Key！`;
-        chatBubble.style.display = 'block';
-        setTimeout(() => { chatBubble.style.display = 'none'; }, 3000);
-        return;
-      }
-      
-      // 停用並隱藏輸入框，顯示思考中
-      chatInput.style.display = 'none';
-        if(typeof chatEscHint !== 'undefined') chatEscHint.style.display = 'none';
-      chatInput.disabled = true;
+      await sendMessage(text);
+    }
+  });
+
+  async function sendMessage(text) {
+    if (!text) return;
+
+    const currentAI = resolveAI();
+    // 防呆：如果沒有設定 API Key
+    if (!currentAI) {
       chatInput.value = '';
+      chatInput.style.display = 'none';
+      if(typeof chatEscHint !== 'undefined') chatEscHint.style.display = 'none';
+      chatBubble.innerHTML = `${namePrefix}請先至「設定面板」輸入 Gemini API Key！`;
       chatBubble.style.display = 'block';
-      chatContent.innerHTML = `${namePrefix}思考中... <span style="white-space: nowrap;">( •ө•)?</span>`;
-      
-      // 儲存使用者對話
-      saveChatHistory('user', text);
+      setTimeout(() => { chatBubble.style.display = 'none'; }, 3000);
+      return;
+    }
+    
+    // 停用並隱藏輸入框，顯示思考中
+    chatInput.style.display = 'none';
+    if(typeof chatEscHint !== 'undefined') chatEscHint.style.display = 'none';
+    chatInput.disabled = true;
+    chatInput.value = '';
+    chatBubble.style.display = 'block';
+    chatContent.innerHTML = `${namePrefix}思考中... <span style="white-space: nowrap;">( •ө•)?</span>`;
+    
+    // 儲存使用者對話
+    saveChatHistory('user', text);
       
       // 指令模式判斷
       if (text.startsWith('/')) {
@@ -547,7 +553,7 @@ ${personaText}
         chatInput.focus();
       }
     }
-  });
+
   function openChat() {
     const now = Date.now();
     let hasMemory = false;
@@ -577,6 +583,6 @@ ${personaText}
     chatInput.focus();
   }
   
-  return { showTempBubble, showAlarmBubble, openChat };
+  return { showTempBubble, showAlarmBubble, openChat, sendMessage };
 }
 module.exports = { init };

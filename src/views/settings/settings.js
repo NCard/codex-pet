@@ -18,7 +18,8 @@ const defaultSettings = {
   aiCustomPrompt: '',
   contextTimeout: 5,
   summonShortcut: 'Ctrl+Shift+K',
-  enableClipboard: false
+  enableClipboard: false,
+  enableClipboardSmartWatch: false
 };
 
 let petState = {};
@@ -53,7 +54,8 @@ const els = {
   aiCustomPrompt: document.getElementById('custom-personality-input'),
   contextTimeout: document.getElementById('setting-contextTimeout'),
   summonShortcut: document.getElementById('setting-shortcut'),
-  enableClipboard: document.getElementById('setting-enableClipboard')
+  enableClipboard: document.getElementById('setting-enableClipboard'),
+  enableClipboardSmartWatch: document.getElementById('setting-enableClipboardSmartWatch')
 };
 
 const vals = {
@@ -93,6 +95,7 @@ function initUI() {
   els.contextTimeout.value = s.contextTimeout ?? defaultSettings.contextTimeout;
   els.summonShortcut.value = s.summonShortcut ?? defaultSettings.summonShortcut;
   els.enableClipboard.checked = s.enableClipboard !== undefined ? Boolean(s.enableClipboard) : defaultSettings.enableClipboard;
+  els.enableClipboardSmartWatch.checked = s.enableClipboardSmartWatch !== undefined ? Boolean(s.enableClipboardSmartWatch) : defaultSettings.enableClipboardSmartWatch;
   
   if (els.aiPersonality.value === 'custom') {
     document.getElementById('custom-personality-group').style.display = 'block';
@@ -188,7 +191,8 @@ function checkDirty() {
     current.aiCustomPrompt !== (s.aiCustomPrompt ?? defaultSettings.aiCustomPrompt) ||
     current.contextTimeout !== (s.contextTimeout ?? defaultSettings.contextTimeout) ||
     current.summonShortcut !== (s.summonShortcut ?? defaultSettings.summonShortcut) ||
-    current.enableClipboard !== (s.enableClipboard ?? defaultSettings.enableClipboard)
+    current.enableClipboard !== (s.enableClipboard ?? defaultSettings.enableClipboard) ||
+    current.enableClipboardSmartWatch !== (s.enableClipboardSmartWatch ?? defaultSettings.enableClipboardSmartWatch)
   );
   setDirty(hasChanged);
 }
@@ -214,7 +218,8 @@ function getFormValues() {
     aiCustomPrompt: els.aiCustomPrompt.value.trim(),
     contextTimeout: parseInt(els.contextTimeout.value, 10),
     summonShortcut: els.summonShortcut.value.trim(),
-    enableClipboard: Boolean(els.enableClipboard.checked)
+    enableClipboard: Boolean(els.enableClipboard.checked),
+    enableClipboardSmartWatch: Boolean(els.enableClipboardSmartWatch.checked)
   };
 }
 
@@ -264,6 +269,11 @@ Object.keys(els).forEach(key => {
 });
 
 els.enableClipboard.addEventListener('change', () => {
+  checkDirty();
+  previewBroadcast();
+});
+
+els.enableClipboardSmartWatch.addEventListener('change', () => {
   checkDirty();
   previewBroadcast();
 });
