@@ -66,3 +66,4 @@ test('Usage Tracker Unit Tests', async (t) => {
     assert.strictEqual(summary.minuteRequests, 1);
   });
 });
+

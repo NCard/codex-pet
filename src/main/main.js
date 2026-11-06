@@ -5,31 +5,36 @@ process.on('uncaughtException', (error) => {
 process.on('unhandledRejection', (reason) => {
   console.error('[Main UnhandledRejection]:', reason);
 });
+// 抑制第三方相依套件 (如 electron-reloader) 在 Node.js 22+ 的廢棄警告 [DEP0180]
+process.noDeprecation = true;
+
 const { app, BrowserWindow, ipcMain, Tray, Menu, screen, dialog, globalShortcut } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { petStatePath } = require('../utils/paths');
 const { autoUpdater } = require('electron-updater');
 
-// 單一實例鎖：僅在打包/安裝版啟用，防止使用者重複開啟多個實例
-if (app.isPackaged) {
-  const gotTheLock = app.requestSingleInstanceLock();
-  if (!gotTheLock) {
-    app.quit();
-    process.exit(0);
-  }
+// 停用 GPU Shader 硬碟快取，避免 Windows 環境下 GPUCache 鎖定衝突與 0x5 存取被拒錯誤
+app.commandLine.appendSwitch('disable-gpu-shader-disk-cache');
 
-  app.on('second-instance', (event, commandLine, workingDirectory) => {
-    // 當使用者在安裝版試圖打開第二個實例時，自動聚焦到現有的主視窗
-    if (mainWindow) {
-      if (mainWindow.isMinimized()) mainWindow.restore();
-      mainWindow.show();
-      mainWindow.focus();
-      // 讓奇異鳥跳躍一下提示使用者「我已經在這裡囉！」
-      mainWindow.webContents.send('play-action', 'jump');
-    }
-  });
+// 單一實例鎖：無論開發或打包環境皆啟用，防止重複開啟多個實例造成 Chromium Cache 衝突 (0x5 Access Denied)
+const gotTheLock = app.requestSingleInstanceLock();
+if (!gotTheLock) {
+  console.log('[Wiki Wiki] 偵測到另一個實例正在運行中，已聚焦至現有實例，當前行程退出。');
+  app.quit();
+  process.exit(0);
 }
+
+app.on('second-instance', (_event, _commandLine, _workingDirectory) => {
+  // 當使用者試圖打開第二個實例時，自動聚焦到現有的主視窗
+  if (mainWindow) {
+    if (mainWindow.isMinimized()) mainWindow.restore();
+    mainWindow.show();
+    mainWindow.focus();
+    // 讓奇異鳥跳躍一下提示使用者「我已經在這裡囉！」
+    mainWindow.webContents.send('play-action', 'jump');
+  }
+});
 
 if (!app.isPackaged) {
   try {
