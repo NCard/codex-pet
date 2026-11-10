@@ -1,3 +1,5 @@
+const { getDialogue } = require('../../../utils/dialogues');
+
 function init({
   kiwi, customMenu, ipcRenderer, petState, savePetState, 
   getCurrentAction, setCurrentAction, showTempBubble, kiwiAccessory, getIsWorking,
@@ -40,7 +42,7 @@ function init({
     setTimeout(() => {
       character.classList.remove('kiwi-pecking');
       food.style.display = 'none';
-      showTempBubble('好飽好飽！嗝～🥝');
+      showTempBubble(getDialogue('interactions', 'feed'));
       kiwi.classList.add('jumping');
       setTimeout(() => { 
         kiwi.classList.remove('jumping'); 
@@ -55,11 +57,11 @@ function init({
     // Instead of instantly petting, we start the petting mode
     if (interaction && interaction.startPettingMode) {
       interaction.startPettingMode();
-      showTempBubble('好喔！來摸摸吧～(๑>◡<๑)');
+      showTempBubble(getDialogue('interactions', 'petReady'));
     } else {
       petState.mood = Math.min(100, petState.mood + 20);
       savePetState();
-      showTempBubble('咕啾～好舒服～(⁎˃ᴗ˂⁎) 心情變好了！');
+      showTempBubble(getDialogue('interactions', 'petComfort'));
       kiwiAccessory.innerText = '❤️';
       kiwiAccessory.style.display = 'block';
       setTimeout(() => { if(!getIsWorking()) kiwiAccessory.style.display = 'none'; }, 2000);
@@ -96,7 +98,7 @@ function init({
     document.getElementById('kiwi-bed').style.display = 'block';
     if (outfitContainer) outfitContainer.style.display = 'none';
     
-    showTempBubble('晚安... Zzz...');
+    showTempBubble(getDialogue('interactions', 'sleep'));
 
     // 延遲解除忽略喚醒，避免點擊選單後滑鼠微動立刻喚醒
     setIgnoreWakeup(true);

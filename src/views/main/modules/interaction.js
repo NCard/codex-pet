@@ -1,3 +1,5 @@
+const { getDialogue } = require('../../../utils/dialogues');
+
 let petScore = 0;
 let lastPetTime = 0;
 let pettingTimeout = null;
@@ -6,21 +8,6 @@ let isPetting = false;
 // 狀態控制：只有透過選單觸發後，才會進入等待被摸的狀態
 let isWaitingForPet = false;
 let petCount = 0;
-
-const petDialogues = [
-  "咕啾～好舒服～(⁎˃ᴗ˂⁎) 心情變好了！",
-  "呼嚕呼嚕... 喜歡被摸摸！( *´ω`* )",
-  "再多摸一點點嘛～(●♡∀♡)",
-  "啾！主人最好了！(*´▽`*)",
-  "暖呼呼的... 感覺快睡著了 ( ¯꒳¯ )ᐝ",
-  "翅膀也要摸摸！(੭ ˃̣̣̥ ω˂̣̣̥)੭ु⁾⁾",
-  "嘿嘿，這樣摸好癢喔～(≧▽≦)",
-  "蹭蹭... 想要一直待在主人身邊 (´,,•ω•,,)♡",
-  "今天的摸摸特別溫柔呢！( ˘͈ ᵕ ˘͈♡)",
-  "嗶嗶！接收到主人的愛心能量了！⚡❤️",
-  "奇異鳥毛茸茸的對吧！(๑>◡<๑)",
-  "摸摸大歡迎！最喜歡主人的手了 ( ˶ˆ꒳ˆ˵ )"
-];
 
 function startPettingMode() {
   isWaitingForPet = true;
@@ -81,7 +68,7 @@ function init({ kiwi, getCurrentAction, setCurrentAction, physics, getIsDragging
           if (savePetState) savePetState();
           
           // 隨機抽選對話
-          const text = petDialogues[Math.floor(Math.random() * petDialogues.length)];
+          const text = getDialogue('interactions', 'petComfort');
           if (showTempBubble) showTempBubble(text);
         }
       }, 800); // 縮短每次摸摸的冷卻時間

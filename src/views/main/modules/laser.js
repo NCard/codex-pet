@@ -1,3 +1,5 @@
+const { getDialogue } = require('../../../utils/dialogues');
+
 let isLaserGameActive = false;
 let laserTimeoutTimer = null;
 let laserAnimFrame = null;
@@ -59,7 +61,7 @@ function resetLaserTimeout() {
   laserTimeoutTimer = setTimeout(() => {
     if (isLaserGameActive) {
       toggleLaserGame(false);
-      showTempBubble('🔴 雷射筆已逾時自動關閉囉！');
+      showTempBubble(getDialogue('laser', 'timeout'));
     }
   }, 30000);
 }
@@ -193,7 +195,7 @@ function updateLaserPhysicsLoop() {
           kiwi.classList.remove('kiwi-chasing', 'walking');
           kiwi.classList.add('kiwi-pouncing');
 
-          showTempBubble(`🐾 撲到了！嘿嘿，我已經抓到 ${laserScore} 次了！`);
+          showTempBubble(getDialogue('laser', 'catch', laserScore));
 
           setTimeout(() => {
             kiwi.classList.remove('kiwi-pouncing');
@@ -260,7 +262,7 @@ function toggleLaserGame(enable) {
 
     if (laserDot) laserDot.style.display = 'none';
     ipcRenderer.send('toggle-laser-overlay', true);
-    showTempBubble('🔴 哇！紅點點耶！！快移動滑鼠讓我抓！ (按ESC / 右鍵 / 點擊結束)');
+    showTempBubble(getDialogue('laser', 'start'));
     resetLaserTimeout();
     if (laserAnimFrame) cancelAnimationFrame(laserAnimFrame);
     laserAnimFrame = requestAnimationFrame(updateLaserPhysicsLoop);
@@ -284,11 +286,11 @@ function toggleLaserGame(enable) {
           if (getCurrentAction() !== 'sleeping') kiwiImg.src = '../../../assets/images/kiwi.png';
         }, 3000);
       }
-      showTempBubble('💨 呼... 一次都沒抓到... 好可惜啊~');
+      showTempBubble(getDialogue('laser', 'endZero'));
     } else {
       kiwi.classList.add('jumping');
       setTimeout(() => { kiwi.classList.remove('jumping'); }, 600);
-      showTempBubble(`✨ 嘿嘿！今天總共抓到 ${laserScore} 次紅點！太開心啦！`);
+      showTempBubble(getDialogue('laser', 'endSuccess', laserScore));
     }
   }
 }

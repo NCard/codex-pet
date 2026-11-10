@@ -1,6 +1,7 @@
 
 const { renderMarkdown } = require('../../../utils/markdown');
 const { recordUsage, getUsageSummary } = require('../../../utils/usage_tracker');
+const { getDialogue } = require('../../../utils/dialogues');
 
 let bubbleTimeout = null;
 let isAlarmActive = false;
@@ -123,7 +124,7 @@ function init({
       sessionContext = [];
       lastRealReply = '';
       lastRealReplyRaw = '';
-      chatContent.innerHTML = `${namePrefix}記憶已清除，請隨時開啟新話題！`;
+      chatContent.innerHTML = `${namePrefix}${getDialogue('system', 'clearChat')}`;
     });
   }
   
@@ -179,14 +180,7 @@ function init({
     kiwi.classList.add('jumping');
     setTimeout(() => { kiwi.classList.remove('jumping'); }, 500);
   
-    const summonPhrases = [
-      '主人！ (・ω・)ノ',
-      '我召喚出來啦！(˵¯͒〰¯͒˵)',
-      '聽候您的差遣( ੭•͈ω•͈)੭',
-      '我來了！(蹦跳) ٩(ˊᗜˋ*)و',
-      '登愣！我出現啦！ ⸜(๑\'ᵕ\'๑)⸝'
-    ];
-    const phrase = summonPhrases[Math.floor(Math.random() * summonPhrases.length)];
+    const phrase = getDialogue('summon');
     showTempBubble(`✨ ${phrase}`, 3000);
   });
   
@@ -292,7 +286,7 @@ function init({
       chatInput.value = '';
       chatInput.style.display = 'none';
       if(typeof chatEscHint !== 'undefined') chatEscHint.style.display = 'none';
-      chatBubble.innerHTML = `${namePrefix}請先至「設定面板」輸入 Gemini API Key！`;
+      chatBubble.innerHTML = `${namePrefix}${getDialogue('system', 'missingApiKey')}`;
       chatBubble.style.display = 'block';
       setTimeout(() => { chatBubble.style.display = 'none'; }, 3000);
       return;
@@ -304,7 +298,7 @@ function init({
     chatInput.disabled = true;
     chatInput.value = '';
     chatBubble.style.display = 'block';
-    chatContent.innerHTML = `${namePrefix}思考中... <span style="white-space: nowrap;">( •ө•)?</span>`;
+    chatContent.innerHTML = `${namePrefix}${getDialogue('system', 'thinking')}`;
     
     // 儲存使用者對話
     saveChatHistory('user', text);
@@ -380,7 +374,7 @@ function init({
           setIsWorking(false);
             kiwiAccessory.style.display = 'none';
             chatBubble.style.display = 'block';
-            chatContent.innerHTML = `${namePrefix}嗶嗶嗶！${mins} 分鐘到啦！快起來喝口水、伸展一下筋骨吧！🐦💦`;
+            chatContent.innerHTML = `${namePrefix}${getDialogue('system', 'pomodoro', mins)}`;
           }, mins * 60 * 1000);
         } else if (cmd === '/todo') {
           if (!argStr) {
@@ -425,13 +419,13 @@ function init({
       try {
         const p = petState.settings.aiPersonality || 'default';
         const customP = petState.settings.aiCustomPrompt || '';
-        let personaText = "請用簡短、活潑、賣萌的語氣說話（回答控制在 50 字以內，可以加上顏文字）。";
+        let personaText = getDialogue('personalityPrompts', 'default');
         if (p === 'bard') {
-          personaText = "請扮演西式奇幻風格的「吟遊詩人」，說話方式必須充滿「押韻」與「詩意」，像是唱歌或吟誦詩歌一般。充滿節奏感，但不准使用中國古詩詞。請盡量在 50 字以內，一定要押韻並帶有音樂般的節奏感。";
+          personaText = getDialogue('personalityPrompts', 'bard');
         } else if (p === 'grumpy') {
-          personaText = "請扮演一隻傲嬌、覺得人類很麻煩但又不得不幫忙的奇異鳥。稍微慵懶、怕麻煩，但其實還是會幫對方，不能有攻擊性或壞脾氣，帶點可愛的懶散性格（回答控制在 50 字以內）。";
+          personaText = getDialogue('personalityPrompts', 'grumpy');
         } else if (p === 'custom' && customP) {
-          personaText = `請遵循以下特殊個性設定來回覆：\n${customP}\n（請盡量在 50 字以內）`;
+          personaText = getDialogue('personalityPrompts', 'custom', customP);
         }
   
         const sysInstruction = `你現在是一隻生活在電腦桌面上的奇異鳥助理，名字叫 Wiki Wiki。
