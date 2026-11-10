@@ -18,6 +18,7 @@ let wanderTarget = null;
 let pauseUntil = 0;
 let isUserHovering = false;
 let wanderAngle = 0;
+let lastJumpTime = 0;
 
 function bindHoverListeners() {
   try {
@@ -89,6 +90,7 @@ function startStalking(_alarm) {
   wanderTarget = null;
   pauseUntil = 0;
   isUserHovering = false;
+  lastJumpTime = 0;
   bindHoverListeners();
 
   const {
@@ -191,10 +193,12 @@ function startPhysicsLoop() {
 
   const {
     kiwi,
+    kiwiAccessory,
     ipcRenderer,
     getRealWindowPos,
     setWindowPos,
-    getCurrentAction
+    getCurrentAction,
+    updateAlarmDialogue
   } = deps;
 
   const kiwiWrapper = document.getElementById('kiwi-wrapper');
@@ -217,6 +221,8 @@ function startPhysicsLoop() {
       const mouseX = (cursorData && typeof cursorData.x === 'number') ? cursorData.x : 0;
       const mouseY = (cursorData && typeof cursorData.y === 'number') ? cursorData.y : 0;
       const workArea = cursorData?.displayWorkArea || null;
+      const cursorDisplayId = cursorData?.cursorDisplayId;
+      const windowDisplayId = cursorData?.windowDisplayId;
 
       const currentPos = typeof getRealWindowPos === 'function' ? getRealWindowPos() : { x: 0, y: 0 };
       const scale = getResolutionScale();
@@ -236,6 +242,68 @@ function startPhysicsLoop() {
       }
 
       const now = performance.now();
+
+      // =========================================================================
+      // 跨螢幕瞬間跳躍 (Multi-Monitor Teleport & Jump)
+      // 當使用者游標跨至不同螢幕時，奇異鳥瞬間跳躍至該螢幕並喊出「跳躍！」
+      // =========================================================================
+      if (
+        cursorDisplayId != null &&
+        windowDisplayId != null &&
+        cursorDisplayId !== windowDisplayId &&
+        workArea &&
+        now - lastJumpTime > 600
+      ) {
+        lastJumpTime = now;
+
+        const offsetX = kiwiRect ? (kiwiRect.left + kiwiRect.width / 2) : 160;
+        const offsetY = kiwiRect ? (kiwiRect.top + kiwiRect.height / 2) : 450;
+
+        const screenMidX = workArea.x + workArea.width / 2;
+        const landOffsetX = (mouseX > screenMidX ? -180 : 180) * scale;
+        const landKiwiX = mouseX + landOffsetX;
+        const landKiwiY = mouseY;
+
+        const clampedLand = clampScreenBounds(landKiwiX - offsetX, landKiwiY - offsetY, kiwiRect, workArea);
+        const jumpX = Math.round(clampedLand.x);
+        const jumpY = Math.round(clampedLand.y);
+
+        ipcRenderer.send('window-move', jumpX, jumpY);
+        if (typeof setWindowPos === 'function') {
+          setWindowPos(jumpX, jumpY);
+        }
+
+        if (kiwi) {
+          kiwi.classList.remove('walking');
+          kiwi.classList.add('jumping');
+          setTimeout(() => { if (kiwi) kiwi.classList.remove('jumping'); }, 600);
+        }
+
+        const jumpPhrase = getDialogue('alarm', 'jump');
+        if (typeof updateAlarmDialogue === 'function' && jumpPhrase) {
+          updateAlarmDialogue(jumpPhrase);
+        }
+
+        if (kiwiAccessory) {
+          const prevAccessory = kiwiAccessory.innerText;
+          kiwiAccessory.innerText = '✨';
+          setTimeout(() => {
+            if (isStalkingActive && kiwiAccessory) {
+              kiwiAccessory.innerText = prevAccessory || (currentStage === 3 ? '❗' : '💦');
+            }
+          }, 1200);
+        }
+
+        const state = typeof deps.getPetState === 'function' ? deps.getPetState() : {};
+        if (state?.settings?.enableAlarmSound !== false) {
+          playAlarmChirp(0.22);
+        }
+
+        pauseUntil = now + 1500;
+        wanderTarget = null;
+        stalkerLoopTimer = requestAnimationFrame(step);
+        return;
+      }
 
       // =========================================================================
       // 點擊防護區 (Click Zone & Hover Protection)
@@ -370,6 +438,7 @@ function stopStalking(reason = 'ok') {
   wanderTarget = null;
   pauseUntil = 0;
   isUserHovering = false;
+  lastJumpTime = 0;
 
   if (stalkerLoopTimer) {
     cancelAnimationFrame(stalkerLoopTimer);

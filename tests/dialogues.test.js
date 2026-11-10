@@ -54,6 +54,9 @@ test('Dialogues Management Module Unit Tests', async (t) => {
 
     const stage3 = getDialogue('alarm', 'stage3');
     assert.ok(DIALOGUES.alarm.stage3.includes(stage3));
+
+    const jump = getDialogue('alarm', 'jump');
+    assert.ok(DIALOGUES.alarm.jump.includes(jump));
   });
 
   await t.test('getDialogue should handle unknown category or key gracefully', () => {

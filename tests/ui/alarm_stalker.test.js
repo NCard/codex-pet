@@ -149,5 +149,30 @@ describe('Alarm Stalker 3-Stage State Machine Unit Tests', () => {
     // Walking should be stopped because cursor is inside window click region
     expect(kiwi.classList.contains('walking')).toBe(false);
   });
+
+  test('executes instant jump and shouts jump dialogue when cursor moves to a different screen', () => {
+    // Return cursor on Right monitor (id: 2), while window is on Middle monitor (id: 1)
+    ipcRenderer.sendSync.mockReturnValue({
+      x: 2500,
+      y: 400,
+      cursorDisplayId: 2,
+      windowDisplayId: 1,
+      displayWorkArea: { x: 1920, y: 0, width: 1920, height: 1080 }
+    });
+
+    stalkerModule.startStalking({ message: '站立提醒' });
+    jest.advanceTimersByTime(15000); // Stage 2 starts
+
+    // Step physics loop
+    jest.advanceTimersByTime(50);
+
+    // Verify window-move is called with coordinates inside the new screen
+    expect(ipcRenderer.send).toHaveBeenCalledWith('window-move', expect.any(Number), expect.any(Number));
+    const lastMoveCall = ipcRenderer.send.mock.calls.find(c => c[0] === 'window-move');
+    expect(lastMoveCall[1]).toBeGreaterThanOrEqual(1920 - 160);
+
+    // Verify updateAlarmDialogue is called with jump phrase
+    expect(mockUpdateDialogue).toHaveBeenCalled();
+  });
 });
 

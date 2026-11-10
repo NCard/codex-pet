@@ -482,12 +482,22 @@ app.whenReady().then(() => {
 
   ipcMain.on('get-cursor-pos', (event) => {
     const point = screen.getCursorScreenPoint();
-    const display = screen.getDisplayNearestPoint(point);
+    const cursorDisplay = screen.getDisplayNearestPoint(point);
+    const win = BrowserWindow.fromWebContents(event.sender);
+    let windowDisplay = null;
+    if (win && !win.isDestroyed()) {
+      try {
+        const [wx, wy] = win.getPosition();
+        windowDisplay = screen.getDisplayNearestPoint({ x: wx + 160, y: wy + 450 });
+      } catch { }
+    }
     event.returnValue = {
       x: point.x,
       y: point.y,
-      displayBounds: display ? display.bounds : null,
-      displayWorkArea: display ? display.workArea : null
+      displayBounds: cursorDisplay ? cursorDisplay.bounds : null,
+      displayWorkArea: cursorDisplay ? cursorDisplay.workArea : null,
+      cursorDisplayId: cursorDisplay ? cursorDisplay.id : null,
+      windowDisplayId: windowDisplay ? windowDisplay.id : null
     };
   });
 
