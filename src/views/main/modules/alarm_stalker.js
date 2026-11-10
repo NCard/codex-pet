@@ -30,21 +30,30 @@ function getResolutionScale() {
   }
 }
 
-function clampScreenBounds(targetX, targetY) {
-  const availTop = window.screen.availTop || 0;
-  const availLeft = window.screen.availLeft || 0;
-  const availWidth = window.screen.availWidth || (window.screen.width || 1920);
-  const availHeight = window.screen.availHeight || (window.screen.height || 1080);
+function clampScreenBounds(targetX, targetY, kiwiRect, workArea) {
+  const availLeft = workArea ? workArea.x : (window.screen.availLeft || 0);
+  const availTop = workArea ? workArea.y : (window.screen.availTop || 0);
+  const availWidth = workArea ? workArea.width : (window.screen.availWidth || (window.screen.width || 1920));
+  const availHeight = workArea ? workArea.height : (window.screen.availHeight || (window.screen.height || 1080));
 
-  // 視窗自身留邊寬容度
-  const minX = availLeft - 20;
-  const minY = availTop - 150;
-  const maxX = availLeft + availWidth - 230;
-  const maxY = availTop + availHeight - 320;
+  // 計算奇異鳥在視窗內的中心偏移（預設約 160px 水平，450px 垂直）
+  const offsetX = kiwiRect ? (kiwiRect.left + kiwiRect.width / 2) : 160;
+  const offsetY = kiwiRect ? (kiwiRect.top + kiwiRect.height / 2) : 450;
+
+  // 確保奇異鳥本體保留在工作區可視範圍內，邊緣保留 30px，允許貼近螢幕邊緣
+  const minKiwiCenterX = availLeft + 30;
+  const maxKiwiCenterX = availLeft + availWidth - 30;
+  const minKiwiCenterY = availTop + 30;
+  const maxKiwiCenterY = availTop + availHeight - 30;
+
+  const minWindowX = minKiwiCenterX - offsetX;
+  const maxWindowX = maxKiwiCenterX - offsetX;
+  const minWindowY = minKiwiCenterY - offsetY;
+  const maxWindowY = maxKiwiCenterY - offsetY;
 
   return {
-    x: Math.max(minX, Math.min(targetX, maxX)),
-    y: Math.max(minY, Math.min(targetY, maxY))
+    x: Math.max(minWindowX, Math.min(targetX, maxWindowX)),
+    y: Math.max(minWindowY, Math.min(targetY, maxWindowY))
   };
 }
 
@@ -177,73 +186,93 @@ function startPhysicsLoop() {
         }
       }
 
-      const globalMouse = ipcRenderer.sendSync('get-cursor-pos');
+      const cursorData = ipcRenderer.sendSync('get-cursor-pos');
+      const mouseX = (cursorData && typeof cursorData.x === 'number') ? cursorData.x : 0;
+      const mouseY = (cursorData && typeof cursorData.y === 'number') ? cursorData.y : 0;
+      const workArea = cursorData?.displayWorkArea || null;
+
       const currentPos = typeof getRealWindowPos === 'function' ? getRealWindowPos() : { x: 0, y: 0 };
       const scale = getResolutionScale();
 
-      const kiwiRect = kiwi ? kiwi.getBoundingClientRect() : { left: 50, top: 50, width: 80, height: 80 };
+      const kiwiRect = kiwi ? kiwi.getBoundingClientRect() : { left: 80, top: 380, width: 160, height: 160 };
       const kiwiCenterX = currentPos.x + kiwiRect.left + kiwiRect.width / 2;
       const kiwiCenterY = currentPos.y + kiwiRect.top + kiwiRect.height / 2;
 
-      let targetX = currentPos.x;
-      let targetY = currentPos.y;
+      const dxToMouse = mouseX - kiwiCenterX;
+      const dyToMouse = mouseY - kiwiCenterY;
+      const distToMouse = Math.hypot(dxToMouse, dyToMouse);
 
       // 面向滑鼠游標
-      const faceDirection = (globalMouse.x - kiwiCenterX) < 0 ? -1 : 1;
+      const faceDirection = dxToMouse < 0 ? -1 : 1;
       if (kiwiWrapper) {
         kiwiWrapper.style.setProperty('--flip', faceDirection);
       }
 
-      if (currentStage === 2) {
-        // 階段 2：以安全距離 (120px) 緩慢朝滑鼠推進
-        const dx = globalMouse.x - kiwiCenterX;
-        const dy = globalMouse.y - kiwiCenterY;
-        const dist = Math.hypot(dx, dy);
-        const safeRadius = 120 * scale;
+      const safeRadius = 125 * scale;
+      let targetKiwiCenterX = kiwiCenterX;
+      let targetKiwiCenterY = kiwiCenterY;
 
-        if (dist > safeRadius) {
-          // 移動至滑鼠外圍
-          const angle = Math.atan2(dy, dx);
-          const aimX = globalMouse.x - Math.cos(angle) * safeRadius - (kiwiRect.left + kiwiRect.width / 2);
-          const aimY = globalMouse.y - Math.sin(angle) * safeRadius - (kiwiRect.top + kiwiRect.height / 2);
+      // 判斷是否應該在滑鼠周圍徘徊 (必須進入階段 3 且已經足夠靠近滑鼠)
+      const canOrbit = (currentStage === 3) && (distToMouse <= safeRadius + 60);
 
-          const stepSpeed = 1.8 * scale;
-          const moveDx = (aimX - currentPos.x) * 0.05;
-          const moveDy = (aimY - currentPos.y) * 0.05;
-
-          const moveDist = Math.hypot(moveDx, moveDy);
-          const cappedDx = moveDist > stepSpeed ? (moveDx / moveDist) * stepSpeed : moveDx;
-          const cappedDy = moveDist > stepSpeed ? (moveDy / moveDist) * stepSpeed : moveDy;
-
-          targetX = currentPos.x + cappedDx;
-          targetY = currentPos.y + cappedDy;
-        }
-      } else if (currentStage === 3) {
-        // 階段 3：圍繞滑鼠以安全橢圓半徑慢步踱步/徘徊
-        orbitAngle += 0.03;
+      if (canOrbit) {
+        // 階段 3 且已就位：圍繞滑鼠以安全橢圓半徑慢步踱步/徘徊
+        orbitAngle += 0.028;
         const orbitRadiusX = 130 * scale;
-        const orbitRadiusY = 75 * scale;
+        const orbitRadiusY = 65 * scale;
 
-        const desiredCenterX = globalMouse.x + Math.cos(orbitAngle) * orbitRadiusX;
-        const desiredCenterY = globalMouse.y + Math.sin(orbitAngle) * orbitRadiusY;
-
-        const aimX = desiredCenterX - (kiwiRect.left + kiwiRect.width / 2);
-        const aimY = desiredCenterY - (kiwiRect.top + kiwiRect.height / 2);
-
-        const stepSpeed = 2.2 * scale;
-        const moveDx = (aimX - currentPos.x) * 0.06;
-        const moveDy = (aimY - currentPos.y) * 0.06;
-
-        const moveDist = Math.hypot(moveDx, moveDy);
-        const cappedDx = moveDist > stepSpeed ? (moveDx / moveDist) * stepSpeed : moveDx;
-        const cappedDy = moveDist > stepSpeed ? (moveDy / moveDist) * stepSpeed : moveDy;
-
-        targetX = currentPos.x + cappedDx;
-        targetY = currentPos.y + cappedDy;
+        targetKiwiCenterX = mouseX + Math.cos(orbitAngle) * orbitRadiusX;
+        targetKiwiCenterY = mouseY + Math.sin(orbitAngle) * orbitRadiusY;
+      } else {
+        // 階段 2 或尚未到達滑鼠周圍：保持 safeRadius 朝滑鼠靠近
+        if (distToMouse > safeRadius) {
+          const angle = Math.atan2(dyToMouse, dxToMouse);
+          targetKiwiCenterX = mouseX - Math.cos(angle) * safeRadius;
+          targetKiwiCenterY = mouseY - Math.sin(angle) * safeRadius;
+        } else {
+          // 已在安全距離內
+          targetKiwiCenterX = kiwiCenterX;
+          targetKiwiCenterY = kiwiCenterY;
+        }
       }
 
-      // 邊界拘束保護
-      const clamped = clampScreenBounds(targetX, targetY);
+      // 計算視窗預期目標位置
+      const aimWindowX = targetKiwiCenterX - (kiwiRect.left + kiwiRect.width / 2);
+      const aimWindowY = targetKiwiCenterY - (kiwiRect.top + kiwiRect.height / 2);
+
+      const moveDx = aimWindowX - currentPos.x;
+      const moveDy = aimWindowY - currentPos.y;
+      const distToAim = Math.hypot(moveDx, moveDy);
+
+      let nextX = currentPos.x;
+      let nextY = currentPos.y;
+
+      if (distToAim > 2) {
+        // 動態步進速度：依距離動態調節，遠距快步走 (4.2*scale)，近距輕柔踱步 (2.2*scale)
+        let stepSpeed;
+        if (distToAim > 400) {
+          stepSpeed = 4.2 * scale;
+        } else if (distToAim > 120) {
+          stepSpeed = 3.2 * scale;
+        } else {
+          stepSpeed = 2.2 * scale;
+        }
+
+        const step = Math.min(distToAim, stepSpeed);
+        nextX = currentPos.x + (moveDx / distToAim) * step;
+        nextY = currentPos.y + (moveDy / distToAim) * step;
+
+        if (kiwi && !kiwi.classList.contains('walking')) {
+          kiwi.classList.add('walking');
+        }
+      } else {
+        if (kiwi && currentStage === 2) {
+          kiwi.classList.remove('walking');
+        }
+      }
+
+      // 多螢幕與工作區邊界拘束保護
+      const clamped = clampScreenBounds(nextX, nextY, kiwiRect, workArea);
       const roundedX = Math.round(clamped.x);
       const roundedY = Math.round(clamped.y);
 

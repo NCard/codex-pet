@@ -125,9 +125,14 @@ describe('Alarm Stalker 3-Stage State Machine Unit Tests', () => {
     expect(kiwiAccessory.innerText).toBe('❤️');
   });
 
-  test('clampScreenBounds bounds target coordinates within display', () => {
+  test('clampScreenBounds bounds target coordinates within display and workArea', () => {
     const clamped = stalkerModule.clampScreenBounds(99999, -5000);
     expect(clamped.x).toBeLessThan(99999);
     expect(clamped.y).toBeGreaterThan(-5000);
+
+    // Multi-monitor workArea test (e.g. secondary monitor at x: 1920)
+    const secondScreenClamped = stalkerModule.clampScreenBounds(2500, 300, null, { x: 1920, y: 0, width: 1920, height: 1080 });
+    expect(secondScreenClamped.x).toBe(2500);
   });
 });
+

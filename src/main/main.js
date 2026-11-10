@@ -481,7 +481,14 @@ app.whenReady().then(() => {
   });
 
   ipcMain.on('get-cursor-pos', (event) => {
-    event.returnValue = screen.getCursorScreenPoint();
+    const point = screen.getCursorScreenPoint();
+    const display = screen.getDisplayNearestPoint(point);
+    event.returnValue = {
+      x: point.x,
+      y: point.y,
+      displayBounds: display ? display.bounds : null,
+      displayWorkArea: display ? display.workArea : null
+    };
   });
 
   let laserOverlayWindows = [];
