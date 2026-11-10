@@ -436,7 +436,7 @@ const physicsCtx = {
 physics.initDragging(physicsCtx);
 
 const chat = require('./modules/chat');
-const { showTempBubble, showAlarmBubble, openChat, sendMessage, getIsAlarmActive, dismissAlarm } = chat.init({
+const { showTempBubble, showAlarmBubble, updateAlarmDialogue, openChat, sendMessage, getIsAlarmActive, dismissAlarm } = chat.init({
   chatBubble, chatContent, chatClose, chatClear, chatInput, chatEscHint, customMenu,
   kiwi, kiwiAccessory, namePrefix: '<span style="color: #c97a2e; font-weight: 900;">Wiki Wiki：</span>',
   petState, savePetState, loadPetState, applyOutfitPos,
@@ -453,6 +453,21 @@ const { showTempBubble, showAlarmBubble, openChat, sendMessage, getIsAlarmActive
 physicsCtx.openChat = openChat;
 physicsCtx.getIsAlarmActive = getIsAlarmActive;
 physicsCtx.dismissAlarm = dismissAlarm;
+
+const alarmStalker = require('./modules/alarm_stalker');
+alarmStalker.init({
+  kiwi,
+  kiwiAccessory,
+  ipcRenderer,
+  getRealWindowPos,
+  setWindowPos: (newX, newY) => { x = newX; y = newY; },
+  getPetState: () => petState,
+  getCurrentAction: () => currentAction,
+  setCurrentAction: (action) => { currentAction = action; },
+  getResolutionScale,
+  getIsWorking: () => isWorking,
+  updateAlarmDialogue
+});
 
 // 啟動智慧剪貼簿主動感知模組
 const clipboardWatcher = require('./modules/clipboard_watcher');
@@ -507,7 +522,7 @@ interaction.init({
 
 
 const alarmModule = require('./modules/alarm');
-alarmModule.init({ alarmsPath, laser, resetIdle, showAlarmBubble, kiwi, ipcRenderer });
+alarmModule.init({ alarmsPath, laser, resetIdle, showAlarmBubble, kiwi, ipcRenderer, alarmStalker });
 
 // 所有模組初始化完成，通知 main.js 關閉 Splash 並顯示主視窗
 ipcRenderer.send('app-ready');

@@ -20,7 +20,10 @@ const defaultSettings = {
   contextTimeout: 5,
   summonShortcut: 'Ctrl+Shift+K',
   enableClipboard: false,
-  enableClipboardSmartWatch: false
+  enableClipboardSmartWatch: false,
+  enableAlarmStalking: true,
+  alarmStalkingDelay: 15,
+  enableAlarmSound: true
 };
 
 let petState = {};
@@ -56,7 +59,10 @@ const els = {
   contextTimeout: document.getElementById('setting-contextTimeout'),
   summonShortcut: document.getElementById('setting-shortcut'),
   enableClipboard: document.getElementById('setting-enableClipboard'),
-  enableClipboardSmartWatch: document.getElementById('setting-enableClipboardSmartWatch')
+  enableClipboardSmartWatch: document.getElementById('setting-enableClipboardSmartWatch'),
+  enableAlarmStalking: document.getElementById('setting-enableAlarmStalking'),
+  alarmStalkingDelay: document.getElementById('setting-alarmStalkingDelay'),
+  enableAlarmSound: document.getElementById('setting-enableAlarmSound')
 };
 
 const vals = {
@@ -97,6 +103,9 @@ function initUI() {
   els.summonShortcut.value = s.summonShortcut ?? defaultSettings.summonShortcut;
   els.enableClipboard.checked = s.enableClipboard !== undefined ? Boolean(s.enableClipboard) : defaultSettings.enableClipboard;
   els.enableClipboardSmartWatch.checked = s.enableClipboardSmartWatch !== undefined ? Boolean(s.enableClipboardSmartWatch) : defaultSettings.enableClipboardSmartWatch;
+  els.enableAlarmStalking.checked = s.enableAlarmStalking !== undefined ? Boolean(s.enableAlarmStalking) : defaultSettings.enableAlarmStalking;
+  els.alarmStalkingDelay.value = s.alarmStalkingDelay ?? defaultSettings.alarmStalkingDelay;
+  els.enableAlarmSound.checked = s.enableAlarmSound !== undefined ? Boolean(s.enableAlarmSound) : defaultSettings.enableAlarmSound;
   
   if (els.aiPersonality.value === 'custom') {
     document.getElementById('custom-personality-group').style.display = 'block';
@@ -259,7 +268,10 @@ function checkDirty() {
     current.contextTimeout !== (s.contextTimeout ?? defaultSettings.contextTimeout) ||
     current.summonShortcut !== (s.summonShortcut ?? defaultSettings.summonShortcut) ||
     current.enableClipboard !== (s.enableClipboard ?? defaultSettings.enableClipboard) ||
-    current.enableClipboardSmartWatch !== (s.enableClipboardSmartWatch ?? defaultSettings.enableClipboardSmartWatch)
+    current.enableClipboardSmartWatch !== (s.enableClipboardSmartWatch ?? defaultSettings.enableClipboardSmartWatch) ||
+    current.enableAlarmStalking !== (s.enableAlarmStalking ?? defaultSettings.enableAlarmStalking) ||
+    current.alarmStalkingDelay !== (s.alarmStalkingDelay ?? defaultSettings.alarmStalkingDelay) ||
+    current.enableAlarmSound !== (s.enableAlarmSound ?? defaultSettings.enableAlarmSound)
   );
   setDirty(hasChanged);
 }
@@ -286,7 +298,10 @@ function getFormValues() {
     contextTimeout: parseInt(els.contextTimeout.value, 10),
     summonShortcut: els.summonShortcut.value.trim(),
     enableClipboard: Boolean(els.enableClipboard.checked),
-    enableClipboardSmartWatch: Boolean(els.enableClipboardSmartWatch.checked)
+    enableClipboardSmartWatch: Boolean(els.enableClipboardSmartWatch.checked),
+    enableAlarmStalking: Boolean(els.enableAlarmStalking.checked),
+    alarmStalkingDelay: parseInt(els.alarmStalkingDelay.value, 10) || 15,
+    enableAlarmSound: Boolean(els.enableAlarmSound.checked)
   };
 }
 
@@ -341,6 +356,16 @@ els.enableClipboard.addEventListener('change', () => {
 });
 
 els.enableClipboardSmartWatch.addEventListener('change', () => {
+  checkDirty();
+  previewBroadcast();
+});
+
+els.enableAlarmStalking.addEventListener('change', () => {
+  checkDirty();
+  previewBroadcast();
+});
+
+els.enableAlarmSound.addEventListener('change', () => {
   checkDirty();
   previewBroadcast();
 });

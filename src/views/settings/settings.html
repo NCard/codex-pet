@@ -203,7 +203,36 @@
         <div style="font-size: 11px; color: #666; margin-top: 5px;">* 點擊上方輸入框後，直接按下您想要的按鍵組合 (例如 Ctrl + K)。按 Backspace 可清除。</div>
       </div>
     </div>
-  </div>
+
+    <div class="section">
+      <div class="section-title">⏰ 鬧鐘微互動 (Alarm Interactions)</div>
+      <div class="control-group" style="margin-bottom: 12px;">
+        <label style="display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none;">
+          <span style="font-weight: bold;">🐣 鬧鐘逾時頑皮跟隨 (Alarm Stalking)</span>
+          <input type="checkbox" id="setting-enableAlarmStalking" style="width: 18px; height: 18px; cursor: pointer;">
+        </label>
+        <div style="font-size: 11px; color: #666; margin-top: 4px;">
+          * 預設開啟。若鬧鐘響起後未即時關閉，奇異鳥會慢慢朝滑鼠走來並在周圍徘徊撒嬌催促。
+        </div>
+      </div>
+
+      <div class="control-group" id="group-alarm-stalking-delay" style="margin-bottom: 12px;">
+        <label>啟動跟隨延遲時間</label>
+        <select id="setting-alarmStalkingDelay" style="width: 100%; box-sizing: border-box; padding: 6px; border-radius: 5px; border: 1px solid #ccc; margin-top: 4px;">
+          <option value="10">10 秒 (敏捷提醒)</option>
+          <option value="15" selected>15 秒 (預設推薦)</option>
+          <option value="30">30 秒 (從容提醒)</option>
+        </select>
+      </div>
+
+      <div class="control-group">
+        <label style="display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none;">
+          <span style="font-weight: bold;">🔔 鬧鐘提示鳥鳴聲 (Web Audio)</span>
+          <input type="checkbox" id="setting-enableAlarmSound" style="width: 18px; height: 18px; cursor: pointer;">
+        </label>
+        <div style="font-size: 11px; color: #666; margin-top: 4px;">
+          * 預設開啟。採用原生合成輕脆雙音鳥鳴，無額外音效檔案依賴。
+        </div>
       </div>
     </div>
   </div>

@@ -199,9 +199,23 @@ function init({
 
 
   
+  let currentAlarm = null;
+
+  function updateAlarmDialogue(extraText) {
+    if (!isAlarmActive) return;
+    const msgEl = document.getElementById('alarm-bubble-msg');
+    if (msgEl && currentAlarm) {
+      msgEl.innerHTML = `
+        <div style="font-weight: bold;">${currentAlarm.message}</div>
+        <div style="margin-top: 5px; font-size: 11px; color: #e65100; font-weight: bold; background: rgba(255, 238, 204, 0.6); padding: 3px 6px; border-radius: 4px;">${extraText}</div>
+      `;
+    }
+  }
+
   function dismissAlarm(reason = 'ok') {
     if (!isAlarmActive) return;
     isAlarmActive = false;
+    currentAlarm = null;
     chatBubble.style.display = 'none';
     if (bubbleTimeout) {
       clearTimeout(bubbleTimeout);
@@ -216,6 +230,7 @@ function init({
 
   function showAlarmBubble(alarm, onSnooze, onDismiss) {
     isAlarmActive = true;
+    currentAlarm = alarm;
     currentAlarmDismissCallback = onDismiss || null;
     chatBubble.style.display = 'block';
     if (bubbleTimeout) {
@@ -227,7 +242,7 @@ function init({
     
     chatContent.innerHTML = `
       ${namePrefix}⏰ 提醒：<br>
-      <div style="margin: 5px 0; word-break: break-all;">${alarm.message}</div>
+      <div id="alarm-bubble-msg" style="margin: 5px 0; word-break: break-all;">${alarm.message}</div>
       <div style="display: flex; gap: 5px; margin-top: 8px;">
         <button id="btn-alarm-ok" style="flex:1; padding: 4px; border: none; background: #4caf50; color: white; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; white-space: nowrap;">我知道了</button>
         <button id="btn-alarm-snooze" style="flex:1; padding: 4px; border: none; background: #ff9800; color: white; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; white-space: nowrap;">稍後提醒 ${snoozeMins}分</button>
@@ -681,6 +696,7 @@ ${personaText}
   return {
     showTempBubble,
     showAlarmBubble,
+    updateAlarmDialogue,
     openChat,
     sendMessage,
     getIsAlarmActive: () => isAlarmActive,

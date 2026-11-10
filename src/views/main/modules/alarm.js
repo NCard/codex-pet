@@ -4,7 +4,7 @@ let snoozedAlarms = [];
 let triggeredAlarms = {};
 
 function init({
-  alarmsPath, laser, resetIdle, showAlarmBubble, kiwi, ipcRenderer
+  alarmsPath, laser, resetIdle, showAlarmBubble, kiwi, ipcRenderer, alarmStalker
 }) {
   function triggerAlarm(alarm, alarmKey) {
     if (!triggeredAlarms[alarmKey]) {
@@ -13,13 +13,27 @@ function init({
         laser.toggleLaserGame(false);
       }
       resetIdle();
-      showAlarmBubble(alarm, (alarmToSnooze, snoozeMins) => {
-        // onSnooze callback
-        const triggerTime = Date.now() + snoozeMins * 60000;
-        snoozedAlarms.push({ ...alarmToSnooze, triggerTime });
-      });
-      kiwi.classList.add('jumping');
-      setTimeout(() => { kiwi.classList.remove('jumping'); }, 500);
+      showAlarmBubble(
+        alarm,
+        (alarmToSnooze, snoozeMins) => {
+          // onSnooze callback
+          const triggerTime = Date.now() + snoozeMins * 60000;
+          snoozedAlarms.push({ ...alarmToSnooze, triggerTime });
+        },
+        (dismissReason) => {
+          // onDismiss callback
+          if (alarmStalker && typeof alarmStalker.stopStalking === 'function') {
+            alarmStalker.stopStalking(dismissReason);
+          }
+        }
+      );
+
+      if (alarmStalker && typeof alarmStalker.startStalking === 'function') {
+        alarmStalker.startStalking(alarm);
+      } else {
+        kiwi.classList.add('jumping');
+        setTimeout(() => { kiwi.classList.remove('jumping'); }, 500);
+      }
     }
   }
 
