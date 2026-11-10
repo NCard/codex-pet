@@ -18,7 +18,8 @@ function init({
   badgeCloseEl,
   getPetState,
   sendMessage,
-  kiwi
+  kiwi,
+  getIsAlarmActive
 }) {
   if (!badgeEl) return;
 
@@ -28,6 +29,11 @@ function init({
       clearTimeout(hideTimer);
       hideTimer = null;
     }
+  }
+
+  // 若初始化時鬧鐘已在進行中，確保不顯示
+  if (typeof getIsAlarmActive === 'function' && getIsAlarmActive()) {
+    hideBadge();
   }
 
   function showBadge(icon, label, prompt) {
@@ -67,14 +73,19 @@ function init({
     }
   });
 
-  // 每 1.2 秒安全輪詢剪貼簿變化（本機零 Token）
-  const pollInterval = setInterval(() => {
+  function pollClipboard() {
     try {
       const state = typeof getPetState === 'function' ? getPetState() : {};
       const settings = state?.settings || {};
 
       // 嚴格權限檢查：必須同時允許剪貼簿存取與主動感知開關
       if (!settings.enableClipboard || !settings.enableClipboardSmartWatch) {
+        if (badgeEl.style.display !== 'none') hideBadge();
+        return;
+      }
+
+      // 鬧鐘響起催促期間暫停顯示剪貼簿提示，避免推擠或覆蓋鬧鐘
+      if (typeof getIsAlarmActive === 'function' && getIsAlarmActive()) {
         if (badgeEl.style.display !== 'none') hideBadge();
         return;
       }
@@ -96,10 +107,14 @@ function init({
     } catch (_) {
       // 容錯防護，避免剪貼簿存取例外中斷流程
     }
-  }, 1200);
+  }
+
+  // 每 1.2 秒安全輪詢剪貼簿變化（本機零 Token）
+  const pollInterval = setInterval(pollClipboard, 1200);
 
   return {
     hideBadge,
+    pollClipboard,
     destroy: () => clearInterval(pollInterval)
   };
 }

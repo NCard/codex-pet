@@ -124,6 +124,14 @@ function initDragging(ctx) {
       hasDragged = false;
       return;
     }
+
+    // 若鬧鐘正在提醒，點擊奇異鳥跳躍提示，絕不關閉鬧鐘氣泡
+    if (typeof ctx.getIsAlarmActive === 'function' && ctx.getIsAlarmActive()) {
+      ctx.kiwi.classList.add('jumping');
+      setTimeout(() => { ctx.kiwi.classList.remove('jumping'); }, 500);
+      return;
+    }
+
     ctx.kiwi.classList.add('jumping');
     setTimeout(() => { ctx.kiwi.classList.remove('jumping'); }, 500);
 

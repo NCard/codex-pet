@@ -436,7 +436,7 @@ const physicsCtx = {
 physics.initDragging(physicsCtx);
 
 const chat = require('./modules/chat');
-const { showTempBubble, showAlarmBubble, openChat, sendMessage } = chat.init({
+const { showTempBubble, showAlarmBubble, openChat, sendMessage, getIsAlarmActive, dismissAlarm } = chat.init({
   chatBubble, chatContent, chatClose, chatClear, chatInput, chatEscHint, customMenu,
   kiwi, kiwiAccessory, namePrefix: '<span style="color: #c97a2e; font-weight: 900;">Wiki Wiki：</span>',
   petState, savePetState, loadPetState, applyOutfitPos,
@@ -451,6 +451,8 @@ const { showTempBubble, showAlarmBubble, openChat, sendMessage } = chat.init({
   resetIdle, ipcRenderer
 });
 physicsCtx.openChat = openChat;
+physicsCtx.getIsAlarmActive = getIsAlarmActive;
+physicsCtx.dismissAlarm = dismissAlarm;
 
 // 啟動智慧剪貼簿主動感知模組
 const clipboardWatcher = require('./modules/clipboard_watcher');
@@ -461,7 +463,8 @@ clipboardWatcher.init({
   badgeCloseEl: clipboardBadgeClose,
   getPetState: () => petState,
   sendMessage,
-  kiwi
+  kiwi,
+  getIsAlarmActive
 });
 
 // Update menus and interaction dependency injections

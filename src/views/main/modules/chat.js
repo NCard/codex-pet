@@ -4,6 +4,7 @@ const { recordUsage, getUsageSummary } = require('../../../utils/usage_tracker')
 
 let bubbleTimeout = null;
 let isAlarmActive = false;
+let currentAlarmDismissCallback = null;
 let pomodoroTimer = null;
 
 let sessionContext = [];
@@ -78,7 +79,11 @@ function init({
   
   // 點擊關閉按鈕隱藏泡泡
   chatClose.addEventListener('click', () => {
-    chatBubble.style.display = 'none';
+    if (isAlarmActive) {
+      dismissAlarm('close');
+    } else {
+      chatBubble.style.display = 'none';
+    }
   });
 
   const chatExpandBtn = document.getElementById('chat-expand-btn');
@@ -122,13 +127,22 @@ function init({
     });
   }
   
-  // 按下 ESC 也可以隱藏各種浮動面板 (全域監聽)
+  // 按下 ESC 隱藏各種浮動面板與對話框 (全域監聽)
   window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
-      if (customMenu.style.display !== 'none') {
+      if (customMenu && customMenu.style.display !== 'none') {
         customMenu.style.display = 'none';
-      } else if (chatBubble.style.display === 'block') {
+        return;
+      }
+      if (isAlarmActive) {
+        dismissAlarm('escape');
+        return;
+      }
+      if (chatInput.style.display !== 'none' || chatBubble.style.display !== 'none') {
+        chatInput.style.display = 'none';
+        if (typeof chatEscHint !== 'undefined' && chatEscHint) chatEscHint.style.display = 'none';
         chatBubble.style.display = 'none';
+        chatInput.value = '';
       }
     }
   });
@@ -191,10 +205,29 @@ function init({
 
 
   
-  function showAlarmBubble(alarm, onSnooze) {
+  function dismissAlarm(reason = 'ok') {
+    if (!isAlarmActive) return;
+    isAlarmActive = false;
+    chatBubble.style.display = 'none';
+    if (bubbleTimeout) {
+      clearTimeout(bubbleTimeout);
+      bubbleTimeout = null;
+    }
+    if (typeof currentAlarmDismissCallback === 'function') {
+      const cb = currentAlarmDismissCallback;
+      currentAlarmDismissCallback = null;
+      try { cb(reason); } catch (_) {}
+    }
+  }
+
+  function showAlarmBubble(alarm, onSnooze, onDismiss) {
     isAlarmActive = true;
+    currentAlarmDismissCallback = onDismiss || null;
     chatBubble.style.display = 'block';
-    if (bubbleTimeout) clearTimeout(bubbleTimeout);
+    if (bubbleTimeout) {
+      clearTimeout(bubbleTimeout);
+      bubbleTimeout = null;
+    }
     
     const snoozeMins = alarm.snoozeInterval || 5;
     
@@ -207,33 +240,21 @@ function init({
       </div>
     `;
     
-    document.getElementById('btn-alarm-ok').onclick = () => {
-      isAlarmActive = false;
-      chatBubble.style.display = 'none';
-    };
-    
-    document.getElementById('btn-alarm-snooze').onclick = () => {
-      isAlarmActive = false;
-      chatBubble.style.display = 'none';
-      if (onSnooze) onSnooze(alarm, snoozeMins);
-    };
-  }
-  
-  
-  
-  
-  
-  // 全域監聽 ESC 鍵關閉對話
-  window.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
-      if (chatInput.style.display !== 'none' || chatBubble.style.display !== 'none') {
-        chatInput.style.display = 'none';
-        if(typeof chatEscHint !== 'undefined') chatEscHint.style.display = 'none';
-        chatBubble.style.display = 'none';
-        chatInput.value = '';
-      }
+    const btnOk = document.getElementById('btn-alarm-ok');
+    if (btnOk) {
+      btnOk.onclick = () => {
+        dismissAlarm('ok');
+      };
     }
-  });
+    
+    const btnSnooze = document.getElementById('btn-alarm-snooze');
+    if (btnSnooze) {
+      btnSnooze.onclick = () => {
+        dismissAlarm('snooze');
+        if (onSnooze) onSnooze(alarm, snoozeMins);
+      };
+    }
+  }
   
   // 監聽輸入框的 Enter 鍵事件，呼叫 Gemini
   chatInput.addEventListener('keydown', async (e) => {
@@ -260,6 +281,10 @@ function init({
 
   async function sendMessage(text) {
     if (!text) return;
+
+    if (isAlarmActive) {
+      dismissAlarm('message');
+    }
 
     const currentAI = resolveAI();
     // 防呆：如果沒有設定 API Key
@@ -622,6 +647,15 @@ ${personaText}
     }
 
   function openChat() {
+    // 鬧鐘響起期間，點擊奇異鳥不應該隱藏鬧鐘，而是跳躍提醒使用者注意鬧鐘
+    if (isAlarmActive) {
+      if (kiwi) {
+        kiwi.classList.add('jumping');
+        setTimeout(() => { kiwi.classList.remove('jumping'); }, 500);
+      }
+      return;
+    }
+
     const now = Date.now();
     let hasMemory = false;
     
@@ -650,6 +684,13 @@ ${personaText}
     chatInput.focus();
   }
   
-  return { showTempBubble, showAlarmBubble, openChat, sendMessage };
+  return {
+    showTempBubble,
+    showAlarmBubble,
+    openChat,
+    sendMessage,
+    getIsAlarmActive: () => isAlarmActive,
+    dismissAlarm
+  };
 }
 module.exports = { init };

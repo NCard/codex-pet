@@ -43,12 +43,13 @@ if (!app.isPackaged) {
     reloader(module, {
       ignore: [
         /data/,
-        /task\.md/,
-        /implementation_plan\.md/,
-        /walkthrough\.md/,
+        /docs/,
+        /tests/,
+        /\.git/,
         /\.system_generated/,
         /logs/,
-        /app\.log/
+        /app\.log/,
+        /.*\.md$/
       ]
     });
   } catch (_) { }
