@@ -134,5 +134,20 @@ describe('Alarm Stalker 3-Stage State Machine Unit Tests', () => {
     const secondScreenClamped = stalkerModule.clampScreenBounds(2500, 300, null, { x: 1920, y: 0, width: 1920, height: 1080 });
     expect(secondScreenClamped.x).toBe(2500);
   });
+
+  test('pauses walking when mouse cursor is near Kiwi or inside window area to make buttons easy to click', () => {
+    // Return cursor right next to window (210, 220) where window is at (200, 200)
+    ipcRenderer.sendSync.mockReturnValue({ x: 210, y: 220 });
+
+    stalkerModule.startStalking({ message: '會議' });
+    jest.advanceTimersByTime(15000); // Stage 2 starts
+    expect(stalkerModule.getCurrentStage()).toBe(2);
+
+    // Let animation frame step run
+    jest.advanceTimersByTime(50);
+
+    // Walking should be stopped because cursor is inside window click region
+    expect(kiwi.classList.contains('walking')).toBe(false);
+  });
 });
 

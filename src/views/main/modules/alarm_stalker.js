@@ -11,8 +11,31 @@ let stalkerLoopTimer = null;
 let stageTimer = null;
 let hopIntervalTimer = null;
 let currentStage = 1; // 1: 原地, 2: 起步尋找, 3: 徘徊催促
-let orbitAngle = 0;
 let isStalkingActive = false;
+
+// 漫步與點擊保護狀態
+let wanderTarget = null;
+let pauseUntil = 0;
+let isUserHovering = false;
+let wanderAngle = 0;
+
+function bindHoverListeners() {
+  try {
+    const bubble = document.getElementById('chat-bubble');
+    const kiwiEl = deps.kiwi || document.getElementById('kiwi') || document.getElementById('kiwi-img');
+
+    if (bubble && !bubble.__stalkerHoverBound) {
+      bubble.__stalkerHoverBound = true;
+      bubble.addEventListener('mouseenter', () => { isUserHovering = true; });
+      bubble.addEventListener('mouseleave', () => { isUserHovering = false; });
+    }
+    if (kiwiEl && !kiwiEl.__stalkerHoverBound) {
+      kiwiEl.__stalkerHoverBound = true;
+      kiwiEl.addEventListener('mouseenter', () => { isUserHovering = true; });
+      kiwiEl.addEventListener('mouseleave', () => { isUserHovering = false; });
+    }
+  } catch {}
+}
 
 function init(dependencies) {
   deps = dependencies;
@@ -62,7 +85,11 @@ function startStalking(_alarm) {
 
   isStalkingActive = true;
   currentStage = 1;
-  orbitAngle = Math.random() * Math.PI * 2;
+  wanderAngle = Math.random() * Math.PI * 2;
+  wanderTarget = null;
+  pauseUntil = 0;
+  isUserHovering = false;
+  bindHoverListeners();
 
   const {
     kiwi,
@@ -202,37 +229,92 @@ function startPhysicsLoop() {
       const dyToMouse = mouseY - kiwiCenterY;
       const distToMouse = Math.hypot(dxToMouse, dyToMouse);
 
-      // 面向滑鼠游標
-      const faceDirection = dxToMouse < 0 ? -1 : 1;
-      if (kiwiWrapper) {
+      // 面向滑鼠游標 (小幅防抖)
+      if (Math.abs(dxToMouse) > 10 && kiwiWrapper) {
+        const faceDirection = dxToMouse < 0 ? -1 : 1;
         kiwiWrapper.style.setProperty('--flip', faceDirection);
       }
 
-      const safeRadius = 125 * scale;
+      const now = performance.now();
+
+      // =========================================================================
+      // 點擊防護區 (Click Zone & Hover Protection)
+      // 使用者靠近氣泡、按鈕或本體時立即完全靜止，消除追逐滑鼠導致按鈕逃跑的現象
+      // =========================================================================
+      const isMouseInWindowArea = (
+        mouseX >= currentPos.x - 15 &&
+        mouseX <= currentPos.x + 335 &&
+        mouseY >= currentPos.y - 15 &&
+        mouseY <= currentPos.y + 480
+      );
+      const isMouseNearKiwi = distToMouse < 140 * scale;
+
+      if (isUserHovering || isMouseInWindowArea || isMouseNearKiwi) {
+        if (kiwi && kiwi.classList.contains('walking')) {
+          kiwi.classList.remove('walking');
+        }
+        pauseUntil = Math.max(pauseUntil, now + 1500);
+        stalkerLoopTimer = requestAnimationFrame(step);
+        return;
+      }
+
+      // =========================================================================
+      // 停留歇息判斷 (Natural Pause)
+      // 讓奇異鳥在游標附近走動後會短暫停下觀看，而不是每幀緊貼不放
+      // =========================================================================
+      if (now < pauseUntil) {
+        // 若使用者滑鼠大幅移開 (> 320px)，解除歇息開始輕步跟上
+        if (distToMouse > 320 * scale) {
+          pauseUntil = 0;
+        } else {
+          if (kiwi && kiwi.classList.contains('walking')) {
+            kiwi.classList.remove('walking');
+          }
+          stalkerLoopTimer = requestAnimationFrame(step);
+          return;
+        }
+      }
+
       let targetKiwiCenterX = kiwiCenterX;
       let targetKiwiCenterY = kiwiCenterY;
 
-      // 判斷是否應該在滑鼠周圍徘徊 (必須進入階段 3 且已經足夠靠近滑鼠)
-      const canOrbit = (currentStage === 3) && (distToMouse <= safeRadius + 60);
+      const approachRadius = 180 * scale;
+      const inVicinity = distToMouse <= 280 * scale;
 
-      if (canOrbit) {
-        // 階段 3 且已就位：圍繞滑鼠以安全橢圓半徑慢步踱步/徘徊
-        orbitAngle += 0.028;
-        const orbitRadiusX = 130 * scale;
-        const orbitRadiusY = 65 * scale;
-
-        targetKiwiCenterX = mouseX + Math.cos(orbitAngle) * orbitRadiusX;
-        targetKiwiCenterY = mouseY + Math.sin(orbitAngle) * orbitRadiusY;
+      if (currentStage === 3 && inVicinity) {
+        // 階段 3 且已在游標附近：在周遭自然漫步，挑選附近隨機點短走後歇息
+        if (!wanderTarget || Math.hypot(wanderTarget.x - kiwiCenterX, wanderTarget.y - kiwiCenterY) < 20) {
+          if (kiwi && kiwi.classList.contains('walking')) {
+            kiwi.classList.remove('walking');
+          }
+          pauseUntil = now + 1800 + Math.random() * 1200; // 歇息 1.8 ~ 3.0 秒
+          wanderAngle += (Math.PI / 4) + Math.random() * (Math.PI / 3);
+          const rx = (160 + Math.random() * 50) * scale;
+          const ry = (85 + Math.random() * 45) * scale;
+          wanderTarget = {
+            x: mouseX + Math.cos(wanderAngle) * rx,
+            y: mouseY + Math.sin(wanderAngle) * ry
+          };
+          stalkerLoopTimer = requestAnimationFrame(step);
+          return;
+        }
+        targetKiwiCenterX = wanderTarget.x;
+        targetKiwiCenterY = wanderTarget.y;
       } else {
-        // 階段 2 或尚未到達滑鼠周圍：保持 safeRadius 朝滑鼠靠近
-        if (distToMouse > safeRadius) {
+        // 階段 2 或距離較遠：保持 approachRadius 朝游標周遭平緩靠近
+        wanderTarget = null;
+        if (distToMouse > approachRadius + 20) {
           const angle = Math.atan2(dyToMouse, dxToMouse);
-          targetKiwiCenterX = mouseX - Math.cos(angle) * safeRadius;
-          targetKiwiCenterY = mouseY - Math.sin(angle) * safeRadius;
+          targetKiwiCenterX = mouseX - Math.cos(angle) * approachRadius;
+          targetKiwiCenterY = mouseY - Math.sin(angle) * approachRadius;
         } else {
-          // 已在安全距離內
-          targetKiwiCenterX = kiwiCenterX;
-          targetKiwiCenterY = kiwiCenterY;
+          // 已進入靠近範圍：停下歇息
+          if (kiwi && kiwi.classList.contains('walking')) {
+            kiwi.classList.remove('walking');
+          }
+          pauseUntil = now + 1800 + Math.random() * 1000;
+          stalkerLoopTimer = requestAnimationFrame(step);
+          return;
         }
       }
 
@@ -247,17 +329,9 @@ function startPhysicsLoop() {
       let nextX = currentPos.x;
       let nextY = currentPos.y;
 
-      if (distToAim > 2) {
-        // 動態步進速度：依距離動態調節，遠距快步走 (4.2*scale)，近距輕柔踱步 (2.2*scale)
-        let stepSpeed;
-        if (distToAim > 400) {
-          stepSpeed = 4.2 * scale;
-        } else if (distToAim > 120) {
-          stepSpeed = 3.2 * scale;
-        } else {
-          stepSpeed = 2.2 * scale;
-        }
-
+      if (distToAim > 3) {
+        // 移動速度：貼近原本走路的節奏 (遠處靠近 1.8*scale，附近漫步 1.2*scale)，絕不狂奔
+        const stepSpeed = (distToAim > 200 * scale ? 1.8 : 1.2) * scale;
         const step = Math.min(distToAim, stepSpeed);
         nextX = currentPos.x + (moveDx / distToAim) * step;
         nextY = currentPos.y + (moveDy / distToAim) * step;
@@ -266,7 +340,7 @@ function startPhysicsLoop() {
           kiwi.classList.add('walking');
         }
       } else {
-        if (kiwi && currentStage === 2) {
+        if (kiwi && kiwi.classList.contains('walking')) {
           kiwi.classList.remove('walking');
         }
       }
@@ -293,6 +367,9 @@ function startPhysicsLoop() {
 function stopStalking(reason = 'ok') {
   isStalkingActive = false;
   currentStage = 1;
+  wanderTarget = null;
+  pauseUntil = 0;
+  isUserHovering = false;
 
   if (stalkerLoopTimer) {
     cancelAnimationFrame(stalkerLoopTimer);
