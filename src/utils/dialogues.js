@@ -79,7 +79,15 @@ const DIALOGUES = {
     dismissRelief: [
       '太好啦！按掉囉～記得去處理事情喔！(๑>◡<๑)',
       '收到！任務達成～🐥✨'
-    ]
+    ],
+    enabled: (label, timeStr) => {
+      if (label && timeStr) {
+        return `⏰ 鬧鐘「${label}」已啟用！（時間：${timeStr}）`;
+      } else if (timeStr) {
+        return `⏰ 鬧鐘已啟用！（時間：${timeStr}）`;
+      }
+      return '⏰ 鬧鐘已啟用囉！';
+    }
   },
 
   // AI 個性 Prompt 系統模板

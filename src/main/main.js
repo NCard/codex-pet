@@ -634,6 +634,12 @@ app.whenReady().then(() => {
     if (mainWindow) mainWindow.webContents.send('reload-data');
   });
 
+  ipcMain.on('alarm-enabled-notify', (event, alarm) => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('alarm-enabled-notify', alarm);
+    }
+  });
+
   ipcMain.on('pet-state-changed', () => {
     if (todoWin) todoWin.webContents.send('reload-data');
     if (mainWindow) mainWindow.webContents.send('reload-data');

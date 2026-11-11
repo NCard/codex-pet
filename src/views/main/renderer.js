@@ -44,6 +44,7 @@ const { ipcRenderer } = require('electron');
 require('dotenv').config({ path: path.resolve(__dirname, '../../../.env') });
 const { AIProviderFactory } = require('../../services/ai_provider');
 const cryptoUtils = require('../../utils/crypto_utils');
+const { getDialogue } = require('../../utils/dialogues');
 const { spawn } = require('child_process');
 const { Client } = require("@modelcontextprotocol/sdk/client/index.js");
 const { StdioClientTransport } = require("@modelcontextprotocol/sdk/client/stdio.js");
@@ -453,6 +454,31 @@ const { showTempBubble, showAlarmBubble, updateAlarmDialogue, openChat, sendMess
 physicsCtx.openChat = openChat;
 physicsCtx.getIsAlarmActive = getIsAlarmActive;
 physicsCtx.dismissAlarm = dismissAlarm;
+
+ipcRenderer.on('alarm-enabled-notify', (event, alarm) => {
+  if (kiwi) {
+    kiwi.classList.add('jumping');
+    setTimeout(() => { kiwi.classList.remove('jumping'); }, 500);
+  }
+
+  let timeDesc = '';
+  if (alarm && alarm.type === 'date') {
+    timeDesc = `${alarm.date} ${alarm.time}`;
+  } else if (alarm) {
+    if (alarm.days && alarm.days.length === 7) {
+      timeDesc = `每天 ${alarm.time}`;
+    } else if (alarm.days && alarm.days.length > 0) {
+      const dayMap = ['日', '一', '二', '三', '四', '五', '六'];
+      timeDesc = `每週 ${alarm.days.map(d => dayMap[d]).join(', ')} ${alarm.time}`;
+    } else {
+      timeDesc = alarm.time || '';
+    }
+  }
+
+  const cleanMsg = (alarm && alarm.message ? alarm.message : '').replace(/^📋 待辦提醒：/, '');
+  const phrase = getDialogue('alarm', 'enabled', cleanMsg, timeDesc);
+  showTempBubble(phrase, 4000);
+});
 
 const alarmStalker = require('./modules/alarm_stalker');
 alarmStalker.init({

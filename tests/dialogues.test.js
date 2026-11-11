@@ -57,6 +57,15 @@ test('Dialogues Management Module Unit Tests', async (t) => {
 
     const jump = getDialogue('alarm', 'jump');
     assert.ok(DIALOGUES.alarm.jump.includes(jump));
+
+    const enabledFull = getDialogue('alarm', 'enabled', '喝水', '每天 10:00');
+    assert.ok(enabledFull.includes('喝水') && enabledFull.includes('每天 10:00') && enabledFull.includes('已啟用'));
+
+    const enabledTimeOnly = getDialogue('alarm', 'enabled', '', '10:00');
+    assert.ok(enabledTimeOnly.includes('10:00') && enabledTimeOnly.includes('已啟用'));
+
+    const enabledDefault = getDialogue('alarm', 'enabled');
+    assert.ok(enabledDefault.includes('已啟用'));
   });
 
   await t.test('getDialogue should handle unknown category or key gracefully', () => {
