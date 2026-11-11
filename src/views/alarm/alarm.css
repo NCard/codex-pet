@@ -420,44 +420,66 @@ input[type="date"]:focus, input[type="text"]:focus, input[type="number"]:focus, 
   background: #ffffff;
   border: 1.5px solid #c5e1a5;
   border-radius: 10px;
-  padding: 3px 6px;
-  gap: 4px;
+  padding: 3px 8px;
+  gap: 5px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   transition: var(--theme-transition);
+  cursor: text;
+}
+
+.time-combobox-field:hover {
+  border-color: #aed581;
 }
 
 .time-combobox-field:focus-within {
   border-color: var(--theme-primary);
-  box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+  box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.15);
 }
 
 .time-combobox-icon {
   font-size: 13px;
   color: var(--theme-primary);
   user-select: none;
+  display: inline-flex;
+  align-items: center;
 }
 
+/* 消除通用 input[type="text"] 造成的雙層框線與內層圓角背景 */
+.time-combobox-field input[type="text"].inline-time-input,
+input[type="text"].inline-time-input,
 .inline-time-input {
-  width: 68px;
+  width: 58px;
   text-align: center;
-  padding: 2px 0;
-  border: none;
-  outline: none;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: none !important;
+  border-radius: 0 !important;
+  outline: none !important;
+  box-shadow: none !important;
   font-size: 14px;
   font-weight: bold;
   font-family: inherit;
   letter-spacing: 0.5px;
-  background: transparent;
+  background: transparent !important;
   color: var(--theme-text-body);
+}
+
+.time-combobox-field input[type="text"].inline-time-input:focus,
+input[type="text"].inline-time-input:focus {
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+  background: transparent !important;
 }
 
 .btn-time-dropdown {
   background: none;
   border: none;
-  color: #78909c;
+  color: #7cb342;
   cursor: pointer;
   padding: 2px 4px;
-  font-size: 11px;
+  font-size: 10px;
+  line-height: 1;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -468,8 +490,9 @@ input[type="date"]:focus, input[type="text"]:focus, input[type="number"]:focus, 
 
 .btn-time-dropdown:hover,
 .btn-time-dropdown.active {
-  background: rgba(76, 175, 80, 0.12);
-  color: var(--theme-primary);
+  background: rgba(124, 179, 66, 0.15);
+  color: #558b2f;
+  transform: scale(1.05);
 }
 
 /* 浮動時間選擇選單 Popover */

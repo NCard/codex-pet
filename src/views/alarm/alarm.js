@@ -229,8 +229,17 @@ function createAlarmInlineForm(initialData, isDraft, onSave, onCancel) {
   minSelect.value = initM;
 
   const comboboxWrapper = formCard.querySelector('.time-combobox-wrapper');
+  const comboboxField = formCard.querySelector('.time-combobox-field');
   const btnToggleDropdown = formCard.querySelector('.btn-time-dropdown');
   const timePopover = formCard.querySelector('.time-dropdown-popover');
+
+  if (comboboxField) {
+    comboboxField.addEventListener('click', (e) => {
+      if (e.target !== btnToggleDropdown && !btnToggleDropdown.contains(e.target)) {
+        timeInput.focus();
+      }
+    });
+  }
 
   function togglePopover(show) {
     const shouldShow = (typeof show === 'boolean') ? show : (timePopover.style.display === 'none');
