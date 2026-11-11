@@ -112,6 +112,236 @@ function saveAlarms() {
   }
 }
 
+// iOS 鬧鐘風格 3D 滾輪選擇器元件
+function setupIosWheelPicker(formCard, hourSelect, minSelect) {
+  const ITEM_HEIGHT = 36;
+  const VISIBLE_COUNT = 5;
+  const CONTAINER_HEIGHT = ITEM_HEIGHT * VISIBLE_COUNT; // 180
+  const CENTER_OFFSET = (CONTAINER_HEIGHT - ITEM_HEIGHT) / 2; // 72
+  const CYCLES = 5;
+  const MID_CYCLE = 2;
+
+  const hourScroll = formCard.querySelector('.wheel-hour-scroll');
+  const minScroll = formCard.querySelector('.wheel-min-scroll');
+
+  if (!hourScroll || !minScroll) return null;
+
+  function createColumnWheel(scrollEl, totalVals, selectEl) {
+    const cycleHeight = totalVals * ITEM_HEIGHT;
+    const minThreshold = 1 * cycleHeight;
+    const maxThreshold = 3 * cycleHeight;
+
+    const items = [];
+    scrollEl.innerHTML = '';
+
+    for (let c = 0; c < CYCLES; c++) {
+      for (let v = 0; v < totalVals; v++) {
+        const item = document.createElement('div');
+        item.className = 'ios-wheel-item';
+        item.dataset.val = v;
+        item.dataset.index = items.length;
+        item.textContent = v.toString().padStart(2, '0');
+        scrollEl.appendChild(item);
+        items.push(item);
+
+        item.addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (item.classList.contains('is-disabled')) return;
+          const idx = parseInt(item.dataset.index, 10);
+          scrollToIndex(idx, true);
+          const chosenVal = (idx % totalVals + totalVals) % totalVals;
+          const strVal = chosenVal.toString().padStart(2, '0');
+          if (selectEl.value !== strVal) {
+            isInternalChange = true;
+            selectEl.value = strVal;
+            selectEl.dispatchEvent(new Event('change'));
+            isInternalChange = false;
+          }
+        });
+      }
+    }
+
+    let isResetting = false;
+    let isInternalChange = false;
+    let scrollDebounceTimer = null;
+    let lastCenterIndex = -1;
+
+    function scrollToIndex(idx, smooth = true) {
+      const targetTop = idx * ITEM_HEIGHT - CENTER_OFFSET;
+      if (typeof scrollEl.scrollTo === 'function') {
+        scrollEl.scrollTo({ top: targetTop, behavior: smooth ? 'smooth' : 'auto' });
+      } else {
+        scrollEl.scrollTop = targetTop;
+      }
+      updateVisuals();
+    }
+
+    function scrollToVal(val, smooth = true) {
+      const idx = MID_CYCLE * totalVals + val;
+      scrollToIndex(idx, smooth);
+    }
+
+    function updateVisuals() {
+      const currentScroll = scrollEl.scrollTop;
+      const centerIndex = Math.round((currentScroll + CENTER_OFFSET) / ITEM_HEIGHT);
+
+      if (centerIndex === lastCenterIndex) return;
+
+      if (lastCenterIndex >= 0) {
+        for (let i = lastCenterIndex - 3; i <= lastCenterIndex + 3; i++) {
+          if (items[i]) {
+            items[i].classList.remove('is-selected', 'is-near-1', 'is-near-2');
+          }
+        }
+      }
+
+      lastCenterIndex = centerIndex;
+
+      for (let offset = -2; offset <= 2; offset++) {
+        const targetIdx = centerIndex + offset;
+        const item = items[targetIdx];
+        if (item) {
+          if (offset === 0) {
+            item.classList.add('is-selected');
+          } else if (Math.abs(offset) === 1) {
+            item.classList.add('is-near-1');
+          } else if (Math.abs(offset) === 2) {
+            item.classList.add('is-near-2');
+          }
+        }
+      }
+    }
+
+    function onScrollStop() {
+      const currentScroll = scrollEl.scrollTop;
+      const centerIndex = Math.round((currentScroll + CENTER_OFFSET) / ITEM_HEIGHT);
+      let val = (centerIndex % totalVals + totalVals) % totalVals;
+
+      const item = items[centerIndex];
+      if (item && item.classList.contains('is-disabled')) {
+        let forwardIdx = centerIndex;
+        while (items[forwardIdx] && items[forwardIdx].classList.contains('is-disabled')) {
+          forwardIdx++;
+        }
+        if (items[forwardIdx]) {
+          scrollToIndex(forwardIdx, true);
+          val = (forwardIdx % totalVals + totalVals) % totalVals;
+        }
+      }
+
+      const strVal = val.toString().padStart(2, '0');
+      if (selectEl.value !== strVal) {
+        isInternalChange = true;
+        selectEl.value = strVal;
+        selectEl.dispatchEvent(new Event('change'));
+        isInternalChange = false;
+      }
+    }
+
+    scrollEl.addEventListener('scroll', () => {
+      if (isResetting) return;
+
+      const currentScroll = scrollEl.scrollTop;
+      if (currentScroll < minThreshold) {
+        isResetting = true;
+        const offset = currentScroll + cycleHeight;
+        scrollEl.scrollTop = offset;
+        if (typeof requestAnimationFrame === 'function') {
+          requestAnimationFrame(() => { isResetting = false; });
+        } else {
+          isResetting = false;
+        }
+      } else if (currentScroll > maxThreshold) {
+        isResetting = true;
+        const offset = currentScroll - cycleHeight;
+        scrollEl.scrollTop = offset;
+        if (typeof requestAnimationFrame === 'function') {
+          requestAnimationFrame(() => { isResetting = false; });
+        } else {
+          isResetting = false;
+        }
+      }
+
+      updateVisuals();
+
+      clearTimeout(scrollDebounceTimer);
+      scrollDebounceTimer = setTimeout(onScrollStop, 90);
+    });
+
+    // 支援像手機一樣的滑鼠拖拽上下滑動
+    let isDragging = false;
+    let startY = 0;
+    let startScroll = 0;
+
+    const onMouseDown = (e) => {
+      isDragging = true;
+      startY = e.clientY;
+      startScroll = scrollEl.scrollTop;
+      scrollEl.style.scrollSnapType = 'none';
+    };
+
+    const onMouseMove = (e) => {
+      if (!isDragging) return;
+      const deltaY = e.clientY - startY;
+      scrollEl.scrollTop = startScroll - deltaY;
+    };
+
+    const onMouseUp = () => {
+      if (!isDragging) return;
+      isDragging = false;
+      scrollEl.style.scrollSnapType = 'y mandatory';
+      onScrollStop();
+    };
+
+    scrollEl.addEventListener('mousedown', onMouseDown);
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+
+    selectEl.addEventListener('change', () => {
+      if (isInternalChange) return;
+      const val = parseInt(selectEl.value, 10);
+      if (!isNaN(val)) {
+        scrollToVal(val, true);
+      }
+    });
+
+    return {
+      scrollToVal,
+      updateDisabled(disabledFn) {
+        items.forEach(item => {
+          const val = parseInt(item.dataset.val, 10);
+          item.classList.toggle('is-disabled', disabledFn(val));
+        });
+      },
+      destroy() {
+        scrollEl.removeEventListener('mousedown', onMouseDown);
+        document.removeEventListener('mousemove', onMouseMove);
+        document.removeEventListener('mouseup', onMouseUp);
+      }
+    };
+  }
+
+  const hourWheel = createColumnWheel(hourScroll, 24, hourSelect);
+  const minWheel = createColumnWheel(minScroll, 60, minSelect);
+
+  return {
+    syncToCurrent(smooth = false) {
+      const h = parseInt(hourSelect.value, 10) || 0;
+      const m = parseInt(minSelect.value, 10) || 0;
+      hourWheel.scrollToVal(h, smooth);
+      minWheel.scrollToVal(m, smooth);
+    },
+    updateRestrictions(isToday, curHInt, curMInt, selectedHInt) {
+      hourWheel.updateDisabled(h => isToday && h < curHInt);
+      minWheel.updateDisabled(m => isToday && selectedHInt === curHInt && m < curMInt);
+    },
+    destroy() {
+      hourWheel.destroy();
+      minWheel.destroy();
+    }
+  };
+}
+
 function createAlarmInlineForm(initialData, isDraft, onSave, onCancel) {
   const formCard = document.createElement('div');
   formCard.className = 'inline-form-card';
@@ -170,17 +400,37 @@ function createAlarmInlineForm(initialData, isDraft, onSave, onCancel) {
           </div>
           
           <div class="time-dropdown-popover" style="display: none;">
-            <div class="time-picker-columns">
-              <div class="time-picker-col">
-                <span class="time-col-label">時</span>
-                <select class="inline-hour-select" size="6"></select>
+            <!-- 保持無障礙與自動化測試相容之原生 select (隱藏於視覺但保留於 DOM) -->
+            <select class="inline-hour-select" style="position: absolute; opacity: 0; pointer-events: none; width: 0; height: 0;"></select>
+            <select class="inline-minute-select" style="position: absolute; opacity: 0; pointer-events: none; width: 0; height: 0;"></select>
+
+            <!-- iOS 鬧鐘風格 3D 滾輪選擇器 -->
+            <div class="ios-time-picker-wrapper">
+              <div class="ios-picker-header">
+                <span class="ios-picker-label">時</span>
+                <span class="ios-picker-label">分</span>
               </div>
-              <span class="time-colon">:</span>
-              <div class="time-picker-col">
-                <span class="time-col-label">分</span>
-                <select class="inline-minute-select" size="6"></select>
+              <div class="ios-wheel-container">
+                <!-- 置中選擇鏡頭高亮 -->
+                <div class="ios-wheel-lens"></div>
+                <!-- 3D 圓柱漸變遮罩 -->
+                <div class="ios-wheel-mask top-mask"></div>
+                <div class="ios-wheel-mask bottom-mask"></div>
+
+                <!-- 小時滾輪 (無限循環) -->
+                <div class="ios-wheel-col" data-unit="hour">
+                  <div class="ios-wheel-scroll wheel-hour-scroll"></div>
+                </div>
+
+                <div class="ios-wheel-colon">:</div>
+
+                <!-- 分鐘滾輪 (無限循環) -->
+                <div class="ios-wheel-col" data-unit="minute">
+                  <div class="ios-wheel-scroll wheel-min-scroll"></div>
+                </div>
               </div>
             </div>
+
             <div class="time-picker-quick">
               <button type="button" class="btn-quick-time" data-offset="0">現在</button>
               <button type="button" class="btn-quick-time" data-offset="15">+15分</button>
@@ -228,6 +478,8 @@ function createAlarmInlineForm(initialData, isDraft, onSave, onCancel) {
   hourSelect.value = initH;
   minSelect.value = initM;
 
+  const timeWheelPicker = setupIosWheelPicker(formCard, hourSelect, minSelect);
+
   const comboboxWrapper = formCard.querySelector('.time-combobox-wrapper');
   const comboboxField = formCard.querySelector('.time-combobox-field');
   const btnToggleDropdown = formCard.querySelector('.btn-time-dropdown');
@@ -248,7 +500,7 @@ function createAlarmInlineForm(initialData, isDraft, onSave, onCancel) {
     if (shouldShow) {
       if (typeof comboboxWrapper.getBoundingClientRect === 'function') {
         const rect = comboboxWrapper.getBoundingClientRect();
-        const popoverHeight = 190;
+        const popoverHeight = 260;
         const spaceBelow = window.innerHeight - rect.bottom;
         if (spaceBelow < popoverHeight && rect.top > popoverHeight) {
           timePopover.style.top = 'auto';
@@ -259,6 +511,12 @@ function createAlarmInlineForm(initialData, isDraft, onSave, onCancel) {
         }
       }
       updateTimeRestrictions(false);
+      if (timeWheelPicker) {
+        timeWheelPicker.syncToCurrent(false);
+        setTimeout(() => {
+          if (timeWheelPicker) timeWheelPicker.syncToCurrent(false);
+        }, 0);
+      }
     }
   }
 
@@ -292,6 +550,8 @@ function createAlarmInlineForm(initialData, isDraft, onSave, onCancel) {
       const mStr = targetDate.getMinutes().toString().padStart(2, '0');
       hourSelect.value = hStr;
       minSelect.value = mStr;
+      hourSelect.dispatchEvent(new Event('change'));
+      minSelect.dispatchEvent(new Event('change'));
       timeInput.value = `${hStr}:${mStr}`;
       updateTimeRestrictions(false);
       togglePopover(false);
@@ -333,6 +593,10 @@ function createAlarmInlineForm(initialData, isDraft, onSave, onCancel) {
 
     if (!skipTimeInputSync) {
       timeInput.value = `${hourSelect.value}:${minSelect.value}`;
+    }
+
+    if (timeWheelPicker) {
+      timeWheelPicker.updateRestrictions(isToday, curHInt, curMInt, selectedHInt);
     }
   }
 
@@ -389,6 +653,9 @@ function createAlarmInlineForm(initialData, isDraft, onSave, onCancel) {
       hourSelect.value = parsed.h;
       minSelect.value = parsed.m;
       updateTimeRestrictions(false);
+      if (timeWheelPicker) {
+        timeWheelPicker.syncToCurrent(true);
+      }
     } else {
       timeInput.value = `${hourSelect.value}:${minSelect.value}`;
     }
@@ -451,6 +718,9 @@ function createAlarmInlineForm(initialData, isDraft, onSave, onCancel) {
     }
 
     document.removeEventListener('click', onDocClick);
+    if (timeWheelPicker) {
+      timeWheelPicker.destroy();
+    }
     onSave({
       type: selectedType,
       time: time,
@@ -477,6 +747,9 @@ function createAlarmInlineForm(initialData, isDraft, onSave, onCancel) {
 
   formCard.querySelector('.btn-cancel').onclick = () => {
     document.removeEventListener('click', onDocClick);
+    if (timeWheelPicker) {
+      timeWheelPicker.destroy();
+    }
     onCancel();
   };
 

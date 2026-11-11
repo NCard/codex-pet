@@ -201,4 +201,48 @@ describe('Alarm View UI Enhancements Unit Tests', () => {
       })
     );
   });
+
+  test('iOS Alarm Wheel Picker: renders 5-cycle infinite loop, central selection lens, and bidirectional sync', () => {
+    require('../../src/views/alarm/alarm');
+
+    const btnAdd = document.getElementById('btn-open-add');
+    btnAdd.click();
+
+    const btnDropdown = document.querySelector('.btn-time-dropdown');
+    btnDropdown.click();
+
+    const hourScroll = document.querySelector('.wheel-hour-scroll');
+    const minScroll = document.querySelector('.wheel-min-scroll');
+    const lens = document.querySelector('.ios-wheel-lens');
+
+    expect(hourScroll).not.toBeNull();
+    expect(minScroll).not.toBeNull();
+    expect(lens).not.toBeNull();
+
+    const hourItems = hourScroll.querySelectorAll('.ios-wheel-item');
+    const minItems = minScroll.querySelectorAll('.wheel-min-scroll .ios-wheel-item');
+
+    // 5 cycles: 24 * 5 = 120 hour items, 60 * 5 = 300 minute items
+    expect(hourItems.length).toBe(120);
+    expect(minItems.length).toBe(300);
+
+    // Clicking an hour item in the list smooth scrolls and snaps that hour to center
+    const targetHourItem = hourItems[48 + 18]; // Hour 18 in Middle Cycle 2
+    expect(targetHourItem.dataset.val).toBe('18');
+    targetHourItem.click();
+
+    const hourSelect = document.querySelector('.inline-hour-select');
+    const timeInput = document.querySelector('.inline-time-input');
+    expect(hourSelect.value).toBe('18');
+    expect(timeInput.value.startsWith('18:')).toBe(true);
+
+    // Clicking a minute item in the list updates minute
+    const targetMinItem = minItems[120 + 45]; // Minute 45 in Middle Cycle 2
+    expect(targetMinItem.dataset.val).toBe('45');
+    targetMinItem.click();
+
+    const minSelect = document.querySelector('.inline-minute-select');
+    expect(minSelect.value).toBe('45');
+    expect(timeInput.value).toBe('18:45');
+  });
 });
