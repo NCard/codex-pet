@@ -413,8 +413,10 @@ app.whenReady().then(() => {
     }
     alarmWin = new BrowserWindow({
       icon: path.join(__dirname, '../../assets/images/kiwi.png'),
-      width: 500,
-      height: 650,
+      width: 540,
+      height: 720,
+      minWidth: 480,
+      minHeight: 650,
       title: 'Wiki Wiki 鬧鐘排程',
       show: false,
       webPreferences: {

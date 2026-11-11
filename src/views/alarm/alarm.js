@@ -237,6 +237,18 @@ function createAlarmInlineForm(initialData, isDraft, onSave, onCancel) {
     timePopover.style.display = shouldShow ? 'flex' : 'none';
     btnToggleDropdown.classList.toggle('active', shouldShow);
     if (shouldShow) {
+      if (typeof comboboxWrapper.getBoundingClientRect === 'function') {
+        const rect = comboboxWrapper.getBoundingClientRect();
+        const popoverHeight = 190;
+        const spaceBelow = window.innerHeight - rect.bottom;
+        if (spaceBelow < popoverHeight && rect.top > popoverHeight) {
+          timePopover.style.top = 'auto';
+          timePopover.style.bottom = 'calc(100% + 6px)';
+        } else {
+          timePopover.style.top = 'calc(100% + 6px)';
+          timePopover.style.bottom = 'auto';
+        }
+      }
       updateTimeRestrictions(false);
     }
   }

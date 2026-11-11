@@ -3,8 +3,24 @@ body {
   color: var(--theme-text-body);
   margin: 0;
   padding: 16px;
+  padding-bottom: 75px;
   box-sizing: border-box;
   user-select: none;
+  overflow-y: auto;
+  min-height: 100vh;
+}
+
+body::-webkit-scrollbar {
+  width: 6px;
+}
+
+body::-webkit-scrollbar-thumb {
+  background: #c5e1a5;
+  border-radius: 6px;
+}
+
+body::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 /* 頂部右上角新增按鈕 */
@@ -422,7 +438,7 @@ input[type="date"]:focus, input[type="text"]:focus, input[type="number"]:focus, 
 }
 
 .inline-time-input {
-  width: 52px;
+  width: 68px;
   text-align: center;
   padding: 2px 0;
   border: none;
@@ -430,6 +446,7 @@ input[type="date"]:focus, input[type="text"]:focus, input[type="number"]:focus, 
   font-size: 14px;
   font-weight: bold;
   font-family: inherit;
+  letter-spacing: 0.5px;
   background: transparent;
   color: var(--theme-text-body);
 }
@@ -460,7 +477,7 @@ input[type="date"]:focus, input[type="text"]:focus, input[type="number"]:focus, 
   position: absolute;
   top: calc(100% + 6px);
   left: 0;
-  z-index: 100;
+  z-index: 999;
   background: #ffffff;
   border: 1.5px solid #c5e1a5;
   border-radius: 12px;
@@ -469,7 +486,7 @@ input[type="date"]:focus, input[type="text"]:focus, input[type="number"]:focus, 
   display: flex;
   flex-direction: column;
   gap: 8px;
-  width: 175px;
+  width: 180px;
   box-sizing: border-box;
   animation: popoverFadeIn 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
