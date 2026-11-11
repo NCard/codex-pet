@@ -4,7 +4,7 @@ let snoozedAlarms = [];
 let triggeredAlarms = {};
 
 function init({
-  alarmsPath, laser, resetIdle, showAlarmBubble, kiwi, ipcRenderer, alarmStalker
+  alarmsPath, laser, resetIdle, showAlarmBubble, kiwi, ipcRenderer, alarmStalker, triggerWalk
 }) {
   function triggerAlarm(alarm, alarmKey) {
     if (!triggeredAlarms[alarmKey]) {
@@ -24,6 +24,8 @@ function init({
           // onDismiss callback
           if (alarmStalker && typeof alarmStalker.stopStalking === 'function') {
             alarmStalker.stopStalking(dismissReason);
+          } else if (dismissReason === 'ok' && typeof triggerWalk === 'function') {
+            setTimeout(() => { triggerWalk(); }, 500);
           }
         }
       );

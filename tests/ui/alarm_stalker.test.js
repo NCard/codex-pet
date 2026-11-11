@@ -125,6 +125,30 @@ describe('Alarm Stalker 3-Stage State Machine Unit Tests', () => {
     expect(kiwiAccessory.innerText).toBe('❤️');
   });
 
+  test('stopStalking with ok triggers walking after relief jump', () => {
+    const mockTriggerWalk = jest.fn();
+    stalkerModule.init({
+      kiwi,
+      kiwiAccessory,
+      ipcRenderer,
+      getRealWindowPos: () => ({ x: 100, y: 100 }),
+      setWindowPos: jest.fn(),
+      getPetState: () => ({ settings: { enableAlarmSound: true } }),
+      getCurrentAction: () => 'idle',
+      setCurrentAction: jest.fn(),
+      getResolutionScale: () => 1,
+      getIsWorking: () => false,
+      updateAlarmDialogue: jest.fn(),
+      triggerWalk: mockTriggerWalk
+    });
+
+    stalkerModule.stopStalking('ok');
+    expect(mockTriggerWalk).not.toHaveBeenCalled();
+
+    jest.advanceTimersByTime(500);
+    expect(mockTriggerWalk).toHaveBeenCalled();
+  });
+
   test('clampScreenBounds bounds target coordinates within display and workArea', () => {
     const clamped = stalkerModule.clampScreenBounds(99999, -5000);
     expect(clamped.x).toBeLessThan(99999);

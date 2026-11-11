@@ -480,6 +480,13 @@ function stopStalking(reason = 'ok') {
       }, 1800);
     }
     playReliefChirp(0.2);
+
+    // 需求：按下「我知道了」後，立即觸發走動
+    if (reason === 'ok' && typeof deps.triggerWalk === 'function') {
+      setTimeout(() => {
+        deps.triggerWalk();
+      }, 500);
+    }
   } else {
     if (kiwiAccessory) {
       const isWorking = typeof getIsWorking === 'function' && getIsWorking();
