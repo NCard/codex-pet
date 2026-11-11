@@ -149,8 +149,8 @@ describe('Alarm Stalker 3-Stage State Machine Unit Tests', () => {
     expect(mockTriggerWalk).toHaveBeenCalled();
   });
 
-  test('stopStalking with snooze shows hourglass ⏳, shows dialogue, and calls walkToCorner', () => {
-    const mockWalkToCorner = jest.fn();
+  test('stopStalking with snooze shows hourglass ⏳, shows dialogue, and triggers walking', () => {
+    const mockTriggerWalk = jest.fn();
     const mockShowTempBubble = jest.fn();
 
     stalkerModule.init({
@@ -165,7 +165,7 @@ describe('Alarm Stalker 3-Stage State Machine Unit Tests', () => {
       getResolutionScale: () => 1,
       getIsWorking: () => false,
       updateAlarmDialogue: jest.fn(),
-      walkToCorner: mockWalkToCorner,
+      triggerWalk: mockTriggerWalk,
       showTempBubble: mockShowTempBubble
     });
 
@@ -174,7 +174,10 @@ describe('Alarm Stalker 3-Stage State Machine Unit Tests', () => {
     expect(stalkerModule.getIsStalkingActive()).toBe(false);
     expect(kiwiAccessory.innerText).toBe('⏳');
     expect(mockShowTempBubble).toHaveBeenCalled();
-    expect(mockWalkToCorner).toHaveBeenCalled();
+    expect(mockTriggerWalk).not.toHaveBeenCalled();
+
+    jest.advanceTimersByTime(500);
+    expect(mockTriggerWalk).toHaveBeenCalled();
   });
 
   test('clampScreenBounds bounds target coordinates within display and workArea', () => {
