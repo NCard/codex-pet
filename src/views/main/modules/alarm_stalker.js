@@ -463,8 +463,8 @@ function stopStalking(reason = 'ok') {
     setCurrentAction('idle');
   }
 
-  // 解除回饋：跳躍與愛心
-  if (reason === 'ok' || reason === 'snooze') {
+  // 解除回饋：跳躍與愛心 (我知道了) vs 退到角落待命 (稍後提醒)
+  if (reason === 'ok') {
     if (kiwi) {
       kiwi.classList.add('jumping');
       setTimeout(() => { if (kiwi) kiwi.classList.remove('jumping'); }, 600);
@@ -482,10 +482,37 @@ function stopStalking(reason = 'ok') {
     playReliefChirp(0.2);
 
     // 需求：按下「我知道了」後，立即觸發走動
-    if (reason === 'ok' && typeof deps.triggerWalk === 'function') {
+    if (typeof deps.triggerWalk === 'function') {
       setTimeout(() => {
         deps.triggerWalk();
       }, 500);
+    }
+  } else if (reason === 'snooze') {
+    // 需求：點擊「稍後提醒」後，頭頂換成沙漏，向使用者告別並退到角落待命避免干擾
+    if (kiwiAccessory) {
+      kiwiAccessory.innerText = '⏳';
+      kiwiAccessory.style.display = 'block';
+      setTimeout(() => {
+        const isWorking = typeof getIsWorking === 'function' && getIsWorking();
+        if (!isWorking && kiwiAccessory) {
+          kiwiAccessory.style.display = 'none';
+        }
+      }, 3500);
+    }
+    playReliefChirp(0.15);
+
+    const { showTempBubble } = deps;
+    if (typeof showTempBubble === 'function') {
+      let phrase = '好～那我去角落待命，等一下再叫你喔！⏳';
+      try {
+        const { getDialogue } = require('../../../utils/dialogues');
+        phrase = getDialogue('alarm', 'snooze');
+      } catch (_) {}
+      showTempBubble(phrase, 3000);
+    }
+
+    if (typeof deps.walkToCorner === 'function') {
+      deps.walkToCorner();
     }
   } else {
     if (kiwiAccessory) {

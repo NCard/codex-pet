@@ -493,7 +493,10 @@ alarmStalker.init({
   getResolutionScale,
   getIsWorking: () => isWorking,
   updateAlarmDialogue,
-  triggerWalk: (opts) => wandering.triggerWalk(opts)
+  showTempBubble,
+  triggerWalk: (opts) => wandering.triggerWalk(opts),
+  walkToCorner: (opts) => wandering.walkToCorner(opts),
+  setSnoozing: (v) => wandering.setSnoozing(v)
 });
 
 // 啟動智慧剪貼簿主動感知模組
@@ -549,7 +552,12 @@ interaction.init({
 
 
 const alarmModule = require('./modules/alarm');
-alarmModule.init({ alarmsPath, laser, resetIdle, showAlarmBubble, kiwi, ipcRenderer, alarmStalker, triggerWalk: (opts) => wandering.triggerWalk(opts) });
+alarmModule.init({
+  alarmsPath, laser, resetIdle, showAlarmBubble, kiwi, ipcRenderer, alarmStalker,
+  triggerWalk: (opts) => wandering.triggerWalk(opts),
+  walkToCorner: (opts) => wandering.walkToCorner(opts),
+  setSnoozing: (v) => wandering.setSnoozing(v)
+});
 
 // 所有模組初始化完成，通知 main.js 關閉 Splash 並顯示主視窗
 ipcRenderer.send('app-ready');

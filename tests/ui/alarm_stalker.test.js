@@ -149,6 +149,34 @@ describe('Alarm Stalker 3-Stage State Machine Unit Tests', () => {
     expect(mockTriggerWalk).toHaveBeenCalled();
   });
 
+  test('stopStalking with snooze shows hourglass ⏳, shows dialogue, and calls walkToCorner', () => {
+    const mockWalkToCorner = jest.fn();
+    const mockShowTempBubble = jest.fn();
+
+    stalkerModule.init({
+      kiwi,
+      kiwiAccessory,
+      ipcRenderer,
+      getRealWindowPos: () => ({ x: 500, y: 500 }),
+      setWindowPos: jest.fn(),
+      getPetState: () => ({ settings: { enableAlarmSound: true } }),
+      getCurrentAction: () => 'idle',
+      setCurrentAction: jest.fn(),
+      getResolutionScale: () => 1,
+      getIsWorking: () => false,
+      updateAlarmDialogue: jest.fn(),
+      walkToCorner: mockWalkToCorner,
+      showTempBubble: mockShowTempBubble
+    });
+
+    stalkerModule.stopStalking('snooze');
+
+    expect(stalkerModule.getIsStalkingActive()).toBe(false);
+    expect(kiwiAccessory.innerText).toBe('⏳');
+    expect(mockShowTempBubble).toHaveBeenCalled();
+    expect(mockWalkToCorner).toHaveBeenCalled();
+  });
+
   test('clampScreenBounds bounds target coordinates within display and workArea', () => {
     const clamped = stalkerModule.clampScreenBounds(99999, -5000);
     expect(clamped.x).toBeLessThan(99999);

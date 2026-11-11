@@ -4,7 +4,7 @@ let snoozedAlarms = [];
 let triggeredAlarms = {};
 
 function init({
-  alarmsPath, laser, resetIdle, showAlarmBubble, kiwi, ipcRenderer, alarmStalker, triggerWalk
+  alarmsPath, laser, resetIdle, showAlarmBubble, kiwi, ipcRenderer, alarmStalker, triggerWalk, walkToCorner, setSnoozing
 }) {
   function triggerAlarm(alarm, alarmKey) {
     if (!triggeredAlarms[alarmKey]) {
@@ -26,6 +26,8 @@ function init({
             alarmStalker.stopStalking(dismissReason);
           } else if (dismissReason === 'ok' && typeof triggerWalk === 'function') {
             setTimeout(() => { triggerWalk(); }, 500);
+          } else if (dismissReason === 'snooze' && typeof walkToCorner === 'function') {
+            walkToCorner();
           }
         }
       );
@@ -47,6 +49,9 @@ function init({
       const sAlarm = snoozedAlarms[i];
       if (nowMs >= sAlarm.triggerTime) {
         snoozedAlarms.splice(i, 1);
+        if (typeof setSnoozing === 'function') {
+          setSnoozing(false);
+        }
         triggerAlarm(sAlarm, sAlarm.id + '-snooze-' + nowMs);
       }
     }

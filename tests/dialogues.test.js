@@ -58,6 +58,9 @@ test('Dialogues Management Module Unit Tests', async (t) => {
     const jump = getDialogue('alarm', 'jump');
     assert.ok(DIALOGUES.alarm.jump.includes(jump));
 
+    const snooze = getDialogue('alarm', 'snooze');
+    assert.ok(DIALOGUES.alarm.snooze.includes(snooze));
+
     const enabledFull = getDialogue('alarm', 'enabled', '喝水', '每天 10:00');
     assert.ok(enabledFull.includes('喝水') && enabledFull.includes('每天 10:00') && enabledFull.includes('已啟用'));
 
