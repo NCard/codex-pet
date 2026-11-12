@@ -5,7 +5,6 @@ const contentEl = document.getElementById('inspector-content');
 const metaTimeEl = document.getElementById('meta-time');
 const metaCharsEl = document.getElementById('meta-chars');
 const copyAllBtn = document.getElementById('btn-copy-all');
-const closeBtn = document.getElementById('btn-close');
 
 const reasoningContainer = document.getElementById('inspector-reasoning');
 const reasoningLevelBadge = document.getElementById('reasoning-level-badge');
@@ -182,13 +181,6 @@ if (copyAllBtn) {
       copyAllBtn.style.background = '#0284c7';
       copyAllBtn.style.borderColor = '#0284c7';
     }, 1500);
-  });
-}
-
-// 關閉視窗
-if (closeBtn) {
-  closeBtn.addEventListener('click', () => {
-    window.close();
   });
 }
 
