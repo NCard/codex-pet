@@ -15,6 +15,7 @@ const defaultSettings = {
   animSpeed: 1.0,
   apiKey: '',
   aiModel: 'gemini-3.5-flash-lite',
+  thinkingLevel: 'medium',
   aiPersonality: 'default',
   aiCustomPrompt: '',
   contextTimeout: 5,
@@ -54,6 +55,7 @@ const els = {
   animSpeed: document.getElementById('anim-speed'),
   apiKey: document.getElementById('setting-apiKey'),
   aiModel: document.getElementById('setting-aiModel'),
+  thinkingLevel: document.getElementById('setting-thinkingLevel'),
   aiPersonality: document.getElementById('ai-personality'),
   aiCustomPrompt: document.getElementById('custom-personality-input'),
   contextTimeout: document.getElementById('setting-contextTimeout'),
@@ -97,6 +99,7 @@ function initUI() {
   els.animSpeed.value = s.animSpeed ?? defaultSettings.animSpeed;
   els.apiKey.value = s.apiKey || process.env.GEMINI_API_KEY || '';
   els.aiModel.value = s.aiModel ?? defaultSettings.aiModel;
+  if (els.thinkingLevel) els.thinkingLevel.value = s.thinkingLevel ?? defaultSettings.thinkingLevel;
   els.aiPersonality.value = s.aiPersonality ?? defaultSettings.aiPersonality;
   els.aiCustomPrompt.value = s.aiCustomPrompt ?? defaultSettings.aiCustomPrompt;
   els.contextTimeout.value = s.contextTimeout ?? defaultSettings.contextTimeout;
@@ -293,6 +296,7 @@ function getFormValues() {
     animSpeed: parseFloat(els.animSpeed.value),
     apiKey: els.apiKey.value.trim(),
     aiModel: els.aiModel.value,
+    thinkingLevel: els.thinkingLevel ? els.thinkingLevel.value : 'medium',
     aiPersonality: els.aiPersonality.value,
     aiCustomPrompt: els.aiCustomPrompt.value.trim(),
     contextTimeout: parseInt(els.contextTimeout.value, 10),

@@ -37,6 +37,15 @@
         </div>
         <div style="font-size: 11px; color: #666; margin-top: 5px;">* 點擊「重新整理」可根據您的 API Key 動態載入可用模型。若發生 503 或 404 錯誤，請切換模型。</div>
       </div>
+      <div class="control-group" style="margin-top: 15px;">
+        <label>AI 思考層級 (Thinking Level)</label>
+        <select id="setting-thinkingLevel" style="width: 100%; box-sizing: border-box; padding: 6px; border-radius: 5px; border: 1px solid #ccc; margin-top: 5px;">
+          <option value="low">Low (輕量思考 / 快速反應 / 節省 Token，最多 3 輪)</option>
+          <option value="medium" selected>Medium (平衡模式 / 適度推理，最多 5 輪，預設)</option>
+          <option value="high">High (深度思考 / 複雜推理與多步自主任務，最多 10 輪)</option>
+        </select>
+        <div style="font-size: 11px; color: #666; margin-top: 5px;">* 控制 Gemini 內在思考鏈深度與 Agent 自主工具決策輪數上限。</div>
+      </div>
     </div>
 
     <!-- AI 用量與額度監控儀表板卡片 -->

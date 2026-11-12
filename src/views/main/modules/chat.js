@@ -13,7 +13,18 @@ let lastInteractionTime = 0;
 let lastRealReply = '';
 let lastRealReplyRaw = '';
 const MAX_HISTORY_MESSAGES = 20;
-const MAX_AGENT_STEPS = 5;
+
+function getThinkingStepLimit(thinkingLevel) {
+  switch (thinkingLevel) {
+    case 'low':
+      return 3;
+    case 'high':
+      return 10;
+    case 'medium':
+    default:
+      return 5;
+  }
+}
 
 function getToolStatusHint(toolName) {
   switch (toolName) {
@@ -462,16 +473,39 @@ ${personaText}
         const activeTools = resolveGeminiTools();
         const activeMcpClient = resolveMcpClient();
 
+        const thinkingLevel = petState.settings?.thinkingLevel || 'medium';
+        const maxAgentSteps = getThinkingStepLimit(thinkingLevel);
+
+        async function callAIWithThinkingFallback(payload) {
+          try {
+            return await activeAI.generateContent(payload);
+          } catch (err) {
+            if (payload?.config?.thinkingConfig && err && err.message && /thinking/i.test(err.message)) {
+              console.warn('[AI] Model does not support thinkingConfig, falling back without thinkingConfig:', err.message);
+              const fallbackPayload = {
+                ...payload,
+                config: { ...payload.config }
+              };
+              delete fallbackPayload.config.thinkingConfig;
+              return await activeAI.generateContent(fallbackPayload);
+            }
+            throw err;
+          }
+        }
+
         let stepCount = 0;
         let finalResponseText = '';
 
-        while (stepCount < MAX_AGENT_STEPS) {
-          let response = await activeAI.generateContent({
+        while (stepCount < maxAgentSteps) {
+          let response = await callAIWithThinkingFallback({
             model: petState.settings?.aiModel || 'gemini-3.5-flash-lite',
             contents: sessionContext,
             config: { 
               systemInstruction: sysInstruction,
-              tools: (activeTools && activeTools.length > 0) ? activeTools : undefined 
+              tools: (activeTools && activeTools.length > 0) ? activeTools : undefined,
+              thinkingConfig: {
+                thinkingLevel: thinkingLevel
+              }
             }
           });
 
@@ -576,14 +610,17 @@ ${personaText}
           sessionContext.push({ role: 'user', parts: functionResponses });
 
           // 如果達到最大步數，進行強制總結
-          if (stepCount >= MAX_AGENT_STEPS) {
-            console.warn(`[Agent] Reached MAX_AGENT_STEPS (${MAX_AGENT_STEPS}), summarizing...`);
+          if (stepCount >= maxAgentSteps) {
+            console.warn(`[Agent] Reached maxAgentSteps (${maxAgentSteps}), summarizing...`);
             chatContent.innerHTML = `${namePrefix}正在彙整最後結果... (•ө•)੭`;
-            const summaryResponse = await activeAI.generateContent({
+            const summaryResponse = await callAIWithThinkingFallback({
               model: petState.settings?.aiModel || 'gemini-3.5-flash-lite',
               contents: sessionContext,
               config: { 
-                systemInstruction: sysInstruction + "\n【重要指令】已完成所有可用步驟，請根據先前的執行結果做最後的完整結論與回覆，不要再調用任何工具。"
+                systemInstruction: sysInstruction + "\n【重要指令】已完成所有可用步驟，請根據先前的執行結果做最後的完整結論與回覆，不要再調用任何工具。",
+                thinkingConfig: {
+                  thinkingLevel: thinkingLevel
+                }
               }
             });
             if (summaryResponse.candidates && summaryResponse.candidates[0]?.content?.parts) {
@@ -703,4 +740,4 @@ ${personaText}
     dismissAlarm
   };
 }
-module.exports = { init };
+module.exports = { init, getThinkingStepLimit };
