@@ -9,6 +9,7 @@ const closeBtn = document.getElementById('btn-close');
 
 const reasoningContainer = document.getElementById('inspector-reasoning');
 const reasoningLevelBadge = document.getElementById('reasoning-level-badge');
+const reasoningStatusPill = document.getElementById('reasoning-status-pill');
 const reasoningMeta = document.getElementById('reasoning-meta');
 const reasoningBody = document.getElementById('reasoning-body');
 
@@ -33,11 +34,32 @@ function renderReasoning(trajectory = {}) {
     reasoningLevelBadge.innerText = level.toUpperCase();
   }
 
+  const status = trajectory.status || 'completed';
+  const isRunning = status === 'running';
+  const isError = status === 'error';
+
+  if (reasoningStatusPill) {
+    if (isRunning) {
+      reasoningStatusPill.className = 'live-status-pill running';
+      reasoningStatusPill.innerHTML = '<span class="pulse-dot"></span> 執行中';
+    } else if (isError) {
+      reasoningStatusPill.className = 'live-status-pill error';
+      reasoningStatusPill.innerHTML = '<span class="pulse-dot"></span> 失敗';
+    } else {
+      reasoningStatusPill.className = 'live-status-pill completed';
+      reasoningStatusPill.innerHTML = '<span class="pulse-dot"></span> 完成';
+    }
+  }
+
   const stepCount = trajectory.steps ? trajectory.steps.length : 0;
   const duration = typeof trajectory.durationMs === 'number' ? `${(trajectory.durationMs / 1000).toFixed(1)}s` : '';
   
   if (reasoningMeta) {
-    reasoningMeta.innerText = `${stepCount} 輪決策${duration ? ' • ' + duration : ''}`;
+    if (isRunning) {
+      reasoningMeta.innerText = `${stepCount} 輪決策 • 即時同步中...`;
+    } else {
+      reasoningMeta.innerText = `${stepCount} 輪決策${duration ? ' • ' + duration : ''}`;
+    }
   }
 
   let html = '';
@@ -56,7 +78,7 @@ function renderReasoning(trajectory = {}) {
   if (!trajectory.steps || trajectory.steps.length === 0) {
     html += `
       <div class="reasoning-empty">
-        ⚡ 單輪直覺推導完成（無呼叫本地工具）。${duration ? '耗時約 ' + duration + '。' : ''}
+        ${isRunning ? '⏳ 奇異鳥正在規劃思考中...' : '⚡ 單輪直覺推導完成（無呼叫本地工具）。' + (duration ? '耗時約 ' + duration + '。' : '')}
       </div>
     `;
   } else {
@@ -89,6 +111,12 @@ function renderReasoning(trajectory = {}) {
                 <pre class="tool-code-block output"><code>${escapeHtml(resp.result || '成功')}</code></pre>
               `;
             }
+          } else if (isRunning) {
+            html += `
+              <div class="tool-pending">
+                <span class="pulse-dot"></span> 正在執行工具中...
+              </div>
+            `;
           }
           html += `</div>`;
         });
@@ -102,9 +130,16 @@ function renderReasoning(trajectory = {}) {
 
 function updateInspector(data = {}) {
   currentRawText = data.content || '';
-  const renderedHtml = renderMarkdown(currentRawText);
+  const trajectory = data.reasoningTrajectory;
+
   if (contentEl) {
-    contentEl.innerHTML = renderedHtml || '<div style="color: #94a3b8; font-style: italic;">目前無回覆內容</div>';
+    if (currentRawText) {
+      contentEl.innerHTML = renderMarkdown(currentRawText);
+    } else if (trajectory && trajectory.status === 'running') {
+      contentEl.innerHTML = '<div class="live-streaming-placeholder"><span class="pulse-dot"></span> 奇異鳥正在思考與執行工具中，結果將即時呈現在此...</div>';
+    } else {
+      contentEl.innerHTML = '<div style="color: #94a3b8; font-style: italic;">目前無回覆內容</div>';
+    }
   }
 
   if (metaCharsEl) {
@@ -112,11 +147,14 @@ function updateInspector(data = {}) {
   }
 
   if (metaTimeEl) {
-    const timeStr = data.timestamp ? new Date(data.timestamp).toLocaleTimeString() : new Date().toLocaleTimeString();
-    metaTimeEl.innerText = timeStr;
+    if (trajectory && trajectory.status === 'running') {
+      metaTimeEl.innerText = '即時同步中';
+    } else {
+      const timeStr = data.timestamp ? new Date(data.timestamp).toLocaleTimeString() : new Date().toLocaleTimeString();
+      metaTimeEl.innerText = timeStr;
+    }
   }
 
-  const trajectory = data.reasoningTrajectory;
   if (trajectory && reasoningContainer) {
     renderReasoning(trajectory);
     reasoningContainer.style.display = 'block';

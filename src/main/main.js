@@ -406,6 +406,13 @@ app.whenReady().then(() => {
     inspectorWin.on('closed', () => { inspectorWin = null; });
   });
 
+  // 即時動態同步檢閱板推理過程
+  ipcMain.on('update-inspector-live', (event, data) => {
+    if (inspectorWin && !inspectorWin.isDestroyed()) {
+      inspectorWin.webContents.send('set-inspector-data', data);
+    }
+  });
+
   ipcMain.on('open-alarm', () => {
     if (alarmWin) {
       alarmWin.focus();

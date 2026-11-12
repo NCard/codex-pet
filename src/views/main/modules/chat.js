@@ -444,6 +444,19 @@ function init({
       lastInteractionTime = now;
       const contextLengthBeforeTurn = sessionContext.length;
 
+      let currentTrajectory = null;
+      function broadcastLiveInspector(content = '') {
+        if (!ipcRenderer || typeof ipcRenderer.send !== 'function') return;
+        try {
+          ipcRenderer.send('update-inspector-live', {
+            title: 'Agent 回覆檢閱板',
+            content: content || lastRealReplyRaw || '',
+            reasoningTrajectory: lastReasoningTrajectory,
+            timestamp: Date.now()
+          });
+        } catch (_) {}
+      }
+
       try {
         const p = petState.settings.aiPersonality || 'default';
         const customP = petState.settings.aiCustomPrompt || '';
@@ -495,14 +508,17 @@ ${personaText}
           }
         }
 
-        const currentTrajectory = {
+        currentTrajectory = {
           thinkingLevel: thinkingLevel,
           maxSteps: maxAgentSteps,
           startTime: Date.now(),
+          status: 'running',
           steps: [],
           thoughts: [],
           finalResponse: ''
         };
+        lastReasoningTrajectory = currentTrajectory;
+        broadcastLiveInspector('');
 
         let stepCount = 0;
         let finalResponseText = '';
@@ -552,10 +568,13 @@ ${personaText}
             }
             finalResponseText = response.text || "";
             currentTrajectory.finalResponse = finalResponseText;
+            currentTrajectory.status = 'completed';
             currentTrajectory.endTime = Date.now();
             currentTrajectory.durationMs = currentTrajectory.endTime - currentTrajectory.startTime;
             currentTrajectory.finalStepCount = stepCount;
             lastReasoningTrajectory = currentTrajectory;
+            lastRealReplyRaw = finalResponseText;
+            broadcastLiveInspector(finalResponseText);
             break;
           }
 
@@ -573,6 +592,8 @@ ${personaText}
             tools: functionCalls.map(c => ({ name: c.name, args: c.args })),
             responses: []
           };
+          currentTrajectory.steps.push(stepRecord);
+          broadcastLiveInspector('');
 
           const functionResponses = [];
 
@@ -599,6 +620,7 @@ ${personaText}
                 name: call.name,
                 result: textResult
               });
+              broadcastLiveInspector('');
               const fnResp = {
                 name: call.name,
                 response: { result: textResult }
@@ -619,6 +641,7 @@ ${personaText}
                 name: call.name,
                 result: textResult
               });
+              broadcastLiveInspector('');
 
               const fnResp = {
                 name: call.name,
@@ -648,6 +671,7 @@ ${personaText}
                 name: call.name,
                 error: e.message
               });
+              broadcastLiveInspector('');
               functionResponses.push({
                 functionResponse: {
                   name: call.name,
@@ -657,7 +681,6 @@ ${personaText}
             }
           }
 
-          currentTrajectory.steps.push(stepRecord);
           sessionContext.push({ role: 'user', parts: functionResponses });
 
           // 如果達到最大步數，進行強制總結
@@ -670,7 +693,8 @@ ${personaText}
               config: { 
                 systemInstruction: sysInstruction + "\n【重要指令】已完成所有可用步驟，請根據先前的執行結果做最後的完整結論與回覆，不要再調用任何工具。",
                 thinkingConfig: {
-                  thinkingLevel: thinkingLevel
+                  thinkingLevel: thinkingLevel,
+                  includeThoughts: true
                 }
               }
             });
@@ -691,11 +715,14 @@ ${personaText}
             }
             finalResponseText = summaryResponse.text || "";
             currentTrajectory.finalResponse = finalResponseText;
+            currentTrajectory.status = 'completed';
             currentTrajectory.endTime = Date.now();
             currentTrajectory.durationMs = currentTrajectory.endTime - currentTrajectory.startTime;
             currentTrajectory.finalStepCount = stepCount;
             currentTrajectory.isSummarized = true;
             lastReasoningTrajectory = currentTrajectory;
+            lastRealReplyRaw = finalResponseText;
+            broadcastLiveInspector(finalResponseText);
             break;
           }
         }
@@ -726,6 +753,14 @@ ${personaText}
         // 如果 API 呼叫失敗，安全回滾未完成的對話狀態，避免留存不完整的 user / function 訊息
         while (sessionContext.length > contextLengthBeforeTurn) {
           sessionContext.pop();
+        }
+
+        if (currentTrajectory) {
+          currentTrajectory.status = 'error';
+          currentTrajectory.error = err.message || '發生錯誤';
+          currentTrajectory.endTime = Date.now();
+          currentTrajectory.durationMs = currentTrajectory.endTime - currentTrajectory.startTime;
+          broadcastLiveInspector();
         }
         
         console.error(err);

@@ -192,6 +192,87 @@ body {
   border: 1px solid #e9d5ff;
 }
 
+/* ── 即時動態同步指示燈與狀態標籤 ── */
+.live-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 12px;
+}
+
+.live-status-pill.running {
+  background: #fef3c7;
+  color: #b45309;
+  border: 1px solid #fde68a;
+}
+
+.live-status-pill.completed {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+.live-status-pill.error {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+.pulse-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: #f59e0b;
+  display: inline-block;
+  animation: pulse-animation 1.2s infinite ease-in-out;
+}
+
+.live-status-pill.completed .pulse-dot {
+  background-color: #22c55e;
+  animation: none;
+}
+
+.live-status-pill.error .pulse-dot {
+  background-color: #ef4444;
+  animation: none;
+}
+
+@keyframes pulse-animation {
+  0% { transform: scale(0.85); opacity: 0.5; }
+  50% { transform: scale(1.25); opacity: 1; }
+  100% { transform: scale(0.85); opacity: 0.5; }
+}
+
+.tool-pending {
+  padding: 8px 12px;
+  background: #1e293b;
+  color: #94a3b8;
+  border-radius: 6px;
+  font-size: 12px;
+  font-style: italic;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.live-streaming-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 36px 20px;
+  color: #64748b;
+  font-size: 14px;
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px dashed #cbd5e1;
+  border-radius: 10px;
+  backdrop-filter: blur(4px);
+}
+
 .reasoning-meta {
   font-size: 11.5px;
   color: #64748b;
