@@ -110,6 +110,25 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         name: "read_clipboard",
         description: "讀取使用者目前的系統剪貼簿文字內容。注意：此為高權限工具，需使用者在設定中啟用權限。",
         inputSchema: { type: "object", properties: {} }
+      },
+      {
+        name: "compute_hash",
+        description: "計算指定文字的雜湊值 (Hash) 或編碼/解碼。支援 md5, sha256, sha1, base64_encode, base64_decode。當主人要求計算 MD5、SHA256、雜湊或編碼時務必優先使用本工具以保證精準性。",
+        inputSchema: {
+          type: "object",
+          properties: {
+            text: {
+              type: "string",
+              description: "要進行計算或轉換的原始文字內容"
+            },
+            algorithm: {
+              type: "string",
+              enum: ["md5", "sha256", "sha1", "base64_encode", "base64_decode"],
+              description: "演算法類型，預設為 'md5'"
+            }
+          },
+          required: ["text"]
+        }
       }
     ],
   };
@@ -236,6 +255,27 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     return {
       content: [{ type: "text", text: text ? `剪貼簿內容為：\n${text}` : "剪貼簿目前是空的。" }]
     };
+  }
+
+  if (name === "compute_hash") {
+    const text = String(args.text || "");
+    const algo = (args.algorithm || "md5").toLowerCase();
+    const { computeHash } = require("../utils/crypto_utils");
+    try {
+      const result = computeHash(text, algo);
+      return {
+        content: [
+          {
+            type: "text",
+            text: `【${algo.toUpperCase()} 計算成功】\n計算結果: ${result}`
+          }
+        ]
+      };
+    } catch (err) {
+      return {
+        content: [{ type: "text", text: `計算失敗: ${err.message}` }]
+      };
+    }
   }
 
   throw new Error(`Unknown tool: ${name}`);

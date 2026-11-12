@@ -26,4 +26,23 @@ function decryptData(encryptedHex) {
   }
 }
 
-module.exports = { encryptData, decryptData };
+function computeHash(text, algorithm = 'md5') {
+  const str = String(text ?? '');
+  const algo = (algorithm || 'md5').toLowerCase();
+  switch (algo) {
+    case 'md5':
+      return crypto.createHash('md5').update(str, 'utf8').digest('hex');
+    case 'sha256':
+      return crypto.createHash('sha256').update(str, 'utf8').digest('hex');
+    case 'sha1':
+      return crypto.createHash('sha1').update(str, 'utf8').digest('hex');
+    case 'base64_encode':
+      return Buffer.from(str, 'utf8').toString('base64');
+    case 'base64_decode':
+      return Buffer.from(str, 'base64').toString('utf8');
+    default:
+      return crypto.createHash('md5').update(str, 'utf8').digest('hex');
+  }
+}
+
+module.exports = { encryptData, decryptData, computeHash };

@@ -1,5 +1,5 @@
 
-const { renderMarkdown } = require('../../../utils/markdown');
+const { renderMarkdown, escapeHtml } = require('../../../utils/markdown');
 const { recordUsage, getUsageSummary } = require('../../../utils/usage_tracker');
 const { getDialogue } = require('../../../utils/dialogues');
 
@@ -41,6 +41,8 @@ function getToolStatusHint(toolName) {
       return '正在翻閱鬧鐘與待辦清單... 📜';
     case 'read_clipboard':
       return '正在讀取剪貼簿... 📋';
+    case 'compute_hash':
+      return '正在用力計算雜湊與轉換... 🔐';
     default:
       return `正在執行 ${toolName}... (•ө•)و`;
   }
@@ -342,7 +344,7 @@ function init({
           reply = 'Wiki Wiki 指令模式喵！<br>' +
                   '<b>/help</b> : 顯示這個說明<br>' +
                   '<b>/laser</b> : 開啟/關閉雷射筆追逐遊戲 🔴<br>' +
-                  '<b>/md5 [字串]</b> : 轉成 md5 32碼<br>' +
+                  '<b>/md5 [字串]</b> : 轉成 md5 32碼（未帶字串則自動取剪貼簿並複製）<br>' +
                   '<b>/base64 [encode/decode] [字串]</b> : base64 轉換<br>' +
                   '<b>/uuid</b> : 產生隨機 UUID<br>' +
                   '<b>/calc [算式]</b> : 幫你算數學 (例如 1+1)<br>' +
@@ -354,15 +356,35 @@ function init({
           chatInput.disabled = false;
           return;
         } else if (cmd === '/md5') {
-          // 如果前後有雙引號，則去除
-          if (argStr.startsWith('"') && argStr.endsWith('"')) {
+          // 如果前後有雙引號或單引號，則去除
+          if ((argStr.startsWith('"') && argStr.endsWith('"')) || (argStr.startsWith("'") && argStr.endsWith("'"))) {
             argStr = argStr.substring(1, argStr.length - 1);
           }
+
+          let fromClipboard = false;
           if (!argStr) {
-            reply = '喵？沒有給我要轉換的字串喔！請用 /md5 "字串"';
+            try {
+              const { clipboard } = require('electron');
+              const clipText = clipboard ? clipboard.readText() : '';
+              if (clipText && clipText.trim()) {
+                argStr = clipText.trim();
+                fromClipboard = true;
+              }
+            } catch (_) {}
+          }
+
+          if (!argStr) {
+            reply = '喵？沒有給要轉換的字串，且目前剪貼簿也是空的喔！<br>請用 <code>/md5 "字串"</code> 或先複製文字後直接輸入 <code>/md5</code>！';
           } else {
             const hash = crypto.createHash('md5').update(argStr).digest('hex');
-            reply = `嗶嗶！Wiki Wiki 用力一啄！(•ө•)♡<br><code>${hash}</code>`;
+            try {
+              const { clipboard } = require('electron');
+              if (clipboard) clipboard.writeText(hash);
+            } catch (_) {}
+
+            const displayTarget = argStr.length > 30 ? escapeHtml(argStr.substring(0, 30)) + '...' : escapeHtml(argStr);
+            const sourceNote = fromClipboard ? '<br><small style="color: #64748b;">📋 已自動讀取剪貼簿文字</small>' : '';
+            reply = `嗶嗶！Wiki Wiki 用力一啄！(•ө•)♡${sourceNote}<br><small style="color: #94a3b8;">原始文字：${displayTarget}</small><br><code>${hash}</code><br><span style="color: #16a34a; font-size: 11.5px; font-weight: bold;">✅ 已自動複製到剪貼簿！</span>`;
           }
         } else if (cmd === '/base64') {
           const subCmd = argStr.split(' ')[0];
@@ -480,7 +502,8 @@ ${personaText}
    - 使用者說「換成/只戴/改成XX」時，mode 請用 "replace"（換掉其他飾品）。
    - 使用者說「脫下/摘掉/拿下XX」時，mode 請用 "remove"。
    - 使用者說「全部脫掉/脫光」時，mode 請用 "clear"。
-5. 完成所有步驟後，請用符合你個性的可愛語氣，向主人清晰且親切地彙整你的執行結果。`;
+5. 當主人要求計算 MD5、SHA256、雜湊值 (Hash) 或進行字串編碼轉換時，嚴禁自行心算或臆測雜湊值，必須優先呼叫 compute_hash 工具以保證 100% 精準。若主人說「把剪貼簿的內容轉成 MD5」，請先呼叫 read_clipboard 取得文字，再呼叫 compute_hash。
+6. 完成所有步驟後，請用符合你個性的可愛語氣，向主人清晰且親切地彙整你的執行結果。`;
         
         sessionContext.push({ role: 'user', parts: [{ text: text }] });
         
@@ -615,6 +638,35 @@ ${personaText}
                 } catch (e) {
                   textResult = `讀取剪貼簿失敗: ${e.message}`;
                 }
+              }
+              stepRecord.responses.push({
+                name: call.name,
+                result: textResult
+              });
+              broadcastLiveInspector('');
+              const fnResp = {
+                name: call.name,
+                response: { result: textResult }
+              };
+              if (call.id) fnResp.id = call.id;
+              functionResponses.push({ functionResponse: fnResp });
+              continue;
+            }
+
+            if (call.name === 'compute_hash') {
+              const targetText = String(call.args?.text ?? "");
+              const algo = (call.args?.algorithm || "md5").toLowerCase();
+              let textResult = "";
+              try {
+                const { computeHash } = require('../../../utils/crypto_utils');
+                const computed = computeHash(targetText, algo);
+                try {
+                  const { clipboard } = require('electron');
+                  if (clipboard) clipboard.writeText(computed);
+                } catch (_) {}
+                textResult = `【${algo.toUpperCase()} 計算成功】\n計算結果：${computed}\n（已自動將結果複製到主人剪貼簿）`;
+              } catch (err) {
+                textResult = `計算失敗: ${err.message}`;
               }
               stepRecord.responses.push({
                 name: call.name,
