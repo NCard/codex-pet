@@ -38,3 +38,4 @@ describe('Compute Hash & Crypto Utilities Unit Tests', () => {
     assert.strictEqual(computeHash(text, 'unknown_algo'), expected);
   });
 });
+
