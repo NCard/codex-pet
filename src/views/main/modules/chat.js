@@ -515,7 +515,8 @@ ${personaText}
               systemInstruction: sysInstruction,
               tools: (activeTools && activeTools.length > 0) ? activeTools : undefined,
               thinkingConfig: {
-                thinkingLevel: thinkingLevel
+                thinkingLevel: thinkingLevel,
+                includeThoughts: true
               }
             }
           });
@@ -533,8 +534,8 @@ ${personaText}
           const candidate = response.candidates && response.candidates[0];
           if (candidate && candidate.content && Array.isArray(candidate.content.parts)) {
             for (const part of candidate.content.parts) {
-              if (part.thought || part.type === 'thought') {
-                currentTrajectory.thoughts.push(part.text || part.thought || '');
+              if (part.thought && part.text) {
+                currentTrajectory.thoughts.push(part.text);
               }
             }
           }
@@ -544,7 +545,10 @@ ${personaText}
           if (functionCalls.length === 0) {
             // 沒有工具需要呼叫，代表已得到最終思考與回覆
             if (candidate && candidate.content && candidate.content.parts) {
-              sessionContext.push({ role: 'model', parts: candidate.content.parts });
+              const cleanParts = candidate.content.parts.filter(p => !p.thought);
+              if (cleanParts.length > 0) {
+                sessionContext.push({ role: 'model', parts: cleanParts });
+              }
             }
             finalResponseText = response.text || "";
             currentTrajectory.finalResponse = finalResponseText;
@@ -557,7 +561,10 @@ ${personaText}
 
           // 記錄模型輸出的 function calls
           if (candidate && candidate.content && candidate.content.parts) {
-            sessionContext.push({ role: 'model', parts: candidate.content.parts });
+            const cleanParts = candidate.content.parts.filter(p => !p.thought);
+            if (cleanParts.length > 0) {
+              sessionContext.push({ role: 'model', parts: cleanParts });
+            }
           }
 
           stepCount++;
@@ -668,7 +675,10 @@ ${personaText}
               }
             });
             if (summaryResponse.candidates && summaryResponse.candidates[0]?.content?.parts) {
-              sessionContext.push({ role: 'model', parts: summaryResponse.candidates[0].content.parts });
+              const cleanParts = summaryResponse.candidates[0].content.parts.filter(p => !p.thought);
+              if (cleanParts.length > 0) {
+                sessionContext.push({ role: 'model', parts: cleanParts });
+              }
             }
             if (summaryResponse.usageMetadata) {
               recordUsage({
