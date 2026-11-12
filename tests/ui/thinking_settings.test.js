@@ -47,5 +47,17 @@ describe('Thinking Level UI & Configuration Tests', () => {
     expect(getThinkingStepLimit('medium')).toBe(5);
     expect(getThinkingStepLimit('high')).toBe(10);
   });
+
+  test('inspector.html should contain reasoning inspection structure', () => {
+    const inspectorHtmlPath = path.resolve(__dirname, '../../src/views/inspector/inspector.html');
+    const inspectorHtml = fs.readFileSync(inspectorHtmlPath, 'utf8');
+    const inspectorContainer = document.createElement('div');
+    inspectorContainer.innerHTML = inspectorHtml;
+
+    expect(inspectorContainer.querySelector('#inspector-reasoning')).not.toBeNull();
+    expect(inspectorContainer.querySelector('#reasoning-details')).not.toBeNull();
+    expect(inspectorContainer.querySelector('#reasoning-level-badge')).not.toBeNull();
+    expect(inspectorContainer.querySelector('#reasoning-body')).not.toBeNull();
+  });
 });
 

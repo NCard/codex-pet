@@ -12,6 +12,7 @@ let sessionContext = [];
 let lastInteractionTime = 0;
 let lastRealReply = '';
 let lastRealReplyRaw = '';
+let lastReasoningTrajectory = null;
 const MAX_HISTORY_MESSAGES = 20;
 
 function getThinkingStepLimit(thinkingLevel) {
@@ -105,6 +106,7 @@ function init({
       ipcRenderer.send('open-inspector', {
         title: 'Agent 回覆檢閱板',
         content: textToInspect,
+        reasoningTrajectory: lastReasoningTrajectory,
         timestamp: Date.now()
       });
     });
@@ -493,6 +495,15 @@ ${personaText}
           }
         }
 
+        const currentTrajectory = {
+          thinkingLevel: thinkingLevel,
+          maxSteps: maxAgentSteps,
+          startTime: Date.now(),
+          steps: [],
+          thoughts: [],
+          finalResponse: ''
+        };
+
         let stepCount = 0;
         let finalResponseText = '';
 
@@ -520,6 +531,14 @@ ${personaText}
           }
 
           const candidate = response.candidates && response.candidates[0];
+          if (candidate && candidate.content && Array.isArray(candidate.content.parts)) {
+            for (const part of candidate.content.parts) {
+              if (part.thought || part.type === 'thought') {
+                currentTrajectory.thoughts.push(part.text || part.thought || '');
+              }
+            }
+          }
+
           const functionCalls = response.functionCalls || [];
 
           if (functionCalls.length === 0) {
@@ -528,6 +547,11 @@ ${personaText}
               sessionContext.push({ role: 'model', parts: candidate.content.parts });
             }
             finalResponseText = response.text || "";
+            currentTrajectory.finalResponse = finalResponseText;
+            currentTrajectory.endTime = Date.now();
+            currentTrajectory.durationMs = currentTrajectory.endTime - currentTrajectory.startTime;
+            currentTrajectory.finalStepCount = stepCount;
+            lastReasoningTrajectory = currentTrajectory;
             break;
           }
 
@@ -537,6 +561,12 @@ ${personaText}
           }
 
           stepCount++;
+          const stepRecord = {
+            step: stepCount,
+            tools: functionCalls.map(c => ({ name: c.name, args: c.args })),
+            responses: []
+          };
+
           const functionResponses = [];
 
           for (const call of functionCalls) {
@@ -558,6 +588,10 @@ ${personaText}
                   textResult = `讀取剪貼簿失敗: ${e.message}`;
                 }
               }
+              stepRecord.responses.push({
+                name: call.name,
+                result: textResult
+              });
               const fnResp = {
                 name: call.name,
                 response: { result: textResult }
@@ -574,6 +608,11 @@ ${personaText}
               const result = await activeMcpClient.callTool({ name: call.name, arguments: call.args });
               const textResult = result.content ? result.content.map(c => c.text).join('\n') : "成功";
               
+              stepRecord.responses.push({
+                name: call.name,
+                result: textResult
+              });
+
               const fnResp = {
                 name: call.name,
                 response: { result: textResult }
@@ -598,6 +637,10 @@ ${personaText}
               }
             } catch (e) {
               console.error(`[Agent Step ${stepCount}] Tool execution error:`, e);
+              stepRecord.responses.push({
+                name: call.name,
+                error: e.message
+              });
               functionResponses.push({
                 functionResponse: {
                   name: call.name,
@@ -607,6 +650,7 @@ ${personaText}
             }
           }
 
+          currentTrajectory.steps.push(stepRecord);
           sessionContext.push({ role: 'user', parts: functionResponses });
 
           // 如果達到最大步數，進行強制總結
@@ -636,6 +680,12 @@ ${personaText}
               recordUsage();
             }
             finalResponseText = summaryResponse.text || "";
+            currentTrajectory.finalResponse = finalResponseText;
+            currentTrajectory.endTime = Date.now();
+            currentTrajectory.durationMs = currentTrajectory.endTime - currentTrajectory.startTime;
+            currentTrajectory.finalStepCount = stepCount;
+            currentTrajectory.isSummarized = true;
+            lastReasoningTrajectory = currentTrajectory;
             break;
           }
         }

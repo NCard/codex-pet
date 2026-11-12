@@ -28,6 +28,26 @@
   </div>
 
   <div class="inspector-body">
+    <!-- 推理與思考過程折疊面板 -->
+    <div id="inspector-reasoning" class="inspector-reasoning" style="display: none;">
+      <details class="reasoning-details" id="reasoning-details" open>
+        <summary class="reasoning-summary">
+          <div class="summary-left">
+            <span class="reasoning-icon">🧠</span>
+            <span class="reasoning-title">思考與推理過程</span>
+            <span class="reasoning-badge" id="reasoning-level-badge">MEDIUM</span>
+          </div>
+          <div class="summary-right">
+            <span class="reasoning-meta" id="reasoning-meta">0 輪決策 • 0ms</span>
+            <span class="reasoning-arrow">▼</span>
+          </div>
+        </summary>
+        <div class="reasoning-body" id="reasoning-body">
+          <!-- 動態渲染各步驟卡片 -->
+        </div>
+      </details>
+    </div>
+
     <div id="inspector-content" class="inspector-content">
       <!-- 完整渲染後的 Markdown 內容 -->
     </div>
