@@ -108,7 +108,7 @@ const DIALOGUES = {
   system: {
     pomodoro: (mins) => `嗶嗶嗶！${mins} 分鐘到啦！快起來喝口水、伸展一下筋骨吧！🐦💦`,
     clearChat: '記憶已清除，請隨時開啟新話題！',
-    missingApiKey: '請先至「設定面板」輸入 Gemini API Key！',
+    missingApiKey: '請先至「設定中心」設定 AI 服務商與 API Key！',
     thinking: '思考中... <span style="white-space: nowrap;">( •ө•)?</span>'
   }
 };

@@ -17,7 +17,10 @@ function getUsageFilePath() {
 // 模型免費層配額常數定義
 const MODEL_QUOTAS = {
   'pro': { limitRPD: 50, limitRPM: 2, limitTPM: 32000 },
-  'default': { limitRPD: 1500, limitRPM: 15, limitTPM: 1000000 }
+  'default': { limitRPD: 1500, limitRPM: 15, limitTPM: 1000000 },
+  'groq': { limitRPD: 14400, limitRPM: 30, limitTPM: 500000 },
+  'ollama': { limitRPD: 999999, limitRPM: 999, limitTPM: 9999999, isUnlimited: true },
+  'external': { limitRPD: 5000, limitRPM: 60, limitTPM: 1000000 }
 };
 
 /**
@@ -76,7 +79,17 @@ function getDailyResetInfo(now = new Date()) {
 /**
  * 取得特定模型配額標準
  */
-function getModelQuota(modelName = '') {
+function getModelQuota(modelName = '', provider = 'gemini') {
+  const cleanProvider = (provider || 'gemini').toLowerCase();
+  if (cleanProvider === 'ollama') {
+    return MODEL_QUOTAS['ollama'];
+  }
+  if (cleanProvider === 'groq') {
+    return MODEL_QUOTAS['groq'];
+  }
+  if (cleanProvider !== 'gemini') {
+    return MODEL_QUOTAS['external'];
+  }
   const clean = (modelName || '').toLowerCase();
   if (clean.includes('pro')) {
     return MODEL_QUOTAS['pro'];
@@ -190,10 +203,10 @@ function recordUsage({ model = '', promptTokens = 0, candidateTokens = 0, totalT
 /**
  * 獲取即時用量摘要與狀態
  */
-function getUsageSummary(currentModel = 'gemini-3.5-flash-lite') {
+function getUsageSummary(currentModel = 'gemini-3.5-flash-lite', provider = 'gemini') {
   const data = loadUsageData();
   const resetInfo = getDailyResetInfo();
-  const quota = getModelQuota(currentModel);
+  const quota = getModelQuota(currentModel, provider);
   const nowMs = Date.now();
   const cleanModel = (currentModel || '').trim();
 
@@ -235,6 +248,7 @@ function getUsageSummary(currentModel = 'gemini-3.5-flash-lite') {
     totalTokens: data.totalTokens || 0,
     limitRPD: quota.limitRPD,
     limitRPM: quota.limitRPM,
+    isUnlimited: Boolean(quota.isUnlimited),
     remainingRequests,
     percentUsed,
     minuteRequests: modelMinuteCount,

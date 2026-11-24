@@ -42,6 +42,13 @@ test('Usage Tracker Unit Tests', async (t) => {
     const proQuota = getModelQuota('gemini-1.5-pro');
     assert.strictEqual(proQuota.limitRPD, 50);
     assert.strictEqual(proQuota.limitRPM, 2);
+
+    const groqQuota = getModelQuota('llama-3.3-70b-versatile', 'groq');
+    assert.strictEqual(groqQuota.limitRPD, 14400);
+    assert.strictEqual(groqQuota.limitRPM, 30);
+
+    const ollamaQuota = getModelQuota('llama3.2', 'ollama');
+    assert.strictEqual(ollamaQuota.isUnlimited, true);
   });
 
   await t.test('should record and accumulate usage correctly', () => {

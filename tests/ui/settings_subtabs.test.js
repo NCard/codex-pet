@@ -74,6 +74,22 @@ describe('Settings Sub-tabs & Model Info Card UI Tests', () => {
     expect(opt).not.toBeNull();
   });
 
+  test('settings.html should provide multi-provider selector, baseUrl and customModel inputs', () => {
+    const providerSelect = container.querySelector('#setting-aiProvider');
+    expect(providerSelect).not.toBeNull();
+
+    const values = Array.from(providerSelect.querySelectorAll('option')).map(o => o.value);
+    expect(values).toEqual(expect.arrayContaining([
+      'gemini', 'groq', 'openrouter', 'openai', 'deepseek', 'anthropic', 'ollama', 'custom'
+    ]));
+
+    expect(container.querySelector('#btn-open-provider-key')).not.toBeNull();
+    expect(container.querySelector('#baseUrl-group')).not.toBeNull();
+    expect(container.querySelector('#setting-baseUrl')).not.toBeNull();
+    expect(container.querySelector('#custom-model-group')).not.toBeNull();
+    expect(container.querySelector('#setting-customModel')).not.toBeNull();
+  });
+
   test('sub-tab buttons should correctly toggle active class on clicks', () => {
     const buttons = container.querySelectorAll('.sub-tab-btn');
     const contents = container.querySelectorAll('.subtab-content');

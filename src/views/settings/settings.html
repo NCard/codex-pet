@@ -28,14 +28,41 @@
     <!-- 子分頁 1：模型與 API -->
     <div id="subtab-model" class="subtab-content active">
       <div class="section">
-        <div class="section-title">🗝️ API 設置 (API Key & Model)</div>
+        <div class="section-title">🗝️ API 設置 (Provider, API Key & Model)</div>
         <div class="control-group">
-          <label>Gemini API Key</label>
-          <div style="display: flex; gap: 10px; margin-top: 5px;">
-            <input type="password" id="setting-apiKey" placeholder="請填寫您的金鑰..." style="flex: 1; box-sizing: border-box; padding: 6px; border-radius: 5px; border: 1px solid #ccc; font-family: inherit;">
+          <label>AI 服務商 (Provider)</label>
+          <div style="display: flex; gap: 8px; margin-top: 5px; align-items: center;">
+            <select id="setting-aiProvider" style="flex: 1; box-sizing: border-box; padding: 6px; border-radius: 5px; border: 1px solid #ccc; font-family: inherit;">
+              <option value="gemini">Google Gemini (官方免費層)</option>
+              <option value="groq">Groq (高速免費額度 • 推薦備援)</option>
+              <option value="openrouter">OpenRouter (多模型聚合 • 含 :free 免費模型)</option>
+              <option value="openai">OpenAI (GPT 系列)</option>
+              <option value="deepseek">DeepSeek (高性價比中文)</option>
+              <option value="anthropic">Anthropic Claude (原生支援)</option>
+              <option value="ollama">Ollama (本機離線 • 完全免費)</option>
+              <option value="custom">自訂 OpenAI 相容端點 (LM Studio / Proxy)</option>
+            </select>
+            <button id="btn-open-provider-key" type="button" style="flex-shrink: 0; white-space: nowrap; padding: 6px 10px; background: #64748b; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 12px;" title="開啟服務商金鑰管理頁面">🔑 取得金鑰</button>
           </div>
-          <div style="font-size: 11px; color: #666; margin-top: 5px;">* 請填寫 Gemini API Key 以啟用 AI 對話與待辦事項功能。</div>
+          <div id="provider-desc-hint" style="font-size: 11px; color: #666; margin-top: 5px;">* Google 官方模型，支援 1M 超長上下文與免費層額度。各服務商金鑰將獨立保存。</div>
         </div>
+
+        <div class="control-group" style="margin-top: 12px;">
+          <label id="label-apiKey">Gemini API Key</label>
+          <div style="display: flex; gap: 10px; margin-top: 5px;">
+            <input type="password" id="setting-apiKey" placeholder="AIzaSy..." style="flex: 1; box-sizing: border-box; padding: 6px; border-radius: 5px; border: 1px solid #ccc; font-family: inherit;">
+          </div>
+          <div id="apikey-hint" style="font-size: 11px; color: #666; margin-top: 5px;">* 請填寫 API Key 以啟用 AI 對話與待辦事項功能（切換服務商不會清除已填金鑰）。</div>
+        </div>
+
+        <div class="control-group" id="baseUrl-group" style="margin-top: 12px; display: none;">
+          <label>API 端點網址 (Base URL)</label>
+          <div style="display: flex; gap: 10px; margin-top: 5px;">
+            <input type="text" id="setting-baseUrl" placeholder="例如 https://api.openai.com/v1 或 http://localhost:11434/v1" style="flex: 1; box-sizing: border-box; padding: 6px; border-radius: 5px; border: 1px solid #ccc; font-family: inherit;">
+          </div>
+          <div style="font-size: 11px; color: #666; margin-top: 5px;">* 需指向相容 OpenAI / Anthropic 規範的 API 基底路徑（不含結尾 /chat/completions）。</div>
+        </div>
+
         <div class="control-group" style="margin-top: 15px;">
           <label>AI 模型選擇 (Model)</label>
           <div style="display: flex; gap: 8px; margin-top: 5px; align-items: center;">
@@ -45,8 +72,11 @@
             <button id="btn-refresh-models" style="flex-shrink: 0; white-space: nowrap; padding: 6px 10px; background: #29b6f6; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 12px;" title="重新抓取可用模型">🔄 重新整理</button>
             <button id="btn-test-model" class="btn-test" style="flex-shrink: 0; white-space: nowrap; padding: 6px 10px; background: #10b981; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 12px;" title="測試當前模型是否可用與支援工具">🧪 測試連線</button>
           </div>
+          <div id="custom-model-group" style="display: none; margin-top: 8px;">
+            <input type="text" id="setting-customModel" placeholder="手動輸入模型 ID（例如 qwen2.5:7b 或自訂模型名，留空則用上方選單）" style="width: 100%; box-sizing: border-box; padding: 6px; border-radius: 5px; border: 1px solid #cbd5e1; font-size: 12px; font-family: inherit;">
+          </div>
           <div id="test-model-status" style="display: none; margin-top: 8px; font-size: 11.5px; padding: 6px 10px; border-radius: 6px;"></div>
-          <div style="font-size: 11px; color: #666; margin-top: 5px;">* 點擊「重新整理」可根據 API Key 動態載入可用模型；點擊「測試連線」可驗證可用性與工具支援。</div>
+          <div style="font-size: 11px; color: #666; margin-top: 5px;">* 點擊「重新整理」可根據服務商與金鑰動態載入可用模型；點擊「測試連線」可驗證可用性與工具支援。</div>
         </div>
 
         <!-- 🌟 模型詳細資訊卡 (Model Info Card) -->

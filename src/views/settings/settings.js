@@ -13,8 +13,11 @@ const defaultSettings = {
   bedScale: 170,
   bedZ: -1,
   animSpeed: 1.0,
+  aiProvider: 'gemini',
   apiKey: '',
+  aiBaseUrl: '',
   aiModel: 'gemini-3.5-flash-lite',
+  providerConfigs: {},
   thinkingLevel: 'medium',
   aiPersonality: 'default',
   aiCustomPrompt: '',
@@ -31,6 +34,8 @@ let petState = {};
 let isDirty = false;
 let isBedEditing = false;
 let pendingClose = false;
+let workingProviderConfigs = {};
+let activeProviderId = 'gemini';
 
 try {
   if (fs.existsSync(statePath)) {
@@ -53,8 +58,11 @@ const els = {
   bedScale: document.getElementById('bed-scale'),
   bedZ: document.getElementById('bed-z'),
   animSpeed: document.getElementById('anim-speed'),
+  aiProvider: document.getElementById('setting-aiProvider'),
   apiKey: document.getElementById('setting-apiKey'),
+  baseUrl: document.getElementById('setting-baseUrl'),
   aiModel: document.getElementById('setting-aiModel'),
+  customModel: document.getElementById('setting-customModel'),
   thinkingLevel: document.getElementById('setting-thinkingLevel'),
   aiPersonality: document.getElementById('ai-personality'),
   aiCustomPrompt: document.getElementById('custom-personality-input'),
@@ -89,6 +97,148 @@ tabBtns.forEach(btn => {
   });
 });
 
+function getActiveProviderId() {
+  return (els.aiProvider && els.aiProvider.value) ? els.aiProvider.value.toLowerCase() : 'gemini';
+}
+
+function getEffectiveModelId() {
+  const customVal = els.customModel ? els.customModel.value.trim() : '';
+  if (customVal) return customVal;
+  return els.aiModel ? els.aiModel.value : 'gemini-3.5-flash-lite';
+}
+
+function getTestResultRecord(providerId, modelId) {
+  const map = petState?.settings?.modelTestResults || {};
+  const compositeKey = `${providerId}:${modelId}`;
+  if (map[compositeKey]) return map[compositeKey];
+  if (providerId === 'gemini' && map[modelId]) return map[modelId];
+  return null;
+}
+
+function saveTestResultRecord(providerId, modelId, record) {
+  if (!petState.settings) petState.settings = {};
+  if (!petState.settings.modelTestResults) petState.settings.modelTestResults = {};
+  petState.settings.modelTestResults[`${providerId}:${modelId}`] = record;
+  if (providerId === 'gemini') {
+    petState.settings.modelTestResults[modelId] = record;
+  }
+  try {
+    fs.writeFileSync(statePath, JSON.stringify(petState, null, 2));
+  } catch (_) {}
+}
+
+function snapshotCurrentProviderInputs(targetProviderId) {
+  const pid = targetProviderId || activeProviderId || 'gemini';
+  const preset = AIProviderFactory.getPreset(pid);
+  workingProviderConfigs[pid] = {
+    apiKey: els.apiKey ? els.apiKey.value.trim() : '',
+    baseUrl: els.baseUrl ? els.baseUrl.value.trim() : (preset.baseUrl || ''),
+    model: els.aiModel ? els.aiModel.value : (preset.defaultModel || ''),
+    customModel: els.customModel ? els.customModel.value.trim() : ''
+  };
+}
+
+function populateDefaultModelsForProvider(providerId, preferredModel = '') {
+  if (!els.aiModel) return;
+  const preset = AIProviderFactory.getPreset(providerId);
+  const presetModels = preset.defaultModels || [];
+  els.aiModel.innerHTML = '';
+
+  const addedIds = new Set();
+  presetModels.forEach(m => {
+    cachedModelsMetadata[`${providerId}:${m.id}`] = m;
+    if (providerId === 'gemini') cachedModelsMetadata[m.id] = m;
+    const opt = document.createElement('option');
+    opt.value = m.id;
+    opt.innerText = m.displayName || m.id;
+    els.aiModel.appendChild(opt);
+    addedIds.add(m.id);
+  });
+
+  if (preferredModel && !addedIds.has(preferredModel)) {
+    const opt = document.createElement('option');
+    opt.value = preferredModel;
+    opt.innerText = preferredModel;
+    els.aiModel.appendChild(opt);
+    addedIds.add(preferredModel);
+  }
+
+  if (addedIds.size === 0) {
+    const opt = document.createElement('option');
+    opt.value = '';
+    opt.innerText = '請點擊「重新整理」或於下方手動輸入模型 ID';
+    els.aiModel.appendChild(opt);
+  }
+
+  if (preferredModel && addedIds.has(preferredModel)) {
+    els.aiModel.value = preferredModel;
+  } else if (preset.defaultModel && addedIds.has(preset.defaultModel)) {
+    els.aiModel.value = preset.defaultModel;
+  }
+}
+
+function applyProviderUI(providerId, { loadSavedValues = true } = {}) {
+  const preset = AIProviderFactory.getPreset(providerId);
+  activeProviderId = preset.id;
+
+  const labelApiKey = document.getElementById('label-apiKey');
+  const providerDescHint = document.getElementById('provider-desc-hint');
+  const apiKeyHint = document.getElementById('apikey-hint');
+  const baseUrlGroup = document.getElementById('baseUrl-group');
+  const customModelGroup = document.getElementById('custom-model-group');
+  const btnOpenProviderKey = document.getElementById('btn-open-provider-key');
+
+  if (labelApiKey) {
+    labelApiKey.innerText = preset.requiresApiKey ? `${preset.name.split(' ')[0]} API Key` : `${preset.name.split(' ')[0]} API Key (選填)`;
+  }
+  if (els.apiKey) {
+    els.apiKey.placeholder = preset.keyPlaceholder || '請填寫您的 API Key...';
+  }
+  if (providerDescHint) {
+    providerDescHint.innerText = `* ${preset.description} 各服務商金鑰將獨立保存。`;
+  }
+  if (apiKeyHint) {
+    apiKeyHint.innerText = preset.requiresApiKey
+      ? '* 請填寫 API Key 以啟用 AI 對話與工具功能（切換服務商不會清除已填金鑰）。'
+      : '* 此服務商無需強制填寫 API Key，若本機或中轉端點有設驗證密碼再填寫即可。';
+  }
+  if (baseUrlGroup) {
+    baseUrlGroup.style.display = preset.allowCustomBaseUrl ? 'block' : 'none';
+  }
+  if (customModelGroup) {
+    const showCustomInput = ['custom', 'ollama', 'openrouter'].includes(preset.id);
+    customModelGroup.style.display = showCustomInput ? 'block' : 'none';
+  }
+  if (btnOpenProviderKey) {
+    btnOpenProviderKey.style.display = preset.keyUrl ? 'inline-block' : 'none';
+  }
+
+  if (loadSavedValues) {
+    const cfg = workingProviderConfigs[preset.id] || {};
+    const defaultEnvKey = preset.id === 'gemini' ? (process.env.GEMINI_API_KEY || '') : '';
+    if (els.apiKey) els.apiKey.value = cfg.apiKey || defaultEnvKey;
+    if (els.baseUrl) els.baseUrl.value = cfg.baseUrl || preset.baseUrl || '';
+    if (els.customModel) els.customModel.value = cfg.customModel || '';
+
+    const preferredModel = cfg.model || preset.defaultModel || '';
+    populateDefaultModelsForProvider(preset.id, preferredModel);
+  }
+
+  // 更新配額頁中的外部控制台按鈕文字
+  const btnOpenDashboard = document.getElementById('btn-open-aistudio');
+  if (btnOpenDashboard) {
+    if (preset.id === 'gemini') {
+      btnOpenDashboard.innerText = '🌐 前往 AI Studio';
+      btnOpenDashboard.style.display = 'inline-block';
+    } else if (preset.keyUrl) {
+      btnOpenDashboard.innerText = `🌐 前往 ${preset.name.split(' ')[0]}`;
+      btnOpenDashboard.style.display = 'inline-block';
+    } else {
+      btnOpenDashboard.style.display = 'none';
+    }
+  }
+}
+
 // 2. 初始化介面
 function initUI() {
   const s = petState.settings;
@@ -97,8 +247,38 @@ function initUI() {
   els.bedScale.value = s.bedScale ?? defaultSettings.bedScale;
   els.bedZ.value = s.bedZ ?? defaultSettings.bedZ;
   els.animSpeed.value = s.animSpeed ?? defaultSettings.animSpeed;
-  els.apiKey.value = s.apiKey || process.env.GEMINI_API_KEY || '';
-  els.aiModel.value = s.aiModel ?? defaultSettings.aiModel;
+
+  // 初始化多服務商獨立設定（向下相容舊版僅有 apiKey / aiModel 的結構）
+  workingProviderConfigs = {};
+  if (s.providerConfigs && typeof s.providerConfigs === 'object') {
+    for (const [k, v] of Object.entries(s.providerConfigs)) {
+      if (v && typeof v === 'object') {
+        workingProviderConfigs[k] = { ...v };
+      }
+    }
+  }
+  const initialProvider = (s.aiProvider || 'gemini').toLowerCase();
+  if (!workingProviderConfigs[initialProvider]) {
+    workingProviderConfigs[initialProvider] = {
+      apiKey: s.apiKey || '',
+      baseUrl: s.aiBaseUrl || AIProviderFactory.getPreset(initialProvider).baseUrl || '',
+      model: s.aiModel || AIProviderFactory.getPreset(initialProvider).defaultModel || '',
+      customModel: ''
+    };
+  } else {
+    if (!workingProviderConfigs[initialProvider].apiKey && s.apiKey) {
+      workingProviderConfigs[initialProvider].apiKey = s.apiKey;
+    }
+    if (!workingProviderConfigs[initialProvider].model && s.aiModel) {
+      workingProviderConfigs[initialProvider].model = s.aiModel;
+    }
+  }
+
+  if (els.aiProvider) {
+    els.aiProvider.value = initialProvider;
+  }
+  applyProviderUI(initialProvider, { loadSavedValues: true });
+
   if (els.thinkingLevel) els.thinkingLevel.value = s.thinkingLevel ?? defaultSettings.thinkingLevel;
   els.aiPersonality.value = s.aiPersonality ?? defaultSettings.aiPersonality;
   els.aiCustomPrompt.value = s.aiCustomPrompt ?? defaultSettings.aiCustomPrompt;
@@ -132,8 +312,8 @@ function initUI() {
   updateModelInfoCard();
   setDirty(false);
   
-  // 嘗試載入可用模型
-  refreshModels();
+  // 嘗試靜默載入可用模型
+  refreshModels(true);
 }
 
 const cachedModelsMetadata = {
@@ -192,14 +372,18 @@ const cachedModelsMetadata = {
 function updateModelInfoCard(modelId = '') {
   const card = document.getElementById('model-info-card');
   if (!card) return;
-  const id = modelId || (els.aiModel ? els.aiModel.value : 'gemini-3.5-flash-lite');
-  const meta = cachedModelsMetadata[id] || {
+  const providerId = getActiveProviderId();
+  const preset = AIProviderFactory.getPreset(providerId);
+  const id = modelId || getEffectiveModelId() || preset.defaultModel || 'gemini-3.5-flash-lite';
+  const meta = cachedModelsMetadata[`${providerId}:${id}`] || cachedModelsMetadata[id] || {
     id,
-    displayName: id,
-    description: 'Google 官方生成模型，支援智慧對話與文字處理。',
+    displayName: id || '尚未指定模型',
+    description: `${preset.name} 模型，支援智慧對話與工具調用。`,
     contextStr: '標準上下文',
     outputTokenLimit: 8192,
-    badge: id.includes('pro') ? '深度旗艦 (2 RPM)' : (id.includes('flash') || id.includes('lite') ? '推薦免費使用 (15 RPM)' : '標準模型'),
+    badge: providerId === 'ollama'
+      ? '本機免費無上限'
+      : (id.includes('pro') ? '深度旗艦' : (id.includes('flash') || id.includes('lite') ? '推薦主力' : preset.name.split(' ')[0])),
     tier: id.includes('pro') ? 'pro' : (id.includes('1.0') ? 'legacy' : 'flash'),
     supportsTools: !id.includes('1.0')
   };
@@ -214,23 +398,32 @@ function updateModelInfoCard(modelId = '') {
 
   if (nameEl) nameEl.innerText = meta.displayName || meta.id;
   if (badgeEl) {
-    badgeEl.innerText = meta.badge || (meta.tier === 'pro' ? '深度旗艦 (2 RPM)' : '推薦免費使用');
+    badgeEl.innerText = meta.badge || (meta.tier === 'pro' ? '深度旗艦' : '推薦使用');
     badgeEl.className = `model-info-badge ${meta.tier || 'flash'}`;
   }
-  if (descEl) descEl.innerText = meta.description || 'Google 官方模型';
-  if (ctxEl) ctxEl.innerText = meta.contextStr || (meta.inputTokenLimit ? `${Math.round(meta.inputTokenLimit / 1000)}k Tokens` : '1M Tokens');
-  if (outEl) outEl.innerText = meta.outputTokenLimit ? `${Number(meta.outputTokenLimit).toLocaleString()} Tokens` : '8,192 Tokens';
+  if (descEl) descEl.innerText = meta.description || preset.description;
+  if (ctxEl) ctxEl.innerText = meta.contextStr || (meta.inputTokenLimit ? `${Math.round(meta.inputTokenLimit / 1000)}k Tokens` : '標準上下文');
+  if (outEl) outEl.innerText = meta.outputTokenLimit ? `${Number(meta.outputTokenLimit).toLocaleString()} Tokens` : '依模型上限';
   if (toolsEl) {
     toolsEl.innerText = meta.supportsTools ? '✅ 完整支援' : '⚠️ 可能不支援';
     toolsEl.style.color = meta.supportsTools ? '#15803d' : '#b91c1c';
   }
-  if (rpmEl) rpmEl.innerText = meta.tier === 'pro' ? '2 RPM' : '15 RPM';
+  if (rpmEl) {
+    if (providerId === 'ollama') {
+      rpmEl.innerText = '無上限 (本機)';
+    } else if (providerId === 'groq') {
+      rpmEl.innerText = '30 RPM';
+    } else if (providerId === 'gemini') {
+      rpmEl.innerText = meta.tier === 'pro' ? '2 RPM' : '15 RPM';
+    } else {
+      rpmEl.innerText = '依方案而定';
+    }
+  }
 
   // 更新上次測試紀錄
   const testRecordEl = document.getElementById('model-info-test-record');
   const testRecordTextEl = document.getElementById('model-info-test-text');
-  const testResults = petState?.settings?.modelTestResults || {};
-  const test = testResults[id];
+  const test = getTestResultRecord(providerId, id);
 
   if (testRecordEl && testRecordTextEl) {
     if (test) {
@@ -256,16 +449,17 @@ function updateModelInfoCard(modelId = '') {
 function updateModelSelectOptionsLabels() {
   const select = els.aiModel;
   if (!select) return;
-  const testResults = petState?.settings?.modelTestResults || {};
+  const providerId = getActiveProviderId();
 
   const currentVal = select.value;
   const optionsArr = Array.from(select.options);
 
   optionsArr.forEach(opt => {
     const modelId = opt.value;
-    const meta = cachedModelsMetadata[modelId] || {};
+    if (!modelId) return;
+    const meta = cachedModelsMetadata[`${providerId}:${modelId}`] || cachedModelsMetadata[modelId] || {};
     const baseName = meta.displayName || modelId;
-    const test = testResults[modelId];
+    const test = getTestResultRecord(providerId, modelId);
 
     if (!test) {
       opt.innerText = baseName;
@@ -282,7 +476,7 @@ function updateModelSelectOptionsLabels() {
   // 智慧排序：可用模型 (✅) 自動置頂，尚未測試居中，不可用模型 (❌) 排在最後
   optionsArr.sort((a, b) => {
     const getScore = (opt) => {
-      const t = testResults[opt.value];
+      const t = getTestResultRecord(providerId, opt.value);
       if (!t) return 2; // 未測試
       if (t.success && t.supportsTools) return 0; // 最優先置頂
       if (t.success && !t.supportsTools) return 1;
@@ -296,9 +490,20 @@ function updateModelSelectOptionsLabels() {
   select.value = currentVal;
 }
 
-async function refreshModels() {
-  const apiKey = els.apiKey.value || process.env.GEMINI_API_KEY;
-  if (!apiKey) return;
+async function refreshModels(silent = false) {
+  const providerId = getActiveProviderId();
+  const preset = AIProviderFactory.getPreset(providerId);
+  const apiKey = els.apiKey.value.trim() || (providerId === 'gemini' ? (process.env.GEMINI_API_KEY || '') : '');
+  const baseUrl = (els.baseUrl && els.baseUrl.value.trim()) || preset.baseUrl || '';
+
+  if (preset.requiresApiKey && !apiKey) {
+    if (!silent) alert(`請先填寫 ${preset.name} 的 API Key 才能獲取模型列表！`);
+    return;
+  }
+  if (!preset.requiresApiKey && !baseUrl && providerId === 'custom') {
+    if (!silent) alert('請先填寫自訂端點的 Base URL！');
+    return;
+  }
   
   const btnRefreshModels = document.getElementById('btn-refresh-models');
   if (btnRefreshModels) {
@@ -307,31 +512,35 @@ async function refreshModels() {
   }
   
   try {
-    const provider = AIProviderFactory.create('gemini', apiKey, '');
+    const provider = AIProviderFactory.create(providerId, apiKey, '', { baseUrl });
     const models = await provider.getAvailableModels();
     
     if (models && models.length > 0) {
       const currentVal = els.aiModel.value;
       els.aiModel.innerHTML = '';
       models.forEach(m => {
-        cachedModelsMetadata[m.id] = m;
+        cachedModelsMetadata[`${providerId}:${m.id}`] = m;
+        if (providerId === 'gemini') cachedModelsMetadata[m.id] = m;
         const opt = document.createElement('option');
         opt.value = m.id;
-        opt.innerText = m.displayName;
+        opt.innerText = m.displayName || m.id;
         els.aiModel.appendChild(opt);
       });
       const hasCurrent = models.some(m => m.id === currentVal);
       if (hasCurrent) {
         els.aiModel.value = currentVal;
       } else {
-        els.aiModel.value = petState.settings.aiModel || models[0].id;
+        const savedModel = workingProviderConfigs[providerId]?.model || petState.settings.aiModel;
+        els.aiModel.value = models.some(m => m.id === savedModel) ? savedModel : models[0].id;
       }
       updateModelSelectOptionsLabels();
-      updateModelInfoCard(els.aiModel.value);
+      updateModelInfoCard(getEffectiveModelId());
     }
   } catch (e) {
     console.error('Failed to fetch models', e);
-    alert('獲取失敗: ' + (e.message || String(e)));
+    if (!silent) {
+      alert('獲取失敗: ' + (e.message || String(e)));
+    }
   } finally {
     if (btnRefreshModels) {
       btnRefreshModels.disabled = false;
@@ -341,23 +550,40 @@ async function refreshModels() {
 }
 
 document.getElementById('btn-refresh-models')?.addEventListener('click', () => {
-  if (!els.apiKey.value && !process.env.GEMINI_API_KEY) {
-    alert('請先填寫 API Key 才能獲取模型列表！');
-    return;
+  refreshModels(false);
+});
+
+document.getElementById('btn-open-provider-key')?.addEventListener('click', () => {
+  const preset = AIProviderFactory.getPreset(getActiveProviderId());
+  if (preset.keyUrl) {
+    shell.openExternal(preset.keyUrl);
   }
-  refreshModels();
 });
 
 // 測試連線按鈕
 const btnTestModel = document.getElementById('btn-test-model');
 const testStatusEl = document.getElementById('test-model-status');
 btnTestModel?.addEventListener('click', async () => {
-  const apiKey = els.apiKey.value || process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    alert('請先填寫 API Key 才能進行連線測試！');
+  const providerId = getActiveProviderId();
+  const preset = AIProviderFactory.getPreset(providerId);
+  const apiKey = els.apiKey.value.trim() || (providerId === 'gemini' ? (process.env.GEMINI_API_KEY || '') : '');
+  const baseUrl = (els.baseUrl && els.baseUrl.value.trim()) || preset.baseUrl || '';
+
+  if (preset.requiresApiKey && !apiKey) {
+    alert(`請先填寫 ${preset.name} 的 API Key 才能進行連線測試！`);
     return;
   }
-  const currentModel = els.aiModel ? els.aiModel.value : 'gemini-3.5-flash-lite';
+  if (providerId === 'custom' && !baseUrl) {
+    alert('請先填寫自訂端點的 Base URL 才能進行連線測試！');
+    return;
+  }
+
+  const currentModel = getEffectiveModelId();
+  if (!currentModel) {
+    alert('請先選擇或手動輸入要測試的模型 ID！');
+    return;
+  }
+
   btnTestModel.disabled = true;
   btnTestModel.innerText = '測試中 (0s)...';
   let elapsedSec = 0;
@@ -365,19 +591,19 @@ btnTestModel?.addEventListener('click', async () => {
     testStatusEl.style.display = 'block';
     testStatusEl.style.background = '#f1f5f9';
     testStatusEl.style.color = '#475569';
-    testStatusEl.innerText = `正在測試 ${currentModel} 連線與工具呼叫能力... (已耗時 0 秒)`;
+    testStatusEl.innerText = `正在測試 [${preset.name.split(' ')[0]}] ${currentModel} 連線與工具呼叫能力... (已耗時 0 秒)`;
   }
 
   const timerInterval = setInterval(() => {
     elapsedSec += 1;
     btnTestModel.innerText = `測試中 (${elapsedSec}s)...`;
     if (testStatusEl && testStatusEl.style.color === '#475569') {
-      testStatusEl.innerText = `正在測試 ${currentModel} 連線與工具呼叫能力... (已耗時 ${elapsedSec} 秒)`;
+      testStatusEl.innerText = `正在測試 [${preset.name.split(' ')[0]}] ${currentModel} 連線與工具呼叫能力... (已耗時 ${elapsedSec} 秒)`;
     }
   }, 1000);
 
   try {
-    const provider = AIProviderFactory.create('gemini', apiKey, currentModel);
+    const provider = AIProviderFactory.create(providerId, apiKey, currentModel, { baseUrl });
     const result = await provider.testModelAvailability(currentModel, 10000);
     clearInterval(timerInterval);
     if (result.success) {
@@ -391,18 +617,13 @@ btnTestModel?.addEventListener('click', async () => {
     }
 
     // 儲存測試結果紀錄
-    if (!petState.settings) petState.settings = {};
-    if (!petState.settings.modelTestResults) petState.settings.modelTestResults = {};
-    petState.settings.modelTestResults[currentModel] = {
+    saveTestResultRecord(providerId, currentModel, {
       success: Boolean(result.success),
       supportsTools: Boolean(result.supportsTools),
       latencyMs: result.latencyMs,
       error: result.error || null,
       testedAt: Date.now()
-    };
-    try {
-      fs.writeFileSync(statePath, JSON.stringify(petState, null, 2));
-    } catch (_) {}
+    });
 
     updateModelSelectOptionsLabels();
     updateModelInfoCard(currentModel);
@@ -411,18 +632,13 @@ btnTestModel?.addEventListener('click', async () => {
     testStatusEl.style.color = '#b91c1c';
     testStatusEl.innerText = `❌ 測試失敗：${err.message || String(err)}`;
 
-    if (!petState.settings) petState.settings = {};
-    if (!petState.settings.modelTestResults) petState.settings.modelTestResults = {};
-    petState.settings.modelTestResults[currentModel] = {
+    saveTestResultRecord(providerId, currentModel, {
       success: false,
       supportsTools: false,
       latencyMs: 0,
       error: err.message || String(err),
       testedAt: Date.now()
-    };
-    try {
-      fs.writeFileSync(statePath, JSON.stringify(petState, null, 2));
-    } catch (_) {}
+    });
 
     updateModelSelectOptionsLabels();
     updateModelInfoCard(currentModel);
@@ -446,8 +662,9 @@ document.querySelectorAll('.sub-tab-btn').forEach(btn => {
 });
 
 function updateQuotaUI() {
-  const currentModel = els.aiModel ? els.aiModel.value : 'gemini-3.5-flash-lite';
-  const summary = getUsageSummary(currentModel);
+  const providerId = getActiveProviderId();
+  const currentModel = getEffectiveModelId() || 'gemini-3.5-flash-lite';
+  const summary = getUsageSummary(currentModel, providerId);
   const reset = summary.resetInfo;
 
   const modelTargetEl = document.getElementById('quota-model-target');
@@ -464,14 +681,18 @@ function updateQuotaUI() {
   const badge = document.getElementById('quota-status-badge');
 
   if (reqText) {
-    reqText.innerText = `${summary.todayRequests} / ${summary.limitRPD} 次 (剩餘 ${summary.remainingRequests})`;
+    reqText.innerText = summary.isUnlimited
+      ? `${summary.todayRequests} 次（本機無上限）`
+      : `${summary.todayRequests} / ${summary.limitRPD} 次 (剩餘 ${summary.remainingRequests})`;
   }
 
   if (progressBar) {
-    progressBar.style.width = `${summary.percentUsed}%`;
+    progressBar.style.width = summary.isUnlimited ? '0%' : `${summary.percentUsed}%`;
     progressBar.className = 'quota-progress-fill';
-    if (summary.percentUsed >= 90) progressBar.classList.add('danger');
-    else if (summary.percentUsed >= 70) progressBar.classList.add('warning');
+    if (!summary.isUnlimited) {
+      if (summary.percentUsed >= 90) progressBar.classList.add('danger');
+      else if (summary.percentUsed >= 70) progressBar.classList.add('warning');
+    }
   }
 
   if (resetTime) {
@@ -491,7 +712,10 @@ function updateQuotaUI() {
   }
 
   if (badge) {
-    if (summary.isRateLimitClose) {
+    if (summary.isUnlimited) {
+      badge.className = 'quota-badge safe';
+      badge.innerText = `本機離線 (${summary.minuteRequests} RPM)`;
+    } else if (summary.isRateLimitClose) {
       badge.className = 'quota-badge warning';
       badge.innerText = `頻率高 (${summary.minuteRequests}/${summary.limitRPM} RPM)`;
     } else {
@@ -512,7 +736,13 @@ document.getElementById('btn-refresh-quota')?.addEventListener('click', () => {
 });
 
 document.getElementById('btn-open-aistudio')?.addEventListener('click', () => {
-  shell.openExternal('https://aistudio.google.com/app/plan_and_billing');
+  const providerId = getActiveProviderId();
+  if (providerId === 'gemini') {
+    shell.openExternal('https://aistudio.google.com/app/plan_and_billing');
+  } else {
+    const preset = AIProviderFactory.getPreset(providerId);
+    if (preset.keyUrl) shell.openExternal(preset.keyUrl);
+  }
 });
 
 function updateLabels() {
@@ -531,8 +761,11 @@ function checkDirty() {
     current.bedScale !== (s.bedScale ?? defaultSettings.bedScale) ||
     current.bedZ !== (s.bedZ ?? defaultSettings.bedZ) ||
     current.animSpeed !== (s.animSpeed ?? defaultSettings.animSpeed) ||
+    current.aiProvider !== (s.aiProvider ?? defaultSettings.aiProvider) ||
     current.apiKey !== (s.apiKey ?? defaultSettings.apiKey) ||
+    current.aiBaseUrl !== (s.aiBaseUrl ?? defaultSettings.aiBaseUrl) ||
     current.aiModel !== (s.aiModel ?? defaultSettings.aiModel) ||
+    current.thinkingLevel !== (s.thinkingLevel ?? defaultSettings.thinkingLevel) ||
     current.aiPersonality !== (s.aiPersonality ?? defaultSettings.aiPersonality) ||
     current.aiCustomPrompt !== (s.aiCustomPrompt ?? defaultSettings.aiCustomPrompt) ||
     current.contextTimeout !== (s.contextTimeout ?? defaultSettings.contextTimeout) ||
@@ -555,14 +788,19 @@ function setDirty(dirty) {
 }
 
 function getFormValues() {
+  const providerId = getActiveProviderId();
+  snapshotCurrentProviderInputs(providerId);
   return {
     bedX: parseInt(els.bedX.value),
     bedY: parseInt(els.bedY.value),
     bedScale: parseInt(els.bedScale.value),
     bedZ: parseInt(els.bedZ.value),
     animSpeed: parseFloat(els.animSpeed.value),
+    aiProvider: providerId,
     apiKey: els.apiKey.value.trim(),
-    aiModel: els.aiModel.value,
+    aiBaseUrl: els.baseUrl ? els.baseUrl.value.trim() : '',
+    aiModel: getEffectiveModelId(),
+    providerConfigs: JSON.parse(JSON.stringify(workingProviderConfigs)),
     thinkingLevel: els.thinkingLevel ? els.thinkingLevel.value : 'medium',
     aiPersonality: els.aiPersonality.value,
     aiCustomPrompt: els.aiCustomPrompt.value.trim(),
@@ -612,18 +850,38 @@ function revertSettings() {
 
 // 監聽變更
 Object.keys(els).forEach(key => {
-  if (key === 'summonShortcut') {
+  if (key === 'summonShortcut' || key === 'aiProvider' || !els[key]) {
     return; // 獨立處理
   }
   els[key].addEventListener('input', () => {
     if (key === 'aiPersonality') {
       document.getElementById('custom-personality-group').style.display = els.aiPersonality.value === 'custom' ? 'block' : 'none';
     }
+    if (key === 'customModel') {
+      updateQuotaUI();
+      updateModelInfoCard(getEffectiveModelId());
+    }
     updateLabels();
     checkDirty();
     previewBroadcast(); // 即時預覽
   });
 });
+
+if (els.aiProvider) {
+  els.aiProvider.addEventListener('change', () => {
+    // 切換前先保存原服務商已填寫的金鑰、端點與模型
+    snapshotCurrentProviderInputs(activeProviderId);
+    const nextProviderId = els.aiProvider.value;
+    applyProviderUI(nextProviderId, { loadSavedValues: true });
+    if (testStatusEl) testStatusEl.style.display = 'none';
+    updateModelSelectOptionsLabels();
+    updateModelInfoCard(getEffectiveModelId());
+    updateQuotaUI();
+    checkDirty();
+    previewBroadcast();
+    refreshModels(true);
+  });
+}
 
 els.enableClipboard.addEventListener('change', () => {
   checkDirty();
@@ -646,8 +904,11 @@ els.enableAlarmSound.addEventListener('change', () => {
 });
 
 els.aiModel.addEventListener('change', () => {
+  if (els.customModel && els.customModel.value.trim()) {
+    els.customModel.value = '';
+  }
   updateQuotaUI();
-  updateModelInfoCard(els.aiModel.value);
+  updateModelInfoCard(getEffectiveModelId());
 });
 
 let prevShortcut = '';

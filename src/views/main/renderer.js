@@ -114,13 +114,21 @@ const outfitContainer = document.getElementById('outfit-container');
 let pomodoroTimer = null;
 let isWorking = false;
 
-// 初始化 Gemini API 客戶端
+// 初始化 AI 客戶端（支援多供應商）
 let ai = null;
 
 function initAI() {
-  const apiKey = (petState.settings && petState.settings.apiKey) ? petState.settings.apiKey : process.env.GEMINI_API_KEY;
-  if (apiKey) {
-    ai = AIProviderFactory.create('gemini', apiKey, petState.settings?.aiModel || 'gemini-3.5-flash-lite');
+  const s = petState.settings || {};
+  const providerId = (s.aiProvider || 'gemini').toLowerCase();
+  const preset = AIProviderFactory.getPreset(providerId);
+  const providerCfg = (s.providerConfigs && s.providerConfigs[providerId]) || {};
+  const apiKey = s.apiKey || providerCfg.apiKey || (providerId === 'gemini' ? process.env.GEMINI_API_KEY : '') || '';
+  const baseUrl = s.aiBaseUrl || providerCfg.baseUrl || preset.baseUrl || '';
+  const modelName = s.aiModel || providerCfg.model || preset.defaultModel || 'gemini-3.5-flash-lite';
+
+  const hasRequiredAuth = preset.requiresApiKey ? Boolean(apiKey) : Boolean(baseUrl || apiKey);
+  if (hasRequiredAuth) {
+    ai = AIProviderFactory.create(providerId, apiKey, modelName, { baseUrl });
   } else {
     ai = null;
   }

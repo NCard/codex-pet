@@ -547,18 +547,22 @@ ${personaText}
         let finalResponseText = '';
 
         while (stepCount < maxAgentSteps) {
+          const activeProvider = (petState.settings?.aiProvider || 'gemini').toLowerCase();
           const activeModel = petState.settings?.aiModel || 'gemini-3.5-flash-lite';
+          const reqConfig = {
+            systemInstruction: sysInstruction,
+            tools: (activeTools && activeTools.length > 0) ? activeTools : undefined
+          };
+          if (activeProvider === 'gemini') {
+            reqConfig.thinkingConfig = {
+              thinkingLevel: thinkingLevel,
+              includeThoughts: true
+            };
+          }
           let response = await callAIWithThinkingFallback({
             model: activeModel,
             contents: sessionContext,
-            config: { 
-              systemInstruction: sysInstruction,
-              tools: (activeTools && activeTools.length > 0) ? activeTools : undefined,
-              thinkingConfig: {
-                thinkingLevel: thinkingLevel,
-                includeThoughts: true
-              }
-            }
+            config: reqConfig
           });
 
           if (response && response.usageMetadata) {
@@ -726,12 +730,12 @@ ${personaText}
                 error: e.message
               });
               broadcastLiveInspector('');
-              functionResponses.push({
-                functionResponse: {
-                  name: call.name,
-                  response: { error: e.message }
-                }
-              });
+              const errResp = {
+                name: call.name,
+                response: { error: e.message }
+              };
+              if (call.id) errResp.id = call.id;
+              functionResponses.push({ functionResponse: errResp });
             }
           }
 
@@ -741,16 +745,19 @@ ${personaText}
           if (stepCount >= maxAgentSteps) {
             console.warn(`[Agent] Reached maxAgentSteps (${maxAgentSteps}), summarizing...`);
             chatContent.innerHTML = `${namePrefix}正在彙整最後結果... (•ө•)੭`;
+            const summaryConfig = {
+              systemInstruction: sysInstruction + "\n【重要指令】已完成所有可用步驟，請根據先前的執行結果做最後的完整結論與回覆，不要再調用任何工具。"
+            };
+            if (activeProvider === 'gemini') {
+              summaryConfig.thinkingConfig = {
+                thinkingLevel: thinkingLevel,
+                includeThoughts: true
+              };
+            }
             const summaryResponse = await callAIWithThinkingFallback({
               model: activeModel,
               contents: sessionContext,
-              config: { 
-                systemInstruction: sysInstruction + "\n【重要指令】已完成所有可用步驟，請根據先前的執行結果做最後的完整結論與回覆，不要再調用任何工具。",
-                thinkingConfig: {
-                  thinkingLevel: thinkingLevel,
-                  includeThoughts: true
-                }
-              }
+              config: summaryConfig
             });
             if (summaryResponse.candidates && summaryResponse.candidates[0]?.content?.parts) {
               const cleanParts = summaryResponse.candidates[0].content.parts.filter(p => !p.thought);
