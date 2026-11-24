@@ -10,6 +10,7 @@ describe('Alarm View UI Enhancements Unit Tests', () => {
   let mockAlarmsData = [];
 
   beforeEach(() => {
+    jest.useFakeTimers();
     jest.resetModules();
 
     document.body.innerHTML = `
@@ -67,6 +68,8 @@ describe('Alarm View UI Enhancements Unit Tests', () => {
   });
 
   afterEach(() => {
+    jest.clearAllTimers();
+    jest.useRealTimers();
     jest.restoreAllMocks();
   });
 

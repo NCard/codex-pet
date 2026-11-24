@@ -8,6 +8,8 @@ describe('Alarm Module', () => {
   let mockIpcRenderer;
 
   beforeEach(() => {
+    jest.useFakeTimers();
+
     mockLaser = { startShooting: jest.fn(), stopShooting: jest.fn() };
     mockResetIdle = jest.fn();
     mockShowAlarmBubble = jest.fn();
@@ -32,6 +34,11 @@ describe('Alarm Module', () => {
       kiwi: mockKiwi,
       ipcRenderer: mockIpcRenderer
     });
+  });
+
+  afterEach(() => {
+    jest.clearAllTimers();
+    jest.useRealTimers();
   });
 
   test('should initialize without errors', () => {

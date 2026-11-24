@@ -20,6 +20,8 @@ describe('Alarm Protection & Interlock Unit Tests', () => {
   let chatInstance;
 
   beforeEach(() => {
+    jest.useFakeTimers();
+
     document.body.innerHTML = `
       <div id="chat-container">
         <div id="clipboard-badge" style="display: none;">
@@ -89,6 +91,8 @@ describe('Alarm Protection & Interlock Unit Tests', () => {
     if (chatInstance) {
       chatInstance.dismissAlarm();
     }
+    jest.clearAllTimers();
+    jest.useRealTimers();
   });
 
   test('showAlarmBubble should set isAlarmActive to true and show bubble', () => {
