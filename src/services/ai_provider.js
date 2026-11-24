@@ -130,8 +130,8 @@ class GeminiProvider extends AIProvider {
       const name = m.name;
       
       if (name.includes('gemini') && methods.includes('generateContent')) {
-        // 排除特定測試、非對話模型、以及帶有特定版本號碼的分支 (如 -001)
-        const excludePatterns = ['embedding', 'tts', 'image', 'video', 'aqa', 'veo', 'imagen', 'preview', 'exp', 'latest', 'robotics', 'computer-use', 'deep-research', '-001', '-002'];
+        // 排除特定測試、非對話模型、語音轉錄、邊緣設備模型以及帶有特定版本號碼的分支 (如 -001)
+        const excludePatterns = ['embedding', 'tts', 'image', 'video', 'aqa', 'veo', 'imagen', 'preview', 'exp', 'latest', 'robotics', 'computer-use', 'deep-research', 'transcribe', 'nano', '-001', '-002'];
         const shouldExclude = excludePatterns.some(pattern => name.includes(pattern));
         
         if (!shouldExclude) {

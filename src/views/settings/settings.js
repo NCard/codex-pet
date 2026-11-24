@@ -258,7 +258,10 @@ function updateModelSelectOptionsLabels() {
   if (!select) return;
   const testResults = petState?.settings?.modelTestResults || {};
 
-  Array.from(select.options).forEach(opt => {
+  const currentVal = select.value;
+  const optionsArr = Array.from(select.options);
+
+  optionsArr.forEach(opt => {
     const modelId = opt.value;
     const meta = cachedModelsMetadata[modelId] || {};
     const baseName = meta.displayName || modelId;
@@ -275,6 +278,22 @@ function updateModelSelectOptionsLabels() {
       opt.innerText = `❌ ${baseName} (${errBrief})`;
     }
   });
+
+  // 智慧排序：可用模型 (✅) 自動置頂，尚未測試居中，不可用模型 (❌) 排在最後
+  optionsArr.sort((a, b) => {
+    const getScore = (opt) => {
+      const t = testResults[opt.value];
+      if (!t) return 2; // 未測試
+      if (t.success && t.supportsTools) return 0; // 最優先置頂
+      if (t.success && !t.supportsTools) return 1;
+      return 3; // 不可用置底
+    };
+    return getScore(a) - getScore(b);
+  });
+
+  select.innerHTML = '';
+  optionsArr.forEach(opt => select.appendChild(opt));
+  select.value = currentVal;
 }
 
 async function refreshModels() {
