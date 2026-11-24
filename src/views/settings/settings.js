@@ -1,8 +1,16 @@
 const { ipcRenderer, shell } = require('electron');
 const fs = require('fs');
 const path = require('path');
-const { petStatePath: statePath } = require('../../utils/paths');
-const { getUsageSummary } = require('../../utils/usage_tracker');
+const {
+  petStatePath: statePath,
+  dataDir,
+  logDir,
+  historyPath,
+  usagePath
+} = require('../../utils/paths');
+const { getUsageSummary, loadUsageData, resetUsageData } = require('../../utils/usage_tracker');
+const modelCache = require('../../utils/model_cache');
+const cryptoUtils = require('../../utils/crypto_utils');
 require('dotenv').config({ path: path.resolve(__dirname, '../../../.env') });
 const { AIProviderFactory } = require('../../services/ai_provider');
 
@@ -108,23 +116,12 @@ function getEffectiveModelId() {
 }
 
 function getTestResultRecord(providerId, modelId) {
-  const map = petState?.settings?.modelTestResults || {};
-  const compositeKey = `${providerId}:${modelId}`;
-  if (map[compositeKey]) return map[compositeKey];
-  if (providerId === 'gemini' && map[modelId]) return map[modelId];
-  return null;
+  return modelCache.getTestResult(providerId, modelId);
 }
 
 function saveTestResultRecord(providerId, modelId, record) {
-  if (!petState.settings) petState.settings = {};
-  if (!petState.settings.modelTestResults) petState.settings.modelTestResults = {};
-  petState.settings.modelTestResults[`${providerId}:${modelId}`] = record;
-  if (providerId === 'gemini') {
-    petState.settings.modelTestResults[modelId] = record;
-  }
-  try {
-    fs.writeFileSync(statePath, JSON.stringify(petState, null, 2));
-  } catch (_) {}
+  modelCache.saveTestResult(providerId, modelId, record);
+  updateDataManagementUI();
 }
 
 function snapshotCurrentProviderInputs(targetProviderId) {
@@ -141,11 +138,12 @@ function snapshotCurrentProviderInputs(targetProviderId) {
 function populateDefaultModelsForProvider(providerId, preferredModel = '') {
   if (!els.aiModel) return;
   const preset = AIProviderFactory.getPreset(providerId);
-  const presetModels = preset.defaultModels || [];
+  const cachedModels = modelCache.getCachedModels(providerId);
+  const sourceModels = (cachedModels && cachedModels.length > 0) ? cachedModels : (preset.defaultModels || []);
   els.aiModel.innerHTML = '';
 
   const addedIds = new Set();
-  presetModels.forEach(m => {
+  sourceModels.forEach(m => {
     cachedModelsMetadata[`${providerId}:${m.id}`] = m;
     if (providerId === 'gemini') cachedModelsMetadata[m.id] = m;
     const opt = document.createElement('option');
@@ -248,6 +246,11 @@ function initUI() {
   els.bedZ.value = s.bedZ ?? defaultSettings.bedZ;
   els.animSpeed.value = s.animSpeed ?? defaultSettings.animSpeed;
 
+  // 遷移舊版儲存在 pet_state.json 的測試紀錄至獨立 ai_model_cache.json
+  if (s.modelTestResults && typeof s.modelTestResults === 'object') {
+    modelCache.migrateLegacyTestResults(s.modelTestResults);
+  }
+
   // 初始化多服務商獨立設定（向下相容舊版僅有 apiKey / aiModel 的結構）
   workingProviderConfigs = {};
   if (s.providerConfigs && typeof s.providerConfigs === 'object') {
@@ -310,10 +313,13 @@ function initUI() {
   updateQuotaUI();
   updateModelSelectOptionsLabels();
   updateModelInfoCard();
+  updateDataManagementUI();
   setDirty(false);
   
-  // 嘗試靜默載入可用模型
-  refreshModels(true);
+  // 若本機尚未快取此服務商模型清單，才自動靜默抓一次；已有快取則直接秒開顯示
+  if (modelCache.getCachedModels(initialProvider).length === 0) {
+    refreshModels(true);
+  }
 }
 
 const cachedModelsMetadata = {
@@ -516,6 +522,7 @@ async function refreshModels(silent = false) {
     const models = await provider.getAvailableModels();
     
     if (models && models.length > 0) {
+      modelCache.setCachedModels(providerId, models);
       const currentVal = els.aiModel.value;
       els.aiModel.innerHTML = '';
       models.forEach(m => {
@@ -535,6 +542,7 @@ async function refreshModels(silent = false) {
       }
       updateModelSelectOptionsLabels();
       updateModelInfoCard(getEffectiveModelId());
+      updateDataManagementUI();
     }
   } catch (e) {
     console.error('Failed to fetch models', e);
@@ -658,7 +666,195 @@ document.querySelectorAll('.sub-tab-btn').forEach(btn => {
     const targetId = btn.getAttribute('data-subtab');
     const targetContent = document.getElementById(targetId);
     if (targetContent) targetContent.classList.add('active');
+    if (targetId === 'subtab-data') {
+      updateDataManagementUI();
+    } else if (targetId === 'subtab-quota') {
+      updateQuotaUI();
+    }
   });
+});
+
+function formatBytes(bytes) {
+  if (!bytes || bytes <= 0) return '0 B';
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+}
+
+function getFileSizeSafe(filePath) {
+  try {
+    if (fs.existsSync(filePath)) {
+      return fs.statSync(filePath).size;
+    }
+  } catch (_) {}
+  return 0;
+}
+
+function escapeHtmlBasic(str) {
+  return String(str || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function updateDataManagementUI() {
+  const listEl = document.getElementById('test-history-list');
+  const countBadge = document.getElementById('test-records-count-badge');
+  const records = modelCache.getAllTestResults();
+
+  if (countBadge) {
+    countBadge.innerText = `${records.length} 筆紀錄`;
+  }
+
+  if (listEl) {
+    if (records.length === 0) {
+      listEl.innerHTML = '<div class="test-history-empty">尚無連線測試紀錄。請至「模型 API」分頁點擊「🧪 測試連線」。</div>';
+    } else {
+      listEl.innerHTML = records.map(rec => {
+        const d = new Date(rec.testedAt || Date.now());
+        const timeStr = `${d.getFullYear()}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getDate().toString().padStart(2, '0')} ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
+        let cls = 'error';
+        let statusLabel = '❌ 失敗';
+        if (rec.success && rec.supportsTools) {
+          cls = 'success';
+          statusLabel = `✅ 可用 (${rec.latencyMs}ms)`;
+        } else if (rec.success && !rec.supportsTools) {
+          cls = 'warning';
+          statusLabel = `⚠️ 無工具 (${rec.latencyMs}ms)`;
+        }
+        const errHtml = (!rec.success && rec.error)
+          ? `<div class="test-history-err">${escapeHtmlBasic(rec.error)}</div>`
+          : '';
+        return `
+          <div class="test-history-item ${cls}">
+            <div class="test-history-top">
+              <span class="test-history-model" title="${escapeHtmlBasic(rec.modelId)}">${escapeHtmlBasic(rec.modelId)}</span>
+              <span class="test-history-provider">${escapeHtmlBasic(rec.providerId)}</span>
+            </div>
+            <div class="test-history-meta">
+              <span>${statusLabel}</span>
+              <span>🕒 ${timeStr}</span>
+            </div>
+            ${errHtml}
+          </div>
+        `;
+      }).join('');
+    }
+  }
+
+  // 更新本地資料檔案大小與統計
+  const cacheStats = modelCache.getCacheStats();
+  const statModelCache = document.getElementById('stat-model-cache');
+  if (statModelCache) {
+    statModelCache.innerText = `測試紀錄 ${cacheStats.testCount} 筆 / 快取 ${cacheStats.totalCachedModels} 個模型 (${formatBytes(cacheStats.sizeBytes)})`;
+  }
+
+  const statChatHistory = document.getElementById('stat-chat-history');
+  if (statChatHistory) {
+    const histSize = getFileSizeSafe(historyPath);
+    statChatHistory.innerText = histSize > 0 ? `檔案大小：${formatBytes(histSize)}` : '目前無對話紀錄 (0 B)';
+  }
+
+  const statUsage = document.getElementById('stat-usage-data');
+  if (statUsage) {
+    const uData = loadUsageData();
+    const uSize = getFileSizeSafe(usagePath);
+    statUsage.innerText = `累計 ${uData.totalRequests || 0} 次請求 / ${Number(uData.totalTokens || 0).toLocaleString()} Tokens (${formatBytes(uSize)})`;
+  }
+
+  const statLogs = document.getElementById('stat-app-logs');
+  if (statLogs) {
+    const logPath = path.join(logDir, 'app.log');
+    const logSize = getFileSizeSafe(logPath);
+    statLogs.innerText = logSize > 0 ? `日誌大小：${formatBytes(logSize)}` : '目前無日誌檔案 (0 B)';
+  }
+}
+
+document.getElementById('btn-refresh-data-stats')?.addEventListener('click', () => {
+  updateDataManagementUI();
+  const btn = document.getElementById('btn-refresh-data-stats');
+  if (btn) {
+    const orig = btn.innerText;
+    btn.innerText = '✅ 已更新';
+    setTimeout(() => { btn.innerText = orig; }, 900);
+  }
+});
+
+document.getElementById('btn-clear-test-results')?.addEventListener('click', () => {
+  if (!confirm('確定要清除所有模型的「連線測試紀錄」嗎？（不會影響您的 API Key 與設定）')) return;
+  modelCache.clearTestResults();
+  if (petState.settings && petState.settings.modelTestResults) {
+    delete petState.settings.modelTestResults;
+  }
+  updateModelSelectOptionsLabels();
+  updateModelInfoCard(getEffectiveModelId());
+  updateDataManagementUI();
+  alert('✅ 已清除所有連線測試紀錄！');
+});
+
+document.getElementById('btn-clear-model-cache')?.addEventListener('click', () => {
+  if (!confirm('確定要清除本機快取的「模型清單」嗎？下次點擊「重新整理」會重新向 API 抓取最新清單。')) return;
+  modelCache.clearModelsCache();
+  populateDefaultModelsForProvider(getActiveProviderId(), getEffectiveModelId());
+  updateModelSelectOptionsLabels();
+  updateModelInfoCard(getEffectiveModelId());
+  updateDataManagementUI();
+  alert('✅ 已清除模型清單快取！');
+});
+
+document.getElementById('btn-clear-all-model-cache')?.addEventListener('click', () => {
+  if (!confirm('確定要同時清除所有「模型清單快取」與「連線測試紀錄」嗎？')) return;
+  modelCache.clearAllCache();
+  if (petState.settings && petState.settings.modelTestResults) {
+    delete petState.settings.modelTestResults;
+  }
+  populateDefaultModelsForProvider(getActiveProviderId(), getEffectiveModelId());
+  updateModelSelectOptionsLabels();
+  updateModelInfoCard(getEffectiveModelId());
+  updateDataManagementUI();
+  alert('✅ 已清空所有模型快取與測試紀錄！');
+});
+
+document.getElementById('btn-clear-chat-history')?.addEventListener('click', () => {
+  if (!confirm('確定要永久清除所有「加密對話歷史紀錄」嗎？此操作無法復原。')) return;
+  try {
+    const encryptedEmpty = cryptoUtils.encryptData('[]');
+    fs.writeFileSync(historyPath, encryptedEmpty, 'utf8');
+    ipcRenderer.send('pet-state-changed');
+    updateDataManagementUI();
+    alert('✅ 已清除所有對話歷史紀錄！');
+  } catch (err) {
+    alert('❌ 清除對話紀錄失敗：' + (err.message || String(err)));
+  }
+});
+
+document.getElementById('btn-reset-usage-data')?.addEventListener('click', () => {
+  if (!confirm('確定要手動重置所有「AI 用量與配額統計」嗎？（提醒：此動作會將今日與累計統計歸零）')) return;
+  resetUsageData();
+  updateQuotaUI();
+  updateDataManagementUI();
+  alert('✅ 已手動重置 AI 用量統計！');
+});
+
+document.getElementById('btn-clear-app-logs')?.addEventListener('click', () => {
+  if (!confirm('確定要清空本機應用程式執行日誌 (app.log) 嗎？')) return;
+  try {
+    const logPath = path.join(logDir, 'app.log');
+    if (fs.existsSync(logPath)) {
+      fs.writeFileSync(logPath, '', 'utf8');
+    }
+    updateDataManagementUI();
+    alert('✅ 已清空應用程式日誌！');
+  } catch (err) {
+    alert('❌ 清空日誌失敗：' + (err.message || String(err)));
+  }
+});
+
+document.getElementById('btn-open-data-dir')?.addEventListener('click', () => {
+  if (shell && typeof shell.openPath === 'function') {
+    shell.openPath(dataDir);
+  }
 });
 
 function updateQuotaUI() {
@@ -879,7 +1075,9 @@ if (els.aiProvider) {
     updateQuotaUI();
     checkDirty();
     previewBroadcast();
-    refreshModels(true);
+    if (modelCache.getCachedModels(nextProviderId).length === 0) {
+      refreshModels(true);
+    }
   });
 }
 

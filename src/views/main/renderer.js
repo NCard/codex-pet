@@ -183,15 +183,15 @@ ipcRenderer.on('settings-closed', () => {
 
 // 監聽設定更新
 ipcRenderer.on('update-settings', (event, newSettings) => {
-  petState.settings = newSettings;
-  applySettings(newSettings);
+  petState.settings = { ...(petState.settings || {}), ...(newSettings || {}) };
+  applySettings(petState.settings);
   savePetState();
   initAI();
 });
 
 ipcRenderer.on('preview-settings', (event, newSettings) => {
-  petState.settings = newSettings;
-  applySettings(newSettings);
+  petState.settings = { ...(petState.settings || {}), ...(newSettings || {}) };
+  applySettings(petState.settings);
   initAI();
 });
 

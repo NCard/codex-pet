@@ -21,5 +21,6 @@ module.exports = {
   petStatePath: path.join(dataDir, 'pet_state.json'),
   alarmsPath: path.join(dataDir, 'alarms.json'),
   historyPath: path.join(dataDir, 'chat_history.dat'),
-  usagePath: path.join(dataDir, 'ai_usage.json')
+  usagePath: path.join(dataDir, 'ai_usage.json'),
+  modelCachePath: path.join(dataDir, 'ai_model_cache.json')
 };

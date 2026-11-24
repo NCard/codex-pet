@@ -16,5 +16,6 @@ describe('Paths Utils Unit Tests', () => {
     assert.ok(paths.alarmsPath.endsWith('alarms.json'));
     assert.ok(paths.historyPath.endsWith('chat_history.dat'));
     assert.ok(paths.usagePath.endsWith('ai_usage.json'));
+    assert.ok(paths.modelCachePath.endsWith('ai_model_cache.json'));
   });
 });

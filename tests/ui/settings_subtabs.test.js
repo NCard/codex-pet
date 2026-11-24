@@ -11,17 +11,18 @@ describe('Settings Sub-tabs & Model Info Card UI Tests', () => {
     container.innerHTML = htmlContent;
   });
 
-  test('settings.html should contain the sub-tabs navigation container and 3 sub-tab buttons', () => {
+  test('settings.html should contain the sub-tabs navigation container and 4 sub-tab buttons', () => {
     const subTabs = container.querySelector('.sub-tabs');
     expect(subTabs).not.toBeNull();
 
     const buttons = Array.from(subTabs.querySelectorAll('.sub-tab-btn'));
-    expect(buttons.length).toBe(3);
+    expect(buttons.length).toBe(4);
 
     const subtabTargets = buttons.map(b => b.getAttribute('data-subtab'));
     expect(subtabTargets).toContain('subtab-model');
     expect(subtabTargets).toContain('subtab-quota');
     expect(subtabTargets).toContain('subtab-personality');
+    expect(subtabTargets).toContain('subtab-data');
 
     // Default active subtab should be subtab-model
     const activeBtn = subTabs.querySelector('.sub-tab-btn.active');
@@ -29,18 +30,30 @@ describe('Settings Sub-tabs & Model Info Card UI Tests', () => {
     expect(activeBtn.getAttribute('data-subtab')).toBe('subtab-model');
   });
 
-  test('settings.html should contain 3 subtab-content sections with proper default visibility', () => {
+  test('settings.html should contain 4 subtab-content sections with proper default visibility', () => {
     const modelSubtab = container.querySelector('#subtab-model');
     const quotaSubtab = container.querySelector('#subtab-quota');
     const personalitySubtab = container.querySelector('#subtab-personality');
+    const dataSubtab = container.querySelector('#subtab-data');
 
     expect(modelSubtab).not.toBeNull();
     expect(quotaSubtab).not.toBeNull();
     expect(personalitySubtab).not.toBeNull();
+    expect(dataSubtab).not.toBeNull();
 
     expect(modelSubtab.classList.contains('active')).toBe(true);
     expect(quotaSubtab.classList.contains('active')).toBe(false);
     expect(personalitySubtab.classList.contains('active')).toBe(false);
+    expect(dataSubtab.classList.contains('active')).toBe(false);
+
+    // Data & cache management controls
+    expect(dataSubtab.querySelector('#test-history-list')).not.toBeNull();
+    expect(dataSubtab.querySelector('#btn-clear-test-results')).not.toBeNull();
+    expect(dataSubtab.querySelector('#btn-clear-model-cache')).not.toBeNull();
+    expect(dataSubtab.querySelector('#btn-clear-chat-history')).not.toBeNull();
+    expect(dataSubtab.querySelector('#btn-reset-usage-data')).not.toBeNull();
+    expect(dataSubtab.querySelector('#btn-clear-app-logs')).not.toBeNull();
+    expect(dataSubtab.querySelector('#btn-open-data-dir')).not.toBeNull();
   });
 
   test('settings.html should contain test model button and test status container', () => {

@@ -20,9 +20,10 @@
   <div id="tab-general" class="tab-content active">
     <!-- 內頁膠囊小頁籤導覽列 (Sub-tabs) -->
     <div class="sub-tabs">
-      <button class="sub-tab-btn active" data-subtab="subtab-model" type="button">🤖 模型與 API</button>
-      <button class="sub-tab-btn" data-subtab="subtab-quota" type="button">📊 用量與配額</button>
-      <button class="sub-tab-btn" data-subtab="subtab-personality" type="button">💬 個性與記憶</button>
+      <button class="sub-tab-btn active" data-subtab="subtab-model" type="button">🤖 模型 API</button>
+      <button class="sub-tab-btn" data-subtab="subtab-quota" type="button">📊 用量配額</button>
+      <button class="sub-tab-btn" data-subtab="subtab-personality" type="button">💬 個性記憶</button>
+      <button class="sub-tab-btn" data-subtab="subtab-data" type="button">🗄️ 資料快取</button>
     </div>
 
     <!-- 子分頁 1：模型與 API -->
@@ -200,6 +201,71 @@
             <option value="0">永久保留（直到手動清除）</option>
           </select>
           <div style="font-size: 11px; color: #666; margin-top: 5px;">* 超過此時間沒有對話，Wiki Wiki 就會忘記當前話題。</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 子分頁 4：資料與快取管理 -->
+    <div id="subtab-data" class="subtab-content">
+      <div class="section">
+        <div class="section-title" style="display: flex; justify-content: space-between; align-items: center;">
+          <span>🧪 連線測試紀錄 (Test Records)</span>
+          <span id="test-records-count-badge" class="quota-badge safe">0 筆紀錄</span>
+        </div>
+        <div id="test-history-list" class="test-history-list">
+          <div class="test-history-empty">尚無連線測試紀錄。請至「模型 API」分頁點擊「🧪 測試連線」。</div>
+        </div>
+        <div style="display: flex; gap: 8px; margin-top: 10px;">
+          <button id="btn-clear-test-results" type="button" class="btn-secondary btn-danger-outline" style="flex: 1; padding: 6px; font-size: 12px; border-radius: 6px; cursor: pointer;">🗑️ 清除測試紀錄</button>
+          <button id="btn-clear-model-cache" type="button" class="btn-secondary" style="flex: 1; padding: 6px; font-size: 12px; border-radius: 6px; cursor: pointer;">🧹 清除模型清單快取</button>
+        </div>
+        <div style="font-size: 10.5px; color: #64748b; margin-top: 6px;">
+          * 測試紀錄與模型快取獨立儲存在 <code>ai_model_cache.json</code>，關閉視窗或未儲存設定皆不會遺失。
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title" style="display: flex; justify-content: space-between; align-items: center;">
+          <span>💾 本地資料與快取管理 (Local Data)</span>
+          <button id="btn-refresh-data-stats" type="button" class="btn-mini" title="重新掃描本地檔案大小">🔄 重新整理</button>
+        </div>
+
+        <div class="data-manage-list">
+          <div class="data-manage-row">
+            <div class="data-manage-info">
+              <div class="data-manage-title">🧪 模型快取與測試紀錄</div>
+              <div class="data-manage-sub" id="stat-model-cache">讀取中...</div>
+            </div>
+            <button id="btn-clear-all-model-cache" type="button" class="btn-mini btn-mini-danger">全部清除</button>
+          </div>
+
+          <div class="data-manage-row">
+            <div class="data-manage-info">
+              <div class="data-manage-title">💬 加密對話歷史紀錄</div>
+              <div class="data-manage-sub" id="stat-chat-history">讀取中...</div>
+            </div>
+            <button id="btn-clear-chat-history" type="button" class="btn-mini btn-mini-danger">清除對話</button>
+          </div>
+
+          <div class="data-manage-row">
+            <div class="data-manage-info">
+              <div class="data-manage-title">📊 AI 用量與配額統計</div>
+              <div class="data-manage-sub" id="stat-usage-data">讀取中...</div>
+            </div>
+            <button id="btn-reset-usage-data" type="button" class="btn-mini btn-mini-danger">重置統計</button>
+          </div>
+
+          <div class="data-manage-row">
+            <div class="data-manage-info">
+              <div class="data-manage-title">📝 應用程式日誌 (Logs)</div>
+              <div class="data-manage-sub" id="stat-app-logs">讀取中...</div>
+            </div>
+            <button id="btn-clear-app-logs" type="button" class="btn-mini">清除日誌</button>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 8px; margin-top: 12px;">
+          <button id="btn-open-data-dir" type="button" class="btn-secondary" style="flex: 1; padding: 7px; font-size: 12px; border-radius: 6px; cursor: pointer;">📂 開啟本地資料夾 (.ai-pet-data)</button>
         </div>
       </div>
     </div>

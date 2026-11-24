@@ -257,6 +257,20 @@ function getUsageSummary(currentModel = 'gemini-3.5-flash-lite', provider = 'gem
   };
 }
 
+function resetUsageData() {
+  const empty = {
+    lastPtDate: getDailyResetInfo().ptDateKey,
+    todayRequests: 0,
+    todayTokens: 0,
+    totalRequests: 0,
+    totalTokens: 0,
+    minuteTimestamps: [],
+    byModel: {}
+  };
+  saveUsageData(empty);
+  return empty;
+}
+
 module.exports = {
   getDailyResetInfo,
   getModelQuota,
@@ -264,6 +278,7 @@ module.exports = {
   getUsageSummary,
   loadUsageData,
   saveUsageData,
-  setUsageFilePath
+  setUsageFilePath,
+  resetUsageData
 };
 
