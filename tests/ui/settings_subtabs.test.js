@@ -63,6 +63,15 @@ describe('Settings Sub-tabs & Model Info Card UI Tests', () => {
     expect(card.querySelector('#model-info-out')).not.toBeNull();
     expect(card.querySelector('#model-info-tools')).not.toBeNull();
     expect(card.querySelector('#model-info-rpm')).not.toBeNull();
+    expect(card.querySelector('#model-info-test-record')).not.toBeNull();
+    expect(card.querySelector('#model-info-test-text')).not.toBeNull();
+  });
+
+  test('model select options should reflect test badges when test results exist', () => {
+    const select = container.querySelector('#setting-aiModel');
+    expect(select).not.toBeNull();
+    const opt = select.querySelector('option[value="gemini-3.5-flash-lite"]');
+    expect(opt).not.toBeNull();
   });
 
   test('sub-tab buttons should correctly toggle active class on clicks', () => {

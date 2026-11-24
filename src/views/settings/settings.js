@@ -128,6 +128,7 @@ function initUI() {
   updateLabels();
   updateBedEditUI();
   updateQuotaUI();
+  updateModelSelectOptionsLabels();
   updateModelInfoCard();
   setDirty(false);
   
@@ -224,6 +225,56 @@ function updateModelInfoCard(modelId = '') {
     toolsEl.style.color = meta.supportsTools ? '#15803d' : '#b91c1c';
   }
   if (rpmEl) rpmEl.innerText = meta.tier === 'pro' ? '2 RPM' : '15 RPM';
+
+  // 更新上次測試紀錄
+  const testRecordEl = document.getElementById('model-info-test-record');
+  const testRecordTextEl = document.getElementById('model-info-test-text');
+  const testResults = petState?.settings?.modelTestResults || {};
+  const test = testResults[id];
+
+  if (testRecordEl && testRecordTextEl) {
+    if (test) {
+      const d = new Date(test.testedAt || Date.now());
+      const dateStr = `${d.getFullYear()}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getDate().toString().padStart(2, '0')} ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
+      if (test.success && test.supportsTools) {
+        testRecordEl.className = 'model-info-test-record success';
+        testRecordTextEl.innerText = `上次測試：${dateStr} (✅ 連線正常，延遲 ${test.latencyMs}ms，支援 Agent 工具)`;
+      } else if (test.success && !test.supportsTools) {
+        testRecordEl.className = 'model-info-test-record warning';
+        testRecordTextEl.innerText = `上次測試：${dateStr} (⚠️ 連線正常但無 Agent 工具支援，延遲 ${test.latencyMs}ms)`;
+      } else {
+        testRecordEl.className = 'model-info-test-record error';
+        testRecordTextEl.innerText = `上次測試：${dateStr} (❌ 測試失敗：${test.error || '連線錯誤'})`;
+      }
+    } else {
+      testRecordEl.className = 'model-info-test-record';
+      testRecordTextEl.innerText = '尚未進行連線測試 (可點擊上方「🧪 測試連線」即時檢測)';
+    }
+  }
+}
+
+function updateModelSelectOptionsLabels() {
+  const select = els.aiModel;
+  if (!select) return;
+  const testResults = petState?.settings?.modelTestResults || {};
+
+  Array.from(select.options).forEach(opt => {
+    const modelId = opt.value;
+    const meta = cachedModelsMetadata[modelId] || {};
+    const baseName = meta.displayName || modelId;
+    const test = testResults[modelId];
+
+    if (!test) {
+      opt.innerText = baseName;
+    } else if (test.success && test.supportsTools) {
+      opt.innerText = `✅ ${baseName} (${test.latencyMs}ms)`;
+    } else if (test.success && !test.supportsTools) {
+      opt.innerText = `⚠️ ${baseName} (無工具 • ${test.latencyMs}ms)`;
+    } else {
+      const errBrief = (test.error || '').includes('429') ? '配額超限' : '不可用';
+      opt.innerText = `❌ ${baseName} (${errBrief})`;
+    }
+  });
 }
 
 async function refreshModels() {
@@ -256,6 +307,7 @@ async function refreshModels() {
       } else {
         els.aiModel.value = petState.settings.aiModel || models[0].id;
       }
+      updateModelSelectOptionsLabels();
       updateModelInfoCard(els.aiModel.value);
     }
   } catch (e) {
@@ -308,10 +360,43 @@ btnTestModel?.addEventListener('click', async () => {
       testStatusEl.style.color = '#b91c1c';
       testStatusEl.innerText = `❌ 測試失敗 (${result.latencyMs}ms)：${result.error}`;
     }
+
+    // 儲存測試結果紀錄
+    if (!petState.settings) petState.settings = {};
+    if (!petState.settings.modelTestResults) petState.settings.modelTestResults = {};
+    petState.settings.modelTestResults[currentModel] = {
+      success: Boolean(result.success),
+      supportsTools: Boolean(result.supportsTools),
+      latencyMs: result.latencyMs,
+      error: result.error || null,
+      testedAt: Date.now()
+    };
+    try {
+      fs.writeFileSync(statePath, JSON.stringify(petState, null, 2));
+    } catch (_) {}
+
+    updateModelSelectOptionsLabels();
+    updateModelInfoCard(currentModel);
   } catch (err) {
     testStatusEl.style.background = '#fee2e2';
     testStatusEl.style.color = '#b91c1c';
     testStatusEl.innerText = `❌ 測試失敗：${err.message || String(err)}`;
+
+    if (!petState.settings) petState.settings = {};
+    if (!petState.settings.modelTestResults) petState.settings.modelTestResults = {};
+    petState.settings.modelTestResults[currentModel] = {
+      success: false,
+      supportsTools: false,
+      latencyMs: 0,
+      error: err.message || String(err),
+      testedAt: Date.now()
+    };
+    try {
+      fs.writeFileSync(statePath, JSON.stringify(petState, null, 2));
+    } catch (_) {}
+
+    updateModelSelectOptionsLabels();
+    updateModelInfoCard(currentModel);
   } finally {
     btnTestModel.disabled = false;
     btnTestModel.innerText = '🧪 測試連線';
@@ -468,7 +553,11 @@ function previewBroadcast() {
 }
 
 function saveSettings() {
-  petState.settings = getFormValues();
+  const formValues = getFormValues();
+  petState.settings = {
+    ...(petState.settings || {}),
+    ...formValues
+  };
   fs.writeFileSync(statePath, JSON.stringify(petState, null, 2));
   ipcRenderer.send('settings-changed', petState.settings);
   setDirty(false);

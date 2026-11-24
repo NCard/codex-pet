@@ -208,6 +208,41 @@ body {
   color: #1e293b;
 }
 
+/* ── 上次測試紀錄提示列 (Test Record Badge) ── */
+.model-info-test-record {
+  margin-top: 10px;
+  padding: 6px 10px;
+  background: var(--theme-input-bg, rgba(255, 255, 255, 0.6));
+  border-radius: 8px;
+  border: 1px dashed rgba(148, 163, 184, 0.5);
+  font-size: 11.5px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--theme-text-sub, #64748b);
+  word-break: break-all;
+  line-height: 1.4;
+  transition: all 0.2s ease;
+}
+
+.model-info-test-record.success {
+  background: rgba(220, 252, 231, 0.6);
+  border-color: rgba(34, 197, 94, 0.4);
+  color: #15803d;
+}
+
+.model-info-test-record.warning {
+  background: rgba(254, 243, 199, 0.6);
+  border-color: rgba(245, 158, 11, 0.4);
+  color: #b45309;
+}
+
+.model-info-test-record.error {
+  background: rgba(254, 226, 226, 0.6);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #b91c1c;
+}
+
 .btn-test {
   transition: all 0.2s ease;
 }
