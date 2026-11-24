@@ -340,17 +340,27 @@ btnTestModel?.addEventListener('click', async () => {
   }
   const currentModel = els.aiModel ? els.aiModel.value : 'gemini-3.5-flash-lite';
   btnTestModel.disabled = true;
-  btnTestModel.innerText = '測試中...';
+  btnTestModel.innerText = '測試中 (0s)...';
+  let elapsedSec = 0;
   if (testStatusEl) {
     testStatusEl.style.display = 'block';
     testStatusEl.style.background = '#f1f5f9';
     testStatusEl.style.color = '#475569';
-    testStatusEl.innerText = `正在測試 ${currentModel} 連線與工具呼叫能力...`;
+    testStatusEl.innerText = `正在測試 ${currentModel} 連線與工具呼叫能力... (已耗時 0 秒)`;
   }
+
+  const timerInterval = setInterval(() => {
+    elapsedSec += 1;
+    btnTestModel.innerText = `測試中 (${elapsedSec}s)...`;
+    if (testStatusEl && testStatusEl.style.color === '#475569') {
+      testStatusEl.innerText = `正在測試 ${currentModel} 連線與工具呼叫能力... (已耗時 ${elapsedSec} 秒)`;
+    }
+  }, 1000);
 
   try {
     const provider = AIProviderFactory.create('gemini', apiKey, currentModel);
-    const result = await provider.testModelAvailability(currentModel);
+    const result = await provider.testModelAvailability(currentModel, 10000);
+    clearInterval(timerInterval);
     if (result.success) {
       testStatusEl.style.background = '#dcfce7';
       testStatusEl.style.color = '#15803d';
@@ -398,6 +408,7 @@ btnTestModel?.addEventListener('click', async () => {
     updateModelSelectOptionsLabels();
     updateModelInfoCard(currentModel);
   } finally {
+    clearInterval(timerInterval);
     btnTestModel.disabled = false;
     btnTestModel.innerText = '🧪 測試連線';
   }

@@ -110,4 +110,17 @@ describe('AI Provider & Model Metadata Unit Tests', () => {
     assert.strictEqual(result.success, false);
     assert.ok(result.error.includes('429 Rate Limit'));
   });
+
+  test('testModelAvailability should handle timeout properly', async () => {
+    const provider = new GeminiProvider('fake-key', 'gemini-slow');
+    provider.client = {
+      models: {
+        generateContent: () => new Promise(resolve => setTimeout(resolve, 500))
+      }
+    };
+
+    const result = await provider.testModelAvailability('gemini-slow', 50);
+    assert.strictEqual(result.success, false);
+    assert.ok(result.error.includes('連線逾時'));
+  });
 });

@@ -45,12 +45,13 @@ class GeminiProvider extends AIProvider {
     return await this.client.models.generateContent(options);
   }
 
-  async testModelAvailability(modelId) {
+  async testModelAvailability(modelId, timeoutMs = 10000) {
     const targetModel = modelId || this.modelName;
     if (!targetModel) {
       return { success: false, latencyMs: 0, error: '未指定測試模型名稱', supportsTools: false };
     }
     const startTime = Date.now();
+    let timer = null;
     try {
       const testTool = {
         functionDeclarations: [
@@ -62,7 +63,7 @@ class GeminiProvider extends AIProvider {
         ]
       };
 
-      const response = await this.client.models.generateContent({
+      const requestPromise = this.client.models.generateContent({
         model: targetModel,
         contents: [{ role: 'user', parts: [{ text: 'Ping! 請回答 Pong' }] }],
         config: {
@@ -72,8 +73,17 @@ class GeminiProvider extends AIProvider {
         }
       });
 
+      const timeoutPromise = new Promise((_, reject) => {
+        timer = setTimeout(() => {
+          reject(new Error(`TIMEOUT: 請求逾時 (超過 ${Math.round(timeoutMs / 1000)} 秒未回應)`));
+        }, timeoutMs);
+      });
+
+      const response = await Promise.race([requestPromise, timeoutPromise]);
+      if (timer) clearTimeout(timer);
+
       const latencyMs = Date.now() - startTime;
-      const text = response.text || '';
+      const text = response?.text || '';
       return {
         success: true,
         latencyMs,
@@ -81,11 +91,14 @@ class GeminiProvider extends AIProvider {
         reply: text.trim()
       };
     } catch (err) {
+      if (timer) clearTimeout(timer);
       const latencyMs = Date.now() - startTime;
       let errMsg = err.message || String(err);
       let supportsTools = true;
 
-      if (/tool|function/i.test(errMsg)) {
+      if (/TIMEOUT/i.test(errMsg)) {
+        errMsg = `連線逾時 (超過 ${Math.round(timeoutMs / 1000)} 秒未回應)：Google 伺服器目前負載過高或未回應，請稍候再試`;
+      } else if (/tool|function/i.test(errMsg)) {
         supportsTools = false;
         errMsg = '此模型不支援 Agent 工具呼叫 (Tool Calling)';
       } else if (/429|quota|resource_exhausted/i.test(errMsg)) {
@@ -94,8 +107,8 @@ class GeminiProvider extends AIProvider {
         errMsg = '模型不存在或已被 Google 官方下線 (404 Not Found)';
       } else if (/403|permission/i.test(errMsg)) {
         errMsg = 'API Key 權限不足或此模型需綁定付費帳單 (403 Forbidden)';
-      } else if (/503|unavailable/i.test(errMsg)) {
-        errMsg = 'Google 伺服器忙碌中，請稍後再試 (503 Service Unavailable)';
+      } else if (/503|unavailable|high demand/i.test(errMsg)) {
+        errMsg = 'Google 官方伺服器目前負載過高 (503 High Demand)，為暫時現象，請稍候再試';
       }
 
       return {
