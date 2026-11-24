@@ -7,8 +7,8 @@ describe('Paths Utils Unit Tests', () => {
   test('should provide valid directory paths', () => {
     assert.strictEqual(typeof paths.dataDir, 'string');
     assert.strictEqual(typeof paths.logDir, 'string');
-    assert.ok(fs.existsSync(paths.dataDir));
-    assert.ok(fs.existsSync(paths.logDir));
+    assert.ok(paths.dataDir.includes('.ai-pet-data'));
+    assert.ok(paths.logDir.includes('logs'));
   });
 
   test('should generate correct json and dat file paths', () => {

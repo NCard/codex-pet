@@ -547,8 +547,9 @@ ${personaText}
         let finalResponseText = '';
 
         while (stepCount < maxAgentSteps) {
+          const activeModel = petState.settings?.aiModel || 'gemini-3.5-flash-lite';
           let response = await callAIWithThinkingFallback({
-            model: petState.settings?.aiModel || 'gemini-3.5-flash-lite',
+            model: activeModel,
             contents: sessionContext,
             config: { 
               systemInstruction: sysInstruction,
@@ -562,12 +563,13 @@ ${personaText}
 
           if (response && response.usageMetadata) {
             recordUsage({
+              model: activeModel,
               promptTokens: response.usageMetadata.promptTokenCount || 0,
               candidateTokens: response.usageMetadata.candidatesTokenCount || 0,
               totalTokens: response.usageMetadata.totalTokenCount || 0
             });
           } else {
-            recordUsage();
+            recordUsage({ model: activeModel });
           }
 
           const candidate = response.candidates && response.candidates[0];
@@ -740,7 +742,7 @@ ${personaText}
             console.warn(`[Agent] Reached maxAgentSteps (${maxAgentSteps}), summarizing...`);
             chatContent.innerHTML = `${namePrefix}正在彙整最後結果... (•ө•)੭`;
             const summaryResponse = await callAIWithThinkingFallback({
-              model: petState.settings?.aiModel || 'gemini-3.5-flash-lite',
+              model: activeModel,
               contents: sessionContext,
               config: { 
                 systemInstruction: sysInstruction + "\n【重要指令】已完成所有可用步驟，請根據先前的執行結果做最後的完整結論與回覆，不要再調用任何工具。",
@@ -758,12 +760,13 @@ ${personaText}
             }
             if (summaryResponse.usageMetadata) {
               recordUsage({
+                model: activeModel,
                 promptTokens: summaryResponse.usageMetadata.promptTokenCount || 0,
                 candidateTokens: summaryResponse.usageMetadata.candidatesTokenCount || 0,
                 totalTokens: summaryResponse.usageMetadata.totalTokenCount || 0
               });
             } else {
-              recordUsage();
+              recordUsage({ model: activeModel });
             }
             finalResponseText = summaryResponse.text || "";
             currentTrajectory.finalResponse = finalResponseText;

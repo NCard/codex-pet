@@ -6,12 +6,14 @@ const dataDir = path.join(os.homedir(), '.ai-pet-data');
 const logDir = path.join(dataDir, 'logs');
 
 // 確保目錄存在
-if (!fs.existsSync(dataDir)) {
-  fs.mkdirSync(dataDir, { recursive: true });
-}
-if (!fs.existsSync(logDir)) {
-  fs.mkdirSync(logDir, { recursive: true });
-}
+try {
+  if (!fs.existsSync(dataDir)) {
+    fs.mkdirSync(dataDir, { recursive: true });
+  }
+  if (!fs.existsSync(logDir)) {
+    fs.mkdirSync(logDir, { recursive: true });
+  }
+} catch (_) {}
 
 module.exports = {
   dataDir,

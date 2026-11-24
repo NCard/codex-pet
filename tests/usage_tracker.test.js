@@ -1,29 +1,27 @@
 const test = require('node:test');
 const assert = require('node:assert');
 const fs = require('fs');
+const path = require('path');
 const {
   getDailyResetInfo,
   getModelQuota,
   recordUsage,
   getUsageSummary,
   loadUsageData,
-  saveUsageData
+  saveUsageData,
+  setUsageFilePath
 } = require('../src/utils/usage_tracker');
-const { usagePath } = require('../src/utils/paths');
 
 test('Usage Tracker Unit Tests', async (t) => {
-  // 備份現存 usage 檔案
-  let originalData = null;
-  if (fs.existsSync(usagePath)) {
-    originalData = fs.readFileSync(usagePath, 'utf8');
-  }
+  const tempUsagePath = path.join(__dirname, 'temp_usage_test.json');
+  setUsageFilePath(tempUsagePath);
 
   t.after(() => {
-    // 復原原本的檔案
-    if (originalData) {
-      fs.writeFileSync(usagePath, originalData, 'utf8');
-    } else if (fs.existsSync(usagePath)) {
-      fs.unlinkSync(usagePath);
+    setUsageFilePath(null);
+    if (fs.existsSync(tempUsagePath)) {
+      try {
+        fs.unlinkSync(tempUsagePath);
+      } catch (_) {}
     }
   });
 
@@ -64,6 +62,72 @@ test('Usage Tracker Unit Tests', async (t) => {
     assert.strictEqual(summary.todayTokens, 1150);
     assert.strictEqual(summary.remainingRequests, 1500 - 6);
     assert.strictEqual(summary.minuteRequests, 1);
+  });
+
+  await t.test('should track per-model usage independently and maintain backward compatibility', () => {
+    // 模擬已記錄的模型
+    saveUsageData({
+      lastPtDate: getDailyResetInfo().ptDateKey,
+      todayRequests: 10,
+      todayTokens: 2000,
+      totalRequests: 20,
+      totalTokens: 4000,
+      minuteTimestamps: [],
+      byModel: {
+        'gemini-2.5-flash': {
+          todayRequests: 8,
+          todayTokens: 1600,
+          totalRequests: 16,
+          totalTokens: 3200,
+          minuteTimestamps: []
+        },
+        'gemini-2.0-flash': {
+          todayRequests: 2,
+          todayTokens: 400,
+          totalRequests: 4,
+          totalTokens: 800,
+          minuteTimestamps: []
+        }
+      }
+    });
+
+    // 針對 gemini-2.5-flash 記錄一次
+    recordUsage({ model: 'gemini-2.5-flash', totalTokens: 200 });
+    const flashSummary = getUsageSummary('gemini-2.5-flash');
+    assert.strictEqual(flashSummary.todayRequests, 9);
+    assert.strictEqual(flashSummary.todayTokens, 1800);
+    assert.strictEqual(flashSummary.remainingRequests, 1500 - 9);
+
+    // gemini-2.0-flash 應不受影響
+    const flash2Summary = getUsageSummary('gemini-2.0-flash');
+    assert.strictEqual(flash2Summary.todayRequests, 2);
+    assert.strictEqual(flash2Summary.todayTokens, 400);
+
+    // 尚未呼叫過的 pro 模型，應為 0 次，不影響其 50 次額度
+    const proSummary = getUsageSummary('gemini-1.5-pro');
+    assert.strictEqual(proSummary.todayRequests, 0);
+    assert.strictEqual(proSummary.remainingRequests, 50);
+
+    // 全域總次數應為 11 (原本 10 + 新增 1)
+    assert.strictEqual(flashSummary.globalTodayRequests, 11);
+  });
+
+  await t.test('should safely migrate legacy data without byModel without resetting counts', () => {
+    saveUsageData({
+      lastPtDate: getDailyResetInfo().ptDateKey,
+      todayRequests: 42,
+      todayTokens: 8400,
+      totalRequests: 100,
+      totalTokens: 20000,
+      minuteTimestamps: []
+      // 舊版資料無 byModel 欄位
+    });
+
+    const summary = getUsageSummary('gemini-3.5-flash-lite');
+    // 升級時絕不歸零，舊有 42 次完整承接
+    assert.strictEqual(summary.todayRequests, 42);
+    assert.strictEqual(summary.todayTokens, 8400);
+    assert.strictEqual(summary.globalTodayRequests, 42);
   });
 });
 

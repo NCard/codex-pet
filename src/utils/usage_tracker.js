@@ -4,7 +4,15 @@
  */
 
 const fs = require('fs');
-const { usagePath } = require('./paths');
+const paths = require('./paths');
+
+let customUsagePath = null;
+function setUsageFilePath(newPath) {
+  customUsagePath = newPath;
+}
+function getUsageFilePath() {
+  return customUsagePath || paths.usagePath;
+}
 
 // 模型免費層配額常數定義
 const MODEL_QUOTAS = {
@@ -86,13 +94,19 @@ function loadUsageData() {
     todayTokens: 0,
     totalRequests: 0,
     totalTokens: 0,
-    minuteTimestamps: []
+    minuteTimestamps: [],
+    byModel: {}
   };
 
+  const targetPath = getUsageFilePath();
   try {
-    if (fs.existsSync(usagePath)) {
-      const raw = fs.readFileSync(usagePath, 'utf8');
-      return { ...defaultData, ...JSON.parse(raw) };
+    if (fs.existsSync(targetPath)) {
+      const raw = fs.readFileSync(targetPath, 'utf8');
+      const parsed = JSON.parse(raw);
+      if (!parsed.byModel || typeof parsed.byModel !== 'object') {
+        parsed.byModel = {};
+      }
+      return { ...defaultData, ...parsed };
     }
   } catch (e) {
     console.error('Failed to load usage data:', e);
@@ -104,8 +118,9 @@ function loadUsageData() {
  * 儲存本地用量紀錄
  */
 function saveUsageData(data) {
+  const targetPath = getUsageFilePath();
   try {
-    fs.writeFileSync(usagePath, JSON.stringify(data, null, 2), 'utf8');
+    fs.writeFileSync(targetPath, JSON.stringify(data, null, 2), 'utf8');
   } catch (e) {
     console.error('Failed to save usage data:', e);
   }
@@ -114,7 +129,7 @@ function saveUsageData(data) {
 /**
  * 記錄一次 API 調用用量
  */
-function recordUsage({ promptTokens = 0, candidateTokens = 0, totalTokens = 0 } = {}) {
+function recordUsage({ model = '', promptTokens = 0, candidateTokens = 0, totalTokens = 0 } = {}) {
   const data = loadUsageData();
   const resetInfo = getDailyResetInfo();
   const nowMs = Date.now();
@@ -124,6 +139,15 @@ function recordUsage({ promptTokens = 0, candidateTokens = 0, totalTokens = 0 } 
     data.lastPtDate = resetInfo.ptDateKey;
     data.todayRequests = 0;
     data.todayTokens = 0;
+    if (data.byModel && typeof data.byModel === 'object') {
+      for (const m of Object.keys(data.byModel)) {
+        if (data.byModel[m]) {
+          data.byModel[m].todayRequests = 0;
+          data.byModel[m].todayTokens = 0;
+          data.byModel[m].minuteTimestamps = [];
+        }
+      }
+    }
   }
 
   const addedTokens = totalTokens > 0 ? totalTokens : (promptTokens + candidateTokens);
@@ -138,6 +162,27 @@ function recordUsage({ promptTokens = 0, candidateTokens = 0, totalTokens = 0 } 
     .filter(ts => nowMs - ts < 60000);
   data.minuteTimestamps.push(nowMs);
 
+  const cleanModel = (model || '').trim();
+  if (cleanModel) {
+    if (!data.byModel) data.byModel = {};
+    if (!data.byModel[cleanModel]) {
+      data.byModel[cleanModel] = {
+        todayRequests: 0,
+        todayTokens: 0,
+        totalRequests: 0,
+        totalTokens: 0,
+        minuteTimestamps: []
+      };
+    }
+    const mData = data.byModel[cleanModel];
+    mData.todayRequests = (mData.todayRequests || 0) + 1;
+    mData.todayTokens = (mData.todayTokens || 0) + addedTokens;
+    mData.totalRequests = (mData.totalRequests || 0) + 1;
+    mData.totalTokens = (mData.totalTokens || 0) + addedTokens;
+    mData.minuteTimestamps = (mData.minuteTimestamps || []).filter(ts => nowMs - ts < 60000);
+    mData.minuteTimestamps.push(nowMs);
+  }
+
   saveUsageData(data);
   return data;
 }
@@ -150,33 +195,49 @@ function getUsageSummary(currentModel = 'gemini-3.5-flash-lite') {
   const resetInfo = getDailyResetInfo();
   const quota = getModelQuota(currentModel);
   const nowMs = Date.now();
+  const cleanModel = (currentModel || '').trim();
 
-  // 跨日檢查
-  let todayReqs = data.todayRequests || 0;
-  let todayToks = data.todayTokens || 0;
-  if (data.lastPtDate !== resetInfo.ptDateKey) {
-    todayReqs = 0;
-    todayToks = 0;
+  const isCrossDay = data.lastPtDate !== resetInfo.ptDateKey;
+
+  // 全域用量
+  const globalTodayReqs = isCrossDay ? 0 : (data.todayRequests || 0);
+  const globalTodayToks = isCrossDay ? 0 : (data.todayTokens || 0);
+
+  // 分模型用量
+  const mData = (!isCrossDay && data.byModel && cleanModel && data.byModel[cleanModel]) ? data.byModel[cleanModel] : null;
+
+  let todayReqs = 0;
+  let todayToks = 0;
+  let modelMinuteCount = 0;
+
+  if (mData) {
+    todayReqs = mData.todayRequests || 0;
+    todayToks = mData.todayTokens || 0;
+    modelMinuteCount = (mData.minuteTimestamps || []).filter(ts => nowMs - ts < 60000).length;
+  } else if (Object.keys(data.byModel || {}).length === 0 && globalTodayReqs > 0) {
+    // 舊版升級相容相容：byModel 為空時沿用 globalTodayReqs
+    todayReqs = globalTodayReqs;
+    todayToks = globalTodayToks;
+    modelMinuteCount = (data.minuteTimestamps || []).filter(ts => nowMs - ts < 60000).length;
   }
-
-  // 60 秒內請求次數
-  const recentMinutes = (data.minuteTimestamps || []).filter(ts => nowMs - ts < 60000);
-  const minuteReqCount = recentMinutes.length;
 
   const remainingRequests = Math.max(0, quota.limitRPD - todayReqs);
   const percentUsed = Math.min(100, Math.round((todayReqs / quota.limitRPD) * 100));
-  const isRateLimitClose = minuteReqCount >= Math.floor(quota.limitRPM * 0.8);
+  const isRateLimitClose = modelMinuteCount >= Math.floor(quota.limitRPM * 0.8);
 
   return {
+    model: cleanModel,
     todayRequests: todayReqs,
     todayTokens: todayToks,
+    globalTodayRequests: globalTodayReqs,
+    globalTodayTokens: globalTodayToks,
     totalRequests: data.totalRequests || 0,
     totalTokens: data.totalTokens || 0,
     limitRPD: quota.limitRPD,
     limitRPM: quota.limitRPM,
     remainingRequests,
     percentUsed,
-    minuteRequests: minuteReqCount,
+    minuteRequests: modelMinuteCount,
     isRateLimitClose,
     resetInfo
   };
@@ -188,6 +249,7 @@ module.exports = {
   recordUsage,
   getUsageSummary,
   loadUsageData,
-  saveUsageData
+  saveUsageData,
+  setUsageFilePath
 };
 

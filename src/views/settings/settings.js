@@ -128,10 +128,102 @@ function initUI() {
   updateLabels();
   updateBedEditUI();
   updateQuotaUI();
+  updateModelInfoCard();
   setDirty(false);
   
   // 嘗試載入可用模型
   refreshModels();
+}
+
+const cachedModelsMetadata = {
+  'gemini-3.5-flash-lite': {
+    id: 'gemini-3.5-flash-lite',
+    displayName: 'Gemini 3.5 Flash Lite',
+    description: '輕量高性價比模型，兼顧極速回應與工具自主調用能力。',
+    contextStr: '1M Tokens',
+    outputTokenLimit: 8192,
+    badge: '推薦免費使用 (15 RPM)',
+    tier: 'flash',
+    supportsTools: true
+  },
+  'gemini-2.5-flash': {
+    id: 'gemini-2.5-flash',
+    displayName: 'Gemini 2.5 Flash',
+    description: '最新世代主力模型，速度極快且深度支援思考推理與 Agent 工具。',
+    contextStr: '1M Tokens',
+    outputTokenLimit: 8192,
+    badge: '推薦免費使用 (15 RPM)',
+    tier: 'flash',
+    supportsTools: true
+  },
+  'gemini-2.0-flash': {
+    id: 'gemini-2.0-flash',
+    displayName: 'Gemini 2.0 Flash',
+    description: '新一代多模態主力工作模型，具備優異的多步驟決策與工具調用能力。',
+    contextStr: '1M Tokens',
+    outputTokenLimit: 8192,
+    badge: '推薦免費使用 (15 RPM)',
+    tier: 'flash',
+    supportsTools: true
+  },
+  'gemini-1.5-flash': {
+    id: 'gemini-1.5-flash',
+    displayName: 'Gemini 1.5 Flash',
+    description: '速度與效率兼具的高吞吐量模型，穩定且免費額度充足。',
+    contextStr: '1M Tokens',
+    outputTokenLimit: 8192,
+    badge: '推薦免費使用 (15 RPM)',
+    tier: 'flash',
+    supportsTools: true
+  },
+  'gemini-1.5-pro': {
+    id: 'gemini-1.5-pro',
+    displayName: 'Gemini 1.5 Pro',
+    description: '高難度複雜問題推導旗艦模型。注意：免費層頻率限制較嚴格 (2 RPM)。',
+    contextStr: '2M Tokens',
+    outputTokenLimit: 8192,
+    badge: '深度旗艦 (2 RPM)',
+    tier: 'pro',
+    supportsTools: true
+  }
+};
+
+function updateModelInfoCard(modelId = '') {
+  const card = document.getElementById('model-info-card');
+  if (!card) return;
+  const id = modelId || (els.aiModel ? els.aiModel.value : 'gemini-3.5-flash-lite');
+  const meta = cachedModelsMetadata[id] || {
+    id,
+    displayName: id,
+    description: 'Google 官方生成模型，支援智慧對話與文字處理。',
+    contextStr: '標準上下文',
+    outputTokenLimit: 8192,
+    badge: id.includes('pro') ? '深度旗艦 (2 RPM)' : (id.includes('flash') || id.includes('lite') ? '推薦免費使用 (15 RPM)' : '標準模型'),
+    tier: id.includes('pro') ? 'pro' : (id.includes('1.0') ? 'legacy' : 'flash'),
+    supportsTools: !id.includes('1.0')
+  };
+
+  const nameEl = document.getElementById('model-info-name');
+  const badgeEl = document.getElementById('model-info-badge');
+  const descEl = document.getElementById('model-info-desc');
+  const ctxEl = document.getElementById('model-info-ctx');
+  const outEl = document.getElementById('model-info-out');
+  const toolsEl = document.getElementById('model-info-tools');
+  const rpmEl = document.getElementById('model-info-rpm');
+
+  if (nameEl) nameEl.innerText = meta.displayName || meta.id;
+  if (badgeEl) {
+    badgeEl.innerText = meta.badge || (meta.tier === 'pro' ? '深度旗艦 (2 RPM)' : '推薦免費使用');
+    badgeEl.className = `model-info-badge ${meta.tier || 'flash'}`;
+  }
+  if (descEl) descEl.innerText = meta.description || 'Google 官方模型';
+  if (ctxEl) ctxEl.innerText = meta.contextStr || (meta.inputTokenLimit ? `${Math.round(meta.inputTokenLimit / 1000)}k Tokens` : '1M Tokens');
+  if (outEl) outEl.innerText = meta.outputTokenLimit ? `${Number(meta.outputTokenLimit).toLocaleString()} Tokens` : '8,192 Tokens';
+  if (toolsEl) {
+    toolsEl.innerText = meta.supportsTools ? '✅ 完整支援' : '⚠️ 可能不支援';
+    toolsEl.style.color = meta.supportsTools ? '#15803d' : '#b91c1c';
+  }
+  if (rpmEl) rpmEl.innerText = meta.tier === 'pro' ? '2 RPM' : '15 RPM';
 }
 
 async function refreshModels() {
@@ -152,6 +244,7 @@ async function refreshModels() {
       const currentVal = els.aiModel.value;
       els.aiModel.innerHTML = '';
       models.forEach(m => {
+        cachedModelsMetadata[m.id] = m;
         const opt = document.createElement('option');
         opt.value = m.id;
         opt.innerText = m.displayName;
@@ -163,6 +256,7 @@ async function refreshModels() {
       } else {
         els.aiModel.value = petState.settings.aiModel || models[0].id;
       }
+      updateModelInfoCard(els.aiModel.value);
     }
   } catch (e) {
     console.error('Failed to fetch models', e);
@@ -183,10 +277,68 @@ document.getElementById('btn-refresh-models')?.addEventListener('click', () => {
   refreshModels();
 });
 
+// 測試連線按鈕
+const btnTestModel = document.getElementById('btn-test-model');
+const testStatusEl = document.getElementById('test-model-status');
+btnTestModel?.addEventListener('click', async () => {
+  const apiKey = els.apiKey.value || process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    alert('請先填寫 API Key 才能進行連線測試！');
+    return;
+  }
+  const currentModel = els.aiModel ? els.aiModel.value : 'gemini-3.5-flash-lite';
+  btnTestModel.disabled = true;
+  btnTestModel.innerText = '測試中...';
+  if (testStatusEl) {
+    testStatusEl.style.display = 'block';
+    testStatusEl.style.background = '#f1f5f9';
+    testStatusEl.style.color = '#475569';
+    testStatusEl.innerText = `正在測試 ${currentModel} 連線與工具呼叫能力...`;
+  }
+
+  try {
+    const provider = AIProviderFactory.create('gemini', apiKey, currentModel);
+    const result = await provider.testModelAvailability(currentModel);
+    if (result.success) {
+      testStatusEl.style.background = '#dcfce7';
+      testStatusEl.style.color = '#15803d';
+      testStatusEl.innerText = `✅ 測試成功 (${result.latencyMs}ms)：模型連線正常且支援 Agent 工具呼叫！`;
+    } else {
+      testStatusEl.style.background = '#fee2e2';
+      testStatusEl.style.color = '#b91c1c';
+      testStatusEl.innerText = `❌ 測試失敗 (${result.latencyMs}ms)：${result.error}`;
+    }
+  } catch (err) {
+    testStatusEl.style.background = '#fee2e2';
+    testStatusEl.style.color = '#b91c1c';
+    testStatusEl.innerText = `❌ 測試失敗：${err.message || String(err)}`;
+  } finally {
+    btnTestModel.disabled = false;
+    btnTestModel.innerText = '🧪 測試連線';
+  }
+});
+
+// 內頁膠囊小頁籤 (Sub-tabs) 切換委派
+document.querySelectorAll('.sub-tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.sub-tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.subtab-content').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    const targetId = btn.getAttribute('data-subtab');
+    const targetContent = document.getElementById(targetId);
+    if (targetContent) targetContent.classList.add('active');
+  });
+});
+
 function updateQuotaUI() {
   const currentModel = els.aiModel ? els.aiModel.value : 'gemini-3.5-flash-lite';
   const summary = getUsageSummary(currentModel);
   const reset = summary.resetInfo;
+
+  const modelTargetEl = document.getElementById('quota-model-target');
+  if (modelTargetEl) {
+    modelTargetEl.innerText = `【${currentModel}】今日請求`;
+  }
 
   const reqText = document.getElementById('quota-req-text');
   const progressBar = document.getElementById('quota-progress-bar');
@@ -376,6 +528,7 @@ els.enableAlarmSound.addEventListener('change', () => {
 
 els.aiModel.addEventListener('change', () => {
   updateQuotaUI();
+  updateModelInfoCard(els.aiModel.value);
 });
 
 let prevShortcut = '';

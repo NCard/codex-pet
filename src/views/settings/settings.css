@@ -82,6 +82,141 @@ body {
   display: block;
 }
 
+/* ── 內頁膠囊小頁籤導覽列 (Sub-tabs) ── */
+.sub-tabs {
+  display: flex;
+  background: var(--theme-card-bg);
+  border: var(--theme-card-border);
+  border-radius: 16px;
+  padding: 3px;
+  margin-bottom: 14px;
+  gap: 3px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+}
+
+.sub-tab-btn {
+  flex: 1;
+  padding: 6px 8px;
+  background: transparent;
+  border: none;
+  border-radius: 12px;
+  color: var(--theme-text-sub);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.sub-tab-btn:hover {
+  color: var(--theme-primary);
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.sub-tab-btn.active {
+  background: var(--theme-btn-primary-bg);
+  color: #ffffff;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.12);
+}
+
+.subtab-content {
+  display: none;
+}
+
+.subtab-content.active {
+  display: block;
+}
+
+/* ── 模型詳細資訊卡片 (Model Info Card) ── */
+.model-info-card {
+  background: linear-gradient(135deg, rgba(240, 249, 255, 0.85) 0%, rgba(245, 243, 255, 0.85) 100%);
+  border: 1px solid rgba(186, 230, 253, 0.8);
+  border-radius: 10px;
+  padding: 12px 14px;
+  backdrop-filter: blur(8px);
+  transition: all 0.25s ease;
+}
+
+.model-info-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.model-info-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #0369a1;
+}
+
+.model-info-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+.model-info-badge.pro {
+  background: #fef3c7;
+  color: #b45309;
+  border-color: #fde68a;
+}
+
+.model-info-badge.legacy {
+  background: #fee2e2;
+  color: #b91c1c;
+  border-color: #fecaca;
+}
+
+.model-info-desc {
+  font-size: 11.5px;
+  color: #475569;
+  line-height: 1.5;
+  margin-bottom: 10px;
+}
+
+.model-info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 12px;
+  padding-top: 8px;
+  border-top: 1px dashed rgba(148, 163, 184, 0.35);
+}
+
+.model-info-item {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11.5px;
+}
+
+.model-info-item .item-label {
+  color: #64748b;
+}
+
+.model-info-item .item-val {
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.btn-test {
+  transition: all 0.2s ease;
+}
+
+.btn-test:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 /* 軟萌卡片區塊 */
 .section {
   background: var(--theme-card-bg);

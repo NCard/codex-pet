@@ -16,9 +16,17 @@ class AIProvider {
 
   /**
    * getAvailableModels
-   * Returns an array of available model names.
+   * Returns an array of available model objects with metadata.
    */
   async getAvailableModels() {
+    throw new Error('Not implemented');
+  }
+
+  /**
+   * testModelAvailability
+   * Tests if the given model can respond and supports tools.
+   */
+  async testModelAvailability(_modelId) {
     throw new Error('Not implemented');
   }
 }
@@ -37,9 +45,71 @@ class GeminiProvider extends AIProvider {
     return await this.client.models.generateContent(options);
   }
 
+  async testModelAvailability(modelId) {
+    const targetModel = modelId || this.modelName;
+    if (!targetModel) {
+      return { success: false, latencyMs: 0, error: '未指定測試模型名稱', supportsTools: false };
+    }
+    const startTime = Date.now();
+    try {
+      const testTool = {
+        functionDeclarations: [
+          {
+            name: "ping",
+            description: "Test ping function",
+            parameters: { type: "object", properties: {} }
+          }
+        ]
+      };
+
+      const response = await this.client.models.generateContent({
+        model: targetModel,
+        contents: [{ role: 'user', parts: [{ text: 'Ping! 請回答 Pong' }] }],
+        config: {
+          tools: [testTool],
+          temperature: 0.1,
+          maxOutputTokens: 20
+        }
+      });
+
+      const latencyMs = Date.now() - startTime;
+      const text = response.text || '';
+      return {
+        success: true,
+        latencyMs,
+        supportsTools: true,
+        reply: text.trim()
+      };
+    } catch (err) {
+      const latencyMs = Date.now() - startTime;
+      let errMsg = err.message || String(err);
+      let supportsTools = true;
+
+      if (/tool|function/i.test(errMsg)) {
+        supportsTools = false;
+        errMsg = '此模型不支援 Agent 工具呼叫 (Tool Calling)';
+      } else if (/429|quota|resource_exhausted/i.test(errMsg)) {
+        errMsg = '目前請求過於頻繁或免費額度暫時耗盡 (429 Rate Limit)';
+      } else if (/404|not found/i.test(errMsg)) {
+        errMsg = '模型不存在或已被 Google 官方下線 (404 Not Found)';
+      } else if (/403|permission/i.test(errMsg)) {
+        errMsg = 'API Key 權限不足或此模型需綁定付費帳單 (403 Forbidden)';
+      } else if (/503|unavailable/i.test(errMsg)) {
+        errMsg = 'Google 伺服器忙碌中，請稍後再試 (503 Service Unavailable)';
+      }
+
+      return {
+        success: false,
+        latencyMs,
+        error: errMsg,
+        supportsTools
+      };
+    }
+  }
+
   async getAvailableModels() {
     const response = await this.client.models.list();
-    let models = [];
+    const models = [];
     
     // Helper function to process model
     const processModel = (m) => {
@@ -56,14 +126,53 @@ class GeminiProvider extends AIProvider {
           if (id.startsWith('models/')) id = id.replace('models/', '');
           
           let displayName = m.displayName || id;
+          let limitStr = '';
           if (m.inputTokenLimit) {
-            let limitStr = (m.inputTokenLimit >= 1000000) 
+            limitStr = (m.inputTokenLimit >= 1000000) 
               ? `${Math.round(m.inputTokenLimit/1000000)}M`
               : `${Math.round(m.inputTokenLimit/1000)}k`;
             displayName += ` (${limitStr} ctx)`;
           }
-          
-          models.push({ id, displayName });
+
+          const description = m.description || '';
+          const inputTokenLimit = m.inputTokenLimit || null;
+          const outputTokenLimit = m.outputTokenLimit || null;
+
+          const lowerId = id.toLowerCase();
+          const isPro = lowerId.includes('pro');
+          const isFlash = lowerId.includes('flash') || lowerId.includes('lite');
+          const isLegacy = lowerId.includes('1.0') || lowerId.includes('gemini-pro');
+
+          let badge = '';
+          let tier = 'standard';
+          let isRecommended = false;
+          let supportsTools = true;
+
+          if (isLegacy) {
+            badge = '舊版 / 限制多';
+            supportsTools = false;
+            tier = 'legacy';
+          } else if (isFlash) {
+            badge = '推薦免費使用 (15 RPM)';
+            isRecommended = true;
+            tier = 'flash';
+          } else if (isPro) {
+            badge = '深度旗艦 (2 RPM)';
+            tier = 'pro';
+          }
+
+          models.push({
+            id,
+            displayName,
+            description,
+            inputTokenLimit,
+            outputTokenLimit,
+            contextStr: limitStr ? `${limitStr} Tokens` : '',
+            badge,
+            tier,
+            isRecommended,
+            supportsTools
+          });
         }
       }
     };
