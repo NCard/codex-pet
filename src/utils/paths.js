@@ -22,5 +22,6 @@ module.exports = {
   alarmsPath: path.join(dataDir, 'alarms.json'),
   historyPath: path.join(dataDir, 'chat_history.dat'),
   usagePath: path.join(dataDir, 'ai_usage.json'),
-  modelCachePath: path.join(dataDir, 'ai_model_cache.json')
+  modelCachePath: path.join(dataDir, 'ai_model_cache.json'),
+  devPidPath: path.join(dataDir, 'dev-electron.pid')
 };

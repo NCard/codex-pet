@@ -5,9 +5,10 @@
   "main": "src/main/main.js",
   "scripts": {
     "start": "electron .",
+    "dev": "node scripts/dev.js",
     "pack": "electron-builder --dir",
     "dist": "electron-builder --win",
-    "test": "node --test tests/crypto_utils.test.js tests/paths.test.js tests/sanitization.test.js tests/clipboard_watcher.test.js tests/clipboard_analyzer.test.js tests/markdown.test.js tests/usage_tracker.test.js tests/dialogues.test.js tests/thinking_level.test.js tests/compute_hash.test.js tests/ai_provider.test.js tests/model_cache.test.js tests/scenarios.test.js tests/chat_sizing.test.js",
+    "test": "node --test tests/crypto_utils.test.js tests/paths.test.js tests/sanitization.test.js tests/clipboard_watcher.test.js tests/clipboard_analyzer.test.js tests/markdown.test.js tests/usage_tracker.test.js tests/dialogues.test.js tests/thinking_level.test.js tests/compute_hash.test.js tests/ai_provider.test.js tests/model_cache.test.js tests/scenarios.test.js tests/chat_sizing.test.js tests/dev_instance.test.js",
     "lint": "eslint src",
     "lint:fix": "eslint src --fix",
     "test:ui": "jest"
@@ -37,6 +38,7 @@
       "!.env",
       "!data/**/*",
       "!logs/**/*",
+      "!scripts/**/*",
       "!tests/**/*",
       "!**/*.test.js"
     ],
@@ -60,7 +62,6 @@
     "electron": "^41.7.1",
     "electron-builder": "^24.13.3",
     "electron-packager": "^17.1.2",
-    "electron-reloader": "^1.2.3",
     "eslint": "^9.39.5",
     "jest": "^30.4.2",
     "jest-environment-jsdom": "^30.4.1"

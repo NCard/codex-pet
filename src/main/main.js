@@ -5,20 +5,26 @@ process.on('uncaughtException', (error) => {
 process.on('unhandledRejection', (reason) => {
   console.error('[Main UnhandledRejection]:', reason);
 });
-// 抑制第三方相依套件 (如 electron-reloader) 在 Node.js 22+ 的廢棄警告 [DEP0180]
-process.noDeprecation = true;
-
 const { app, BrowserWindow, ipcMain, Tray, Menu, screen, dialog, globalShortcut } = require('electron');
 const path = require('path');
 const fs = require('fs');
-const { petStatePath } = require('../utils/paths');
+const { petStatePath, devPidPath } = require('../utils/paths');
+const {
+  terminateExistingDevInstance,
+  registerCurrentDevInstance,
+  cleanupCurrentDevInstance
+} = require('../utils/dev_instance');
 const { resolveChatSize, computeAnchoredWindowBounds } = require('../utils/chat_sizing');
 const { autoUpdater } = require('electron-updater');
 
 // 停用 GPU Shader 硬碟快取，避免 Windows 環境下 GPUCache 鎖定衝突與 0x5 存取被拒錯誤
 app.commandLine.appendSwitch('disable-gpu-shader-disk-cache');
 
-// 單一實例鎖：僅在打包/安裝版啟用，防止使用者重複開啟多個實例
+const PROJECT_ROOT = path.resolve(__dirname, '../..');
+
+// 單一實例管理：
+// - 打包安裝版：鎖定單一實例，重複開啟時聚焦並叫醒既有的奇異鳥
+// - 開發測試版：若直接執行 npm start，會先自動結束舊的開發實例再啟動新版，避免長出第二隻
 if (app.isPackaged) {
   const gotTheLock = app.requestSingleInstanceLock();
   if (!gotTheLock) {
@@ -36,24 +42,42 @@ if (app.isPackaged) {
       mainWindow.webContents.send('play-action', 'jump');
     }
   });
-}
+} else {
+  const isManagedByDevRunner = process.env.WIKI_DEV_RUNNER === '1';
+  const runnerPid = parseInt(process.env.WIKI_DEV_RUNNER_PID, 10) || null;
 
-if (!app.isPackaged) {
-  try {
-    const reloader = require('electron-reloader');
-    reloader(module, {
-      ignore: [
-        /data/,
-        /docs/,
-        /tests/,
-        /\.git/,
-        /\.system_generated/,
-        /logs/,
-        /app\.log/,
-        /.*\.md$/
-      ]
+  if (!isManagedByDevRunner) {
+    const replaced = terminateExistingDevInstance({
+      pidFilePath: devPidPath,
+      currentPid: process.pid,
+      workspace: PROJECT_ROOT
     });
-  } catch (_) { }
+    if (replaced.terminated) {
+      console.log(`[Wiki Dev] 已結束舊的開發實例 (PID: ${replaced.terminatedPids.join(', ')})，啟動新版實例。`);
+    }
+  }
+
+  registerCurrentDevInstance({
+    pidFilePath: devPidPath,
+    pid: process.pid,
+    runnerPid,
+    workspace: PROJECT_ROOT
+  });
+
+  // 接收來自 scripts/dev.js 熱重載監看器的指令
+  process.on('message', (msg) => {
+    if (!msg || typeof msg !== 'object') return;
+    if (msg.type === 'dev-reload-renderer') {
+      BrowserWindow.getAllWindows().forEach((win) => {
+        if (!win || win.isDestroyed() || win === splashWindow) return;
+        win.webContents.reloadIgnoringCache();
+      });
+    } else if (msg.type === 'dev-graceful-quit') {
+      globalShortcut.unregisterAll();
+      cleanupCurrentDevInstance({ pidFilePath: devPidPath, pid: process.pid });
+      app.exit(0);
+    }
+  });
 }
 
 let mainWindow = null;
@@ -925,6 +949,9 @@ autoUpdater.on('update-downloaded', () => {
 
 app.on('will-quit', () => {
   globalShortcut.unregisterAll();
+  if (!app.isPackaged) {
+    cleanupCurrentDevInstance({ pidFilePath: devPidPath, pid: process.pid });
+  }
 });
 
 app.on('window-all-closed', () => {

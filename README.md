@@ -241,6 +241,10 @@ echo "GEMINI_API_KEY=your_gemini_api_key_here" > .env
 
 ### 3. 啟動應用程式
 ```bash
+# 熱重載開發模式（推薦）：改前端即時刷新畫面、改主行程自動乾淨重啟，永遠保持單一實例
+npm run dev
+
+# 單次啟動（重跑時會自動關閉前一個開發實例，不會長出第二隻）
 npm start
 ```
 
