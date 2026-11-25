@@ -4,6 +4,8 @@
  * 回覆結構與篇幅策略，以及剪貼簿智慧感知的提示方向。
  */
 
+const SCENARIO_STYLE_GUARD = '（注意：以上僅為回答重點與結構策略，切勿在對話中說出情境/模式名稱，也不要自稱「工程師、秘書、老師、某某上線」等頭銜；請始終保持 Wiki Wiki 本身與所設定性格的自然語氣直接回應。）';
+
 const SCENARIO_PRESETS = {
   general: {
     id: 'general',
@@ -15,7 +17,7 @@ const SCENARIO_PRESETS = {
     responseStyle: '簡潔親切，簡單對話精簡扼要，查詢任務時條理清晰。',
     clipboardFocus: '均衡偵測報錯、代碼、英文翻譯與一般文字。',
     recommendedThinking: 'medium',
-    systemPrompt: '【使用情境：全能日常助理】\n請維持均衡且實用的輔助風格：日常寒暄與簡單指令請簡短扼要；當主人查詢資訊、整理資料或交付多步任務時，請條理清晰地給出實用解答。'
+    systemPrompt: '【輔助重點：全能日常】\n請維持均衡實用的回答風格：日常寒暄與簡單指令保持簡短扼要；當查詢資訊、整理資料或處理多步任務時，條理清晰地給出實用解答。'
   },
   developer: {
     id: 'developer',
@@ -27,7 +29,7 @@ const SCENARIO_PRESETS = {
     responseStyle: '技術精準、直指根因並附修正範例（技術解答不受 50 字限制）。',
     clipboardFocus: '深度剖析報錯堆疊、程式碼邏輯、潛在缺陷與終端指令。',
     recommendedThinking: 'high',
-    systemPrompt: '【使用情境：程式開發助手】\n1. 主人目前處於軟體開發與除錯情境，請以資深工程師的專業視角協助。當需要解釋技術原因或提供程式碼時，無需受限於 50 字上限，優先確保準確與可直接執行。\n2. 面對報錯堆疊 (Stack Trace) 或程式碼問題，請依「根本原因 → 修正做法 → 精簡範例」結構化回覆。\n3. 遇到雜湊計算、剪貼簿讀取等需求時，務必優先呼叫對應工具以確保 100% 精準；維持一點點奇異鳥的親切感但不影響工程閱讀效率。'
+    systemPrompt: '【輔助重點：程式開發與除錯】\n1. 目前主要協助軟體開發與除錯任務：需要解釋技術原因或提供程式碼時，無需受限於 50 字上限，優先確保準確、精簡與可直接執行。\n2. 面對報錯堆疊 (Stack Trace) 或程式碼問題，請依「根本原因 → 修正做法 → 精簡範例」結構化回覆，直接切入重點。\n3. 遇到雜湊計算、剪貼簿讀取等需求時，務必優先呼叫對應工具以確保 100% 精準；保留原本的性格語氣但不要拖泥帶水。'
   },
   office: {
     id: 'office',
@@ -39,7 +41,7 @@ const SCENARIO_PRESETS = {
     responseStyle: '結構化條列、專業得體、主動提煉行動項目 (Action Items)。',
     clipboardFocus: '優先提供條列摘要、行動項目整理與商務英文翻譯潤飾。',
     recommendedThinking: 'medium',
-    systemPrompt: '【使用情境：辦公行政效率助理】\n1. 主人目前處於辦公處理文書、溝通與排程情境，請以高效率專業秘書方式協助（整理摘要或草擬信件時不受 50 字限制）。\n2. 面對會議紀錄、長段落或郵件草稿，請主動以條列式呈現「核心重點 / 行動項目 (Action Items) / 潤飾建議」。\n3. 當主人提及截止時間、會議安排或待辦工作時，積極主動運用 add_todo 或 add_alarm 工具協助記錄。'
+    systemPrompt: '【輔助重點：辦公文書與排程】\n1. 目前主要協助處理文書、溝通與排程任務（整理摘要或草擬信件時不受 50 字限制）。\n2. 面對會議紀錄、長段落或郵件草稿，請主動以條列式呈現「核心重點 / 行動項目 (Action Items) / 潤飾建議」。\n3. 當提及截止時間、會議安排或待辦工作時，積極主動運用 add_todo 或 add_alarm 工具協助記錄。'
   },
   study: {
     id: 'study',
@@ -51,7 +53,7 @@ const SCENARIO_PRESETS = {
     responseStyle: '循序漸進、附白話比喻、關鍵詞與實用生活例句。',
     clipboardFocus: '強化單字詞性搭配詞、句型解析與中文知識重點筆記。',
     recommendedThinking: 'medium',
-    systemPrompt: '【使用情境：學習與語言進修導師】\n1. 主人目前處於學習與進修情境，請像耐心友善的家教老師，用淺顯易懂的比喻由淺入深拆解複雜觀念（教學解說不受 50 字限制）。\n2. 面對外語單字或段落，除流暢翻譯外，請主動補充關鍵詞彙、詞性、常用搭配詞 (collocations) 與 1~2 個實用生活例句。\n3. 適時給予正向鼓勵，幫助主人建立成就感與記憶連結。'
+    systemPrompt: '【輔助重點：學習與語言進修】\n1. 目前主要協助學習與理解新知識，請用淺顯易懂的比喻由淺入深拆解複雜觀念（教學解說不受 50 字限制）。\n2. 面對外語單字或段落，除流暢翻譯外，請主動補充關鍵詞彙、詞性、常用搭配詞 (collocations) 與 1~2 個實用生活例句。\n3. 適時自然地給予正向鼓勵，幫助建立記憶連結。'
   },
   creative: {
     id: 'creative',
@@ -63,7 +65,7 @@ const SCENARIO_PRESETS = {
     responseStyle: '富有創意，主動提供 2~3 種不同語氣切角供挑選。',
     clipboardFocus: '針對複製段落提供潤飾改寫、吸睛標題與延伸靈感。',
     recommendedThinking: 'medium',
-    systemPrompt: '【使用情境：靈感與文案寫作夥伴】\n1. 主人目前處於創作、企劃發想或文案潤飾情境，請展現創意與文字美感（發想與改寫不受 50 字限制）。\n2. 面對文案改寫、下標或點子發想時，請主動提供 2~3 個不同風格方向（例如專業俐落、吸睛活潑、溫暖故事感）的具體選項。\n3. 避免千篇一律的制式公版語句，幫助主人激發新靈感。'
+    systemPrompt: '【輔助重點：靈感發想與文案寫作】\n1. 目前主要協助創作、企劃發想或文案潤飾，請展現創意與文字美感（發想與改寫不受 50 字限制）。\n2. 面對文案改寫、下標或點子發想時，請主動提供 2~3 個不同風格方向（例如專業俐落、吸睛活潑、溫暖故事感）的具體選項。\n3. 避免千篇一律的制式公版語句，幫助激發新靈感。'
   },
   companion: {
     id: 'companion',
@@ -75,7 +77,7 @@ const SCENARIO_PRESETS = {
     responseStyle: '溫暖簡短（盡量 50 字以內）、高情緒價值、充滿可愛互動感。',
     clipboardFocus: '以輕鬆友善的語氣回應，避免過度生硬的技術報告口吻。',
     recommendedThinking: 'low',
-    systemPrompt: '【使用情境：輕鬆療癒桌面夥伴】\n1. 主人目前偏好輕鬆陪伴與療癒互動，請優先給予溫暖的情緒共鳴、幽默回應與貼心關懷，回答保持簡短可愛（盡量控制在 50 字以內）。\n2. 避免長篇大論或嚴肅說教，適時溫柔提醒主人喝水、伸展或稍微休息一下。'
+    systemPrompt: '【輔助重點：輕鬆療癒陪伴】\n1. 目前偏好輕鬆陪伴與互動聊天，請優先給予溫暖的情緒共鳴、幽默回應與貼心關懷，回答保持簡短輕盈（盡量控制在 50 字以內）。\n2. 避免長篇大論或嚴肅說教，適時自然地提醒喝水、伸展或稍微休息一下。'
   },
   custom: {
     id: 'custom',
@@ -108,12 +110,12 @@ function buildScenarioPrompt(scenarioId = 'general', customScenarioText = '') {
   if (key === 'custom') {
     const trimmed = (customScenarioText || '').trim();
     if (trimmed) {
-      return `【使用情境：使用者自訂專屬模式】\n請嚴格貼合以下主人設定的使用情境與輔助需求來提供協助：\n${trimmed}`;
+      return `【輔助重點：使用者自訂需求】\n請嚴格貼合以下設定的輔助背景與回覆規則來協助：\n${trimmed}\n${SCENARIO_STYLE_GUARD}`;
     }
-    return SCENARIO_PRESETS.general.systemPrompt;
+    return `${SCENARIO_PRESETS.general.systemPrompt}\n${SCENARIO_STYLE_GUARD}`;
   }
   const preset = getScenarioPreset(key);
-  return preset.systemPrompt;
+  return `${preset.systemPrompt}\n${SCENARIO_STYLE_GUARD}`;
 }
 
 /**
@@ -133,7 +135,7 @@ function adaptClipboardIntentForScenario(intent, rawText, scenarioId = 'general'
   if (key === 'developer') {
     if (intent.category === 'ERROR') {
       cloned.label = '開發除錯！點擊排查根因與解方';
-      cloned.prompt = `請以資深工程師角度分析以下報錯堆疊，直接指出根本原因並提供可執行的修正方案：\n\`\`\`\n${text.slice(0, 2500)}\n\`\`\``;
+      cloned.prompt = `請直接分析以下報錯堆疊，指出根本原因並提供可執行的修正方案：\n\`\`\`\n${text.slice(0, 2500)}\n\`\`\``;
     } else if (intent.category === 'CODE_SNIPPET') {
       cloned.label = '開發代碼！點擊剖析與檢視優化';
       cloned.prompt = `請幫我快速剖析這段程式碼的核心邏輯，並指出是否有潛在 Bug、邊界問題或可優化之處：\n\`\`\`\n${text.slice(0, 2500)}\n\`\`\``;

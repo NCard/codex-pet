@@ -16,7 +16,7 @@ body, html {
   height: 100%;
   position: relative;
   box-sizing: border-box;
-  padding-bottom: 30px;
+  padding: 10px 0 30px 0;
 }
 
 #kiwi-wrapper {
@@ -88,6 +88,21 @@ body, html {
   width: var(--chat-width, 320px);
   align-items: center;
   position: relative;
+}
+
+.chat-esc-hint {
+  font-size: 11px;
+  color: #ffffff;
+  background: rgba(15, 23, 42, 0.52);
+  padding: 3px 11px;
+  border-radius: 12px;
+  pointer-events: none;
+  margin-bottom: 6px;
+  letter-spacing: 0.5px;
+  backdrop-filter: blur(4px);
+  line-height: 1.35;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .chat-bubble {
@@ -211,7 +226,8 @@ body, html {
 
 #chat-content {
   min-height: 24px;
-  max-height: var(--chat-height, 240px);
+  /* 雙重保護：平時依設定高度顯示，若輸入框多行或螢幕較矮則自動收斂，避免頂部 ESC 提示被視窗裁切 */
+  max-height: max(100px, min(var(--chat-height, 240px), calc(100vh - 395px)));
   overflow-y: auto;
   padding-right: 5px; /* 留點空間給捲軸 */
   color: #1e293b;

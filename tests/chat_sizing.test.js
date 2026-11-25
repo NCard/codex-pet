@@ -44,7 +44,9 @@ describe('Chat Bubble Resolution-Adaptive Sizing Unit Tests', () => {
     assert.strictEqual(manualRes.chatWidth, 460);
     assert.strictEqual(manualRes.chatHeight, 330);
     assert.strictEqual(manualRes.windowWidth, 500);
-    assert.strictEqual(manualRes.windowHeight, 690);
+    assert.strictEqual(manualRes.windowHeight, 750);
+    // Ensure enough vertical headroom for ESC hint + bubble header + input + kiwi
+    assert.ok(manualRes.windowHeight - manualRes.chatHeight >= 410);
 
     // Extreme manual values should be safely clamped
     const extremeLow = resolveChatSize({ chatSizeMode: 'manual', chatWidth: 50, chatHeight: 20 }, 1920, 1040);

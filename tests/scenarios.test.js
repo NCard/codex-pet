@@ -27,22 +27,28 @@ describe('Usage Scenario Presets & Adaptation Unit Tests', () => {
     assert.strictEqual(getScenarioPreset('').id, 'general');
   });
 
-  test('buildScenarioPrompt should build distinct system instructions and handle custom mode', () => {
+  test('buildScenarioPrompt should build distinct system instructions without stiff role-play titles', () => {
     const devPrompt = buildScenarioPrompt('developer');
-    assert.ok(devPrompt.includes('程式開發助手'));
+    assert.ok(devPrompt.includes('程式開發與除錯'));
     assert.ok(devPrompt.includes('根本原因'));
+    assert.ok(!devPrompt.includes('資深工程師'));
+    assert.ok(devPrompt.includes('切勿在對話中說出情境/模式名稱'));
 
     const officePrompt = buildScenarioPrompt('office');
-    assert.ok(officePrompt.includes('辦公行政效率助理'));
+    assert.ok(officePrompt.includes('辦公文書與排程'));
     assert.ok(officePrompt.includes('Action Items'));
+    assert.ok(!officePrompt.includes('專業秘書'));
+
+    const studyPrompt = buildScenarioPrompt('study');
+    assert.ok(!studyPrompt.includes('家教老師'));
 
     const customPrompt = buildScenarioPrompt('custom', '我是 Vue 3 前端工程師，請優先附程式碼');
-    assert.ok(customPrompt.includes('使用者自訂專屬模式'));
+    assert.ok(customPrompt.includes('使用者自訂需求'));
     assert.ok(customPrompt.includes('Vue 3 前端工程師'));
 
     // Empty custom text gracefully falls back to general prompt
     const emptyCustom = buildScenarioPrompt('custom', '   ');
-    assert.ok(emptyCustom.includes('全能日常助理'));
+    assert.ok(emptyCustom.includes('全能日常'));
   });
 
   test('analyzeClipboardText should adapt intent prompts when a focused scenario is active', () => {
@@ -52,7 +58,8 @@ describe('Usage Scenario Presets & Adaptation Unit Tests', () => {
     assert.strictEqual(generalErr.category, 'ERROR');
     assert.strictEqual(devErr.category, 'ERROR');
     assert.ok(devErr.label.includes('開發除錯'));
-    assert.ok(devErr.prompt.includes('資深工程師'));
+    assert.ok(devErr.prompt.includes('根本原因'));
+    assert.ok(!devErr.prompt.includes('資深工程師'));
 
     const noteText = '今天下午三點要和客戶確認第三季產品上線時程與預算分配';
     const officeNote = analyzeClipboardText(noteText, 'office');

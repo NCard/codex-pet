@@ -9,9 +9,9 @@ const MIN_CHAT_HEIGHT = 140;
 const MAX_CHAT_HEIGHT = 540;
 
 const WINDOW_EXTRA_WIDTH = 40;
-const WINDOW_EXTRA_HEIGHT = 360;
+const WINDOW_EXTRA_HEIGHT = 420;
 const MIN_WINDOW_WIDTH = 320;
-const MIN_WINDOW_HEIGHT = 520;
+const MIN_WINDOW_HEIGHT = 560;
 
 function clamp(val, min, max) {
   return Math.max(min, Math.min(max, val));
