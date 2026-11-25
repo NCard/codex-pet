@@ -12,6 +12,7 @@ const { app, BrowserWindow, ipcMain, Tray, Menu, screen, dialog, globalShortcut 
 const path = require('path');
 const fs = require('fs');
 const { petStatePath } = require('../utils/paths');
+const { resolveChatSize, computeAnchoredWindowBounds } = require('../utils/chat_sizing');
 const { autoUpdater } = require('electron-updater');
 
 // 停用 GPU Shader 硬碟快取，避免 Windows 環境下 GPUCache 鎖定衝突與 0x5 存取被拒錯誤
@@ -108,11 +109,20 @@ function closeSplashAndShowMain() {
 function createWindow() {
   const primaryDisplay = screen.getPrimaryDisplay();
   const { width: screenWidth, height: screenHeight } = primaryDisplay.workAreaSize;
-  const winWidth = 320;
-  const winHeight = 580;
+  let savedSettings = {};
+  try {
+    if (fs.existsSync(petStatePath)) {
+      const parsed = JSON.parse(fs.readFileSync(petStatePath, 'utf8'));
+      savedSettings = parsed.settings || {};
+    }
+  } catch (_) {}
 
-  const randomX = Math.floor(Math.random() * (screenWidth - winWidth));
-  const randomY = Math.floor(Math.random() * (screenHeight - winHeight));
+  const resolvedSize = resolveChatSize(savedSettings, screenWidth, screenHeight);
+  const winWidth = resolvedSize.windowWidth;
+  const winHeight = resolvedSize.windowHeight;
+
+  const randomX = Math.max(0, Math.floor(Math.random() * Math.max(1, screenWidth - winWidth)));
+  const randomY = Math.max(0, Math.floor(Math.random() * Math.max(1, screenHeight - winHeight)));
 
   mainWindow = new BrowserWindow({
     icon: path.join(__dirname, '../../assets/images/kiwi.png'),
@@ -184,6 +194,47 @@ ipcMain.on('get-window-pos', (event) => {
     event.returnValue = { x, y };
   } else {
     event.returnValue = { x: 0, y: 0 };
+  }
+});
+
+ipcMain.on('get-display-info', (event) => {
+  try {
+    const refWin = (mainWindow && !mainWindow.isDestroyed()) ? mainWindow : BrowserWindow.fromWebContents(event.sender);
+    const display = refWin
+      ? screen.getDisplayMatching(refWin.getBounds())
+      : screen.getPrimaryDisplay();
+    event.returnValue = {
+      width: display.workAreaSize.width,
+      height: display.workAreaSize.height,
+      scaleFactor: display.scaleFactor || 1
+    };
+  } catch (_) {
+    const primary = screen.getPrimaryDisplay();
+    event.returnValue = {
+      width: primary.workAreaSize.width,
+      height: primary.workAreaSize.height,
+      scaleFactor: primary.scaleFactor || 1
+    };
+  }
+});
+
+ipcMain.on('resize-main-window', (_event, { chatWidth, chatHeight } = {}) => {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  try {
+    const curBounds = mainWindow.getBounds();
+    const display = screen.getDisplayMatching(curBounds);
+    const resolved = resolveChatSize(
+      { chatSizeMode: 'manual', chatWidth, chatHeight },
+      display.workAreaSize.width,
+      display.workAreaSize.height
+    );
+    if (curBounds.width === resolved.windowWidth && curBounds.height === resolved.windowHeight) {
+      return;
+    }
+    const nextBounds = computeAnchoredWindowBounds(curBounds, resolved, display.workArea);
+    mainWindow.setBounds(nextBounds);
+  } catch (e) {
+    console.error('Failed to resize main window:', e);
   }
 });
 
@@ -635,6 +686,12 @@ app.whenReady().then(() => {
   });
   screen.on('display-metrics-changed', () => {
     if (laserOverlayWindows.length > 0) createLaserOverlayWindows();
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('display-metrics-changed');
+    }
+    if (settingsWindow && !settingsWindow.isDestroyed()) {
+      settingsWindow.webContents.send('display-metrics-changed');
+    }
   });
 
   ipcMain.on('update-outfit-pos', (event, data) => {

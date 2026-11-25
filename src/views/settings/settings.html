@@ -391,8 +391,40 @@
     </div>
   </div>
 
-  <!-- 外觀與互動設定頁籤 (原床鋪升級擴充，整合動畫速度與快捷鍵) -->
+  <!-- 外觀與互動設定頁籤 (原床鋪升級擴充，整合對話尺寸、動畫速度與快捷鍵) -->
   <div id="tab-appearance" class="tab-content">
+    <div class="section">
+      <div class="section-title">💬 對話氣泡尺寸 (Chat Bubble Size)</div>
+      <div id="chat-size-resolution-info" style="font-size: 11.5px; color: #2e7d32; background: #f1f8e9; border: 1px solid #c5e1a5; border-radius: 8px; padding: 7px 10px; margin-bottom: 10px; line-height: 1.45;">
+        🖥️ 偵測目前螢幕：讀取中...
+      </div>
+
+      <div class="control-group" style="margin-bottom: 10px;">
+        <label>調整模式</label>
+        <div style="display: flex; gap: 8px; margin-top: 5px; align-items: center;">
+          <select id="setting-chatSizeMode" style="flex: 1; padding: 6px; border-radius: 5px; border: 1px solid #ccc; font-family: inherit;">
+            <option value="auto">✨ 依螢幕解析度自動調整（推薦）</option>
+            <option value="manual">🎛️ 手動自訂長寬</option>
+          </select>
+          <button id="btn-reset-chat-size" type="button" class="btn-secondary" style="flex-shrink: 0; white-space: nowrap; padding: 6px 10px; border-radius: 6px; font-size: 11.5px; cursor: pointer;" title="恢復依目前螢幕解析度自動計算建議尺寸">↺ 套用建議值</button>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <label>對話框寬度 <span id="val-chat-width">350px</span></label>
+        <input type="range" id="setting-chatWidth" min="240" max="640" step="10" value="350">
+      </div>
+
+      <div class="control-group" style="margin-top: 8px;">
+        <label>對話內容最大高度 <span id="val-chat-height">250px</span></label>
+        <input type="range" id="setting-chatHeight" min="140" max="540" step="10" value="250">
+      </div>
+
+      <div style="font-size: 11px; color: #666; margin-top: 6px;">
+        * 拖曳滑桿會自動切換為「手動模式」並即時預覽；您也可以直接按住桌面對話氣泡左上角的 <strong>⤢</strong> 手柄自由拉大縮小！
+      </div>
+    </div>
+
     <div class="section">
       <div class="section-title"><i class="theme-icon icon-bed"></i> 床鋪狀態控制</div>
       <button id="btn-toggle-bed-edit" class="bed-edit-btn">✏️ 開啟床鋪編輯模式 (小鳥坐床)</button>

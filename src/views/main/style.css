@@ -85,7 +85,7 @@ body, html {
   flex-direction: column;
   gap: 0px;
   z-index: 20;
-  width: 290px;
+  width: var(--chat-width, 320px);
   align-items: center;
   position: relative;
 }
@@ -211,12 +211,41 @@ body, html {
 
 #chat-content {
   min-height: 24px;
-  max-height: 220px;
+  max-height: var(--chat-height, 240px);
   overflow-y: auto;
   padding-right: 5px; /* 留點空間給捲軸 */
   color: #1e293b;
   word-break: break-word;
   overflow-wrap: break-word;
+}
+
+/* 對話氣泡左上角手動拖曳調整大小手柄 */
+.chat-resize-handle {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  color: #94a3b8;
+  cursor: nwse-resize;
+  border-radius: 6px;
+  opacity: 0.45;
+  user-select: none;
+  -webkit-user-select: none;
+  z-index: 15;
+  transition: opacity 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+
+.chat-bubble:hover .chat-resize-handle,
+.chat-resize-handle:hover,
+.chat-resize-handle.resizing {
+  opacity: 1;
+  color: #0284c7;
+  background: rgba(224, 242, 254, 0.85);
 }
 
 /* ── 輕量級 Markdown 元素樣式 ── */

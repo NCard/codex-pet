@@ -12,6 +12,7 @@ const { getUsageSummary, loadUsageData, resetUsageData } = require('../../utils/
 const modelCache = require('../../utils/model_cache');
 const cryptoUtils = require('../../utils/crypto_utils');
 const { getScenarioPreset } = require('../../utils/scenarios');
+const { getAdaptiveChatSize, resolveChatSize } = require('../../utils/chat_sizing');
 require('dotenv').config({ path: path.resolve(__dirname, '../../../.env') });
 const { AIProviderFactory } = require('../../services/ai_provider');
 
@@ -22,6 +23,9 @@ const defaultSettings = {
   bedScale: 170,
   bedZ: -1,
   animSpeed: 1.0,
+  chatSizeMode: 'auto',
+  chatWidth: 350,
+  chatHeight: 250,
   aiProvider: 'gemini',
   apiKey: '',
   aiBaseUrl: '',
@@ -69,6 +73,9 @@ const els = {
   bedScale: document.getElementById('bed-scale'),
   bedZ: document.getElementById('bed-z'),
   animSpeed: document.getElementById('anim-speed'),
+  chatSizeMode: document.getElementById('setting-chatSizeMode'),
+  chatWidth: document.getElementById('setting-chatWidth'),
+  chatHeight: document.getElementById('setting-chatHeight'),
   aiProvider: document.getElementById('setting-aiProvider'),
   apiKey: document.getElementById('setting-apiKey'),
   baseUrl: document.getElementById('setting-baseUrl'),
@@ -92,8 +99,34 @@ const vals = {
   bedX: document.getElementById('val-bed-x'),
   bedY: document.getElementById('val-bed-y'),
   bedScale: document.getElementById('val-bed-scale'),
-  animSpeed: document.getElementById('val-anim-speed')
+  animSpeed: document.getElementById('val-anim-speed'),
+  chatWidth: document.getElementById('val-chat-width'),
+  chatHeight: document.getElementById('val-chat-height')
 };
+
+function getDetectedDisplaySize() {
+  try {
+    const info = ipcRenderer.sendSync('get-display-info');
+    if (info && info.width > 0 && info.height > 0) {
+      return info;
+    }
+  } catch (_) {}
+  return {
+    width: window.screen?.availWidth || window.screen?.width || 1920,
+    height: window.screen?.availHeight || window.screen?.height || 1080,
+    scaleFactor: window.devicePixelRatio || 1
+  };
+}
+
+function updateChatSizeInfoBanner() {
+  const infoEl = document.getElementById('chat-size-resolution-info');
+  if (!infoEl) return;
+  const display = getDetectedDisplaySize();
+  const rec = getAdaptiveChatSize(display.width, display.height);
+  const mode = els.chatSizeMode ? els.chatSizeMode.value : 'auto';
+  const modeNote = mode === 'auto' ? '目前為自動適應模式' : '目前為手動自訂模式';
+  infoEl.innerText = `🖥️ 偵測螢幕工作區：${display.width} × ${display.height}（${rec.tierLabel}）• 建議尺寸 ${rec.width} × ${rec.height} px（${modeNote}）`;
+}
 
 // 1. 分頁切換
 const tabBtns = document.querySelectorAll('.tab-btn');
@@ -250,6 +283,13 @@ function initUI() {
   els.bedScale.value = s.bedScale ?? defaultSettings.bedScale;
   els.bedZ.value = s.bedZ ?? defaultSettings.bedZ;
   els.animSpeed.value = s.animSpeed ?? defaultSettings.animSpeed;
+
+  const detectedDisplay = getDetectedDisplaySize();
+  const resolvedChat = resolveChatSize(s, detectedDisplay.width, detectedDisplay.height);
+  if (els.chatSizeMode) els.chatSizeMode.value = resolvedChat.mode;
+  if (els.chatWidth) els.chatWidth.value = resolvedChat.chatWidth;
+  if (els.chatHeight) els.chatHeight.value = resolvedChat.chatHeight;
+  updateChatSizeInfoBanner();
 
   // 遷移舊版儲存在 pet_state.json 的測試紀錄至獨立 ai_model_cache.json
   if (s.modelTestResults && typeof s.modelTestResults === 'object') {
@@ -954,6 +994,8 @@ function updateLabels() {
   vals.bedY.innerText = els.bedY.value + 'px';
   vals.bedScale.innerText = els.bedScale.value + 'px';
   vals.animSpeed.innerText = parseFloat(els.animSpeed.value).toFixed(1) + 'x';
+  if (vals.chatWidth && els.chatWidth) vals.chatWidth.innerText = els.chatWidth.value + 'px';
+  if (vals.chatHeight && els.chatHeight) vals.chatHeight.innerText = els.chatHeight.value + 'px';
 }
 
 function checkDirty() {
@@ -965,6 +1007,11 @@ function checkDirty() {
     current.bedScale !== (s.bedScale ?? defaultSettings.bedScale) ||
     current.bedZ !== (s.bedZ ?? defaultSettings.bedZ) ||
     current.animSpeed !== (s.animSpeed ?? defaultSettings.animSpeed) ||
+    current.chatSizeMode !== (s.chatSizeMode ?? defaultSettings.chatSizeMode) ||
+    (current.chatSizeMode === 'manual' && (
+      current.chatWidth !== (s.chatWidth ?? defaultSettings.chatWidth) ||
+      current.chatHeight !== (s.chatHeight ?? defaultSettings.chatHeight)
+    )) ||
     current.aiProvider !== (s.aiProvider ?? defaultSettings.aiProvider) ||
     current.apiKey !== (s.apiKey ?? defaultSettings.apiKey) ||
     current.aiBaseUrl !== (s.aiBaseUrl ?? defaultSettings.aiBaseUrl) ||
@@ -1002,6 +1049,9 @@ function getFormValues() {
     bedScale: parseInt(els.bedScale.value),
     bedZ: parseInt(els.bedZ.value),
     animSpeed: parseFloat(els.animSpeed.value),
+    chatSizeMode: els.chatSizeMode ? els.chatSizeMode.value : 'auto',
+    chatWidth: els.chatWidth ? parseInt(els.chatWidth.value, 10) : defaultSettings.chatWidth,
+    chatHeight: els.chatHeight ? parseInt(els.chatHeight.value, 10) : defaultSettings.chatHeight,
     aiProvider: providerId,
     apiKey: els.apiKey.value.trim(),
     aiBaseUrl: els.baseUrl ? els.baseUrl.value.trim() : '',
@@ -1146,6 +1196,21 @@ Object.keys(els).forEach(key => {
     if (key === 'thinkingLevel') {
       updateScenarioUI(els.aiScenario ? els.aiScenario.value : 'general');
     }
+    if (key === 'chatWidth' || key === 'chatHeight') {
+      if (els.chatSizeMode && els.chatSizeMode.value !== 'manual') {
+        els.chatSizeMode.value = 'manual';
+      }
+      updateChatSizeInfoBanner();
+    }
+    if (key === 'chatSizeMode') {
+      if (els.chatSizeMode.value === 'auto') {
+        const display = getDetectedDisplaySize();
+        const rec = getAdaptiveChatSize(display.width, display.height);
+        if (els.chatWidth) els.chatWidth.value = rec.width;
+        if (els.chatHeight) els.chatHeight.value = rec.height;
+      }
+      updateChatSizeInfoBanner();
+    }
     if (key === 'customModel') {
       updateQuotaUI();
       updateModelInfoCard(getEffectiveModelId());
@@ -1286,13 +1351,49 @@ function updateBedEditUI() {
   }
 }
 
-// 拖曳床鋪時收到的廣播
+document.getElementById('btn-reset-chat-size')?.addEventListener('click', () => {
+  const display = getDetectedDisplaySize();
+  const rec = getAdaptiveChatSize(display.width, display.height);
+  if (els.chatSizeMode) els.chatSizeMode.value = 'auto';
+  if (els.chatWidth) els.chatWidth.value = rec.width;
+  if (els.chatHeight) els.chatHeight.value = rec.height;
+  updateChatSizeInfoBanner();
+  updateLabels();
+  checkDirty();
+  previewBroadcast();
+});
+
+// 拖曳床鋪或桌面對話框縮放時收到的廣播
 ipcRenderer.on('update-settings-ui', (event, data) => {
   if (data.bedX !== undefined) els.bedX.value = data.bedX;
   if (data.bedY !== undefined) els.bedY.value = data.bedY;
   if (data.bedScale !== undefined) els.bedScale.value = data.bedScale;
+  if (data.chatSizeMode !== undefined && els.chatSizeMode) {
+    els.chatSizeMode.value = data.chatSizeMode;
+    petState.settings.chatSizeMode = data.chatSizeMode;
+  }
+  if (data.chatWidth !== undefined && els.chatWidth) {
+    els.chatWidth.value = data.chatWidth;
+    petState.settings.chatWidth = data.chatWidth;
+  }
+  if (data.chatHeight !== undefined && els.chatHeight) {
+    els.chatHeight.value = data.chatHeight;
+    petState.settings.chatHeight = data.chatHeight;
+  }
+  updateChatSizeInfoBanner();
   updateLabels();
   checkDirty();
+});
+
+ipcRenderer.on('display-metrics-changed', () => {
+  if (els.chatSizeMode && els.chatSizeMode.value === 'auto') {
+    const display = getDetectedDisplaySize();
+    const rec = getAdaptiveChatSize(display.width, display.height);
+    if (els.chatWidth) els.chatWidth.value = rec.width;
+    if (els.chatHeight) els.chatHeight.value = rec.height;
+  }
+  updateChatSizeInfoBanner();
+  updateLabels();
 });
 
 // 4. 按鈕行為

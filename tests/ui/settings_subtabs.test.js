@@ -124,6 +124,21 @@ describe('Settings Sub-tabs & Model Info Card UI Tests', () => {
     expect(container.querySelector('#btn-apply-scenario-thinking')).not.toBeNull();
   });
 
+  test('settings.html and index.html should provide adaptive and manual chat bubble size controls', () => {
+    expect(container.querySelector('#chat-size-resolution-info')).not.toBeNull();
+    const modeSelect = container.querySelector('#setting-chatSizeMode');
+    expect(modeSelect).not.toBeNull();
+    const modeValues = Array.from(modeSelect.querySelectorAll('option')).map(o => o.value);
+    expect(modeValues).toEqual(expect.arrayContaining(['auto', 'manual']));
+
+    expect(container.querySelector('#setting-chatWidth')).not.toBeNull();
+    expect(container.querySelector('#setting-chatHeight')).not.toBeNull();
+    expect(container.querySelector('#btn-reset-chat-size')).not.toBeNull();
+
+    const mainHtml = fs.readFileSync(path.resolve(__dirname, '../../src/views/main/index.html'), 'utf8');
+    expect(mainHtml).toContain('id="chat-resize-handle"');
+  });
+
   test('sub-tab buttons should correctly toggle active class on clicks', () => {
     const buttons = container.querySelectorAll('.sub-tab-btn');
     const contents = container.querySelectorAll('.subtab-content');

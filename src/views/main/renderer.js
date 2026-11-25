@@ -43,11 +43,46 @@ const os = require('os');
 const { ipcRenderer } = require('electron');
 require('dotenv').config({ path: path.resolve(__dirname, '../../../.env') });
 const { AIProviderFactory } = require('../../services/ai_provider');
+const { resolveChatSize, MIN_CHAT_WIDTH, MAX_CHAT_WIDTH, MIN_CHAT_HEIGHT, MAX_CHAT_HEIGHT } = require('../../utils/chat_sizing');
 const cryptoUtils = require('../../utils/crypto_utils');
 const { getDialogue } = require('../../utils/dialogues');
 const { spawn } = require('child_process');
 const { Client } = require("@modelcontextprotocol/sdk/client/index.js");
 const { StdioClientTransport } = require("@modelcontextprotocol/sdk/client/stdio.js");
+
+function getCurrentDisplaySize() {
+  try {
+    const info = ipcRenderer.sendSync('get-display-info');
+    if (info && info.width > 0 && info.height > 0) {
+      return { width: info.width, height: info.height };
+    }
+  } catch (_) {}
+  return {
+    width: window.screen?.availWidth || window.screen?.width || 1920,
+    height: window.screen?.availHeight || window.screen?.height || 1080
+  };
+}
+
+let lastAppliedChatWidth = 0;
+let lastAppliedChatHeight = 0;
+
+function applyChatSize(settings) {
+  const root = document.documentElement;
+  const display = getCurrentDisplaySize();
+  const resolved = resolveChatSize(settings || {}, display.width, display.height);
+  root.style.setProperty('--chat-width', `${resolved.chatWidth}px`);
+  root.style.setProperty('--chat-height', `${resolved.chatHeight}px`);
+
+  if (resolved.chatWidth !== lastAppliedChatWidth || resolved.chatHeight !== lastAppliedChatHeight) {
+    lastAppliedChatWidth = resolved.chatWidth;
+    lastAppliedChatHeight = resolved.chatHeight;
+    ipcRenderer.send('resize-main-window', {
+      chatWidth: resolved.chatWidth,
+      chatHeight: resolved.chatHeight
+    });
+  }
+  return resolved;
+}
 
 // 載入設定檔套用 CSS 變數
 function applySettings(settings) {
@@ -58,6 +93,7 @@ function applySettings(settings) {
   if (settings.bedScale !== undefined) root.style.setProperty('--bed-scale', `${settings.bedScale}px`);
   if (settings.bedZ !== undefined) root.style.setProperty('--bed-z', settings.bedZ);
   if (settings.animSpeed !== undefined) root.style.setProperty('--anim-speed', settings.animSpeed);
+  applyChatSize(settings);
 }
 
 // 初始化 MCP Client
@@ -595,3 +631,80 @@ ipcRenderer.on('onboarding-completed', () => {
   initAI();
   showTempBubble('🎉 歡迎來到桌面！雙擊我隨時聊天，右鍵可開啟工具與導覽喔～🥝', 6000);
 });
+
+ipcRenderer.on('display-metrics-changed', () => {
+  if (!petState.settings || (petState.settings.chatSizeMode || 'auto') === 'auto') {
+    applyChatSize(petState.settings || {});
+  }
+});
+
+// ── 對話氣泡左上角手動拖曳縮放控制 (Direct Resize Handle) ──
+const chatResizeHandle = document.getElementById('chat-resize-handle');
+let isResizingChat = false;
+let chatResizeStartX = 0;
+let chatResizeStartY = 0;
+let chatResizeStartW = 320;
+let chatResizeStartH = 240;
+let chatResizeDraftW = 320;
+let chatResizeDraftH = 240;
+let chatResizeRaf = null;
+
+if (chatResizeHandle) {
+  chatResizeHandle.addEventListener('mousedown', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    isResizingChat = true;
+    chatResizeHandle.classList.add('resizing');
+    chatResizeStartX = e.screenX;
+    chatResizeStartY = e.screenY;
+
+    const currentResolved = applyChatSize(petState.settings || {});
+    chatResizeStartW = currentResolved.chatWidth;
+    chatResizeStartH = currentResolved.chatHeight;
+    chatResizeDraftW = chatResizeStartW;
+    chatResizeDraftH = chatResizeStartH;
+  });
+
+  window.addEventListener('mousemove', (e) => {
+    if (!isResizingChat) return;
+    const dx = e.screenX - chatResizeStartX;
+    const dy = e.screenY - chatResizeStartY;
+
+    // 左上角往左拉寬度增加（因水平置中對稱放大 x2），往上拉高度增加
+    const nextW = Math.max(MIN_CHAT_WIDTH, Math.min(MAX_CHAT_WIDTH, Math.round(chatResizeStartW - dx * 2)));
+    const nextH = Math.max(MIN_CHAT_HEIGHT, Math.min(MAX_CHAT_HEIGHT, Math.round(chatResizeStartH - dy)));
+
+    chatResizeDraftW = nextW;
+    chatResizeDraftH = nextH;
+
+    if (!chatResizeRaf) {
+      chatResizeRaf = requestAnimationFrame(() => {
+        chatResizeRaf = null;
+        document.documentElement.style.setProperty('--chat-width', `${chatResizeDraftW}px`);
+        document.documentElement.style.setProperty('--chat-height', `${chatResizeDraftH}px`);
+        lastAppliedChatWidth = chatResizeDraftW;
+        lastAppliedChatHeight = chatResizeDraftH;
+        ipcRenderer.send('resize-main-window', {
+          chatWidth: chatResizeDraftW,
+          chatHeight: chatResizeDraftH
+        });
+      });
+    }
+  });
+
+  window.addEventListener('mouseup', () => {
+    if (!isResizingChat) return;
+    isResizingChat = false;
+    chatResizeHandle.classList.remove('resizing');
+    if (!petState.settings) petState.settings = {};
+    petState.settings.chatSizeMode = 'manual';
+    petState.settings.chatWidth = chatResizeDraftW;
+    petState.settings.chatHeight = chatResizeDraftH;
+    savePetState();
+    ipcRenderer.send('settings-dragged', {
+      chatSizeMode: 'manual',
+      chatWidth: chatResizeDraftW,
+      chatHeight: chatResizeDraftH
+    });
+  });
+}
