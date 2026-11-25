@@ -636,15 +636,17 @@ app.whenReady().then(() => {
     const cursorDisplay = screen.getDisplayNearestPoint(point);
     const win = BrowserWindow.fromWebContents(event.sender);
     let windowDisplay = null;
+    let windowBounds = null;
     if (win && !win.isDestroyed()) {
       try {
-        const [wx, wy] = win.getPosition();
-        windowDisplay = screen.getDisplayNearestPoint({ x: wx + 160, y: wy + 450 });
+        windowBounds = win.getBounds();
+        windowDisplay = screen.getDisplayNearestPoint({ x: windowBounds.x + 160, y: windowBounds.y + 450 });
       } catch { }
     }
     event.returnValue = {
       x: point.x,
       y: point.y,
+      windowBounds,
       displayBounds: cursorDisplay ? cursorDisplay.bounds : null,
       displayWorkArea: cursorDisplay ? cursorDisplay.workArea : null,
       cursorDisplayId: cursorDisplay ? cursorDisplay.id : null,

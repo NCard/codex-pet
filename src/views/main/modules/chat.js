@@ -6,6 +6,7 @@ const { buildScenarioPrompt } = require('../../../utils/scenarios');
 
 let bubbleTimeout = null;
 let chatAutoHideTimer = null;
+let chatHoverPollTimer = null;
 let isAlarmActive = false;
 let currentAlarmDismissCallback = null;
 let pomodoroTimer = null;
@@ -85,6 +86,10 @@ function init({
     clearTimeout(chatAutoHideTimer);
     chatAutoHideTimer = null;
   }
+  if (chatHoverPollTimer) {
+    clearInterval(chatHoverPollTimer);
+    chatHoverPollTimer = null;
+  }
 
   function getChatAutoHideMs() {
     const raw = Number(petState.settings?.chatAutoHideSeconds);
@@ -96,24 +101,83 @@ function init({
     return petState.settings?.chatAutoHidePauseOnHover !== false;
   }
 
+  function stopHoverWatch() {
+    if (chatHoverPollTimer) {
+      clearInterval(chatHoverPollTimer);
+      chatHoverPollTimer = null;
+    }
+  }
+
   function cancelChatAutoHide() {
     if (chatAutoHideTimer) {
       clearTimeout(chatAutoHideTimer);
       chatAutoHideTimer = null;
     }
+    stopHoverWatch();
+  }
+
+  function isPointInVisibleEl(el, relX, relY) {
+    if (!el || el.style.display === 'none') return false;
+    const rect = typeof el.getBoundingClientRect === 'function' ? el.getBoundingClientRect() : null;
+    if (!rect || (rect.width === 0 && rect.height === 0)) return false;
+    return relX >= rect.left && relX <= rect.right && relY >= rect.top && relY <= rect.bottom;
+  }
+
+  // 透過主行程取得真實作業系統游標位置，避免 Windows 透明穿透視窗漏發 mouseleave 導致永久判定為停留中
+  function probeCursorOverChat() {
+    if (!ipcRenderer || typeof ipcRenderer.sendSync !== 'function') return null;
+    try {
+      const info = ipcRenderer.sendSync('get-cursor-pos');
+      if (!info || !info.windowBounds || typeof info.x !== 'number' || typeof info.y !== 'number') {
+        return null;
+      }
+      const b = info.windowBounds;
+      const relX = info.x - b.x;
+      const relY = info.y - b.y;
+      if (relX < 0 || relY < 0 || relX > b.width || relY > b.height) {
+        return false;
+      }
+      return isPointInVisibleEl(chatBubble, relX, relY) || isPointInVisibleEl(chatInput, relX, relY);
+    } catch {
+      return null;
+    }
+  }
+
+  function startHoverWatch() {
+    if (chatHoverPollTimer) return;
+    chatHoverPollTimer = setInterval(() => {
+      if (isAlarmActive || isAIThinking || bubbleKind !== 'chat' || getChatAutoHideMs() <= 0) {
+        stopHoverWatch();
+        return;
+      }
+      const probed = probeCursorOverChat();
+      if (probed === false) {
+        isHoveringChat = false;
+        stopHoverWatch();
+        scheduleChatAutoHide();
+      }
+    }, 500);
   }
 
   function executeChatAutoHide() {
     chatAutoHideTimer = null;
     // 嚴格防護：絕不隱藏鬧鐘、番茄鐘提醒、系統進度、思考中、滑鼠停留中或正在輸入中的對話框
     if (isAlarmActive || isAIThinking || bubbleKind !== 'chat') return;
-    if (shouldPauseOnHover() && isHoveringChat) return;
+    const probed = probeCursorOverChat();
+    if (probed !== null) {
+      isHoveringChat = probed;
+    }
+    if (shouldPauseOnHover() && isHoveringChat) {
+      startHoverWatch();
+      return;
+    }
     if (chatInput && typeof chatInput.value === 'string' && chatInput.value.trim().length > 0) return;
 
     chatInput.style.display = 'none';
     if (typeof chatEscHint !== 'undefined' && chatEscHint) chatEscHint.style.display = 'none';
     chatBubble.style.display = 'none';
     bubbleKind = 'none';
+    stopHoverWatch();
   }
 
   function scheduleChatAutoHide() {
@@ -121,8 +185,16 @@ function init({
     if (isAlarmActive || isAIThinking || bubbleKind !== 'chat') return;
     const hideMs = getChatAutoHideMs();
     if (hideMs <= 0) return;
-    if (shouldPauseOnHover() && isHoveringChat) return;
     if (chatInput && typeof chatInput.value === 'string' && chatInput.value.trim().length > 0) return;
+
+    const probed = probeCursorOverChat();
+    if (probed !== null) {
+      isHoveringChat = probed;
+    }
+    if (shouldPauseOnHover() && isHoveringChat) {
+      startHoverWatch();
+      return;
+    }
 
     chatAutoHideTimer = setTimeout(executeChatAutoHide, hideMs);
   }
@@ -154,25 +226,48 @@ function init({
   updateContainerStyles();
 
   // 滑鼠停留、捲動、點擊或輸入時暫停／重設自動消失倒數，避免閱讀或打字到一半視窗消失
+  function handleChatHoverChange(overNow) {
+    if (overNow === isHoveringChat) return;
+    isHoveringChat = overNow;
+    if (bubbleKind !== 'chat') return;
+    if (overNow && shouldPauseOnHover()) {
+      cancelChatAutoHide();
+      if (getChatAutoHideMs() > 0) {
+        startHoverWatch();
+      }
+    } else {
+      stopHoverWatch();
+      scheduleChatAutoHide();
+    }
+  }
+
   if (container) {
-    container.addEventListener('mouseenter', () => {
-      isHoveringChat = true;
-      if (shouldPauseOnHover()) {
-        cancelChatAutoHide();
-      }
-    });
-    container.addEventListener('mouseleave', () => {
-      isHoveringChat = false;
-      if (bubbleKind === 'chat') {
-        scheduleChatAutoHide();
-      }
-    });
+    container.addEventListener('mouseenter', () => handleChatHoverChange(true));
+    container.addEventListener('mouseleave', () => handleChatHoverChange(false));
     container.addEventListener('mousedown', () => {
       if (bubbleKind === 'chat') {
         scheduleChatAutoHide();
       }
     });
   }
+
+  // Windows 透明穿透視窗移出對話區或切換至其他應用程式時，可能不觸發 container mouseleave，
+  // 透過全域 mousemove、document mouseleave 與 window blur 補齊離開偵測
+  window.addEventListener('mousemove', (e) => {
+    if (bubbleKind !== 'chat') return;
+    const overChat = Boolean(e.target && typeof e.target.closest === 'function' && e.target.closest('#chat-bubble, #chat-input'));
+    handleChatHoverChange(overChat);
+  });
+
+  document.addEventListener('mouseleave', () => {
+    handleChatHoverChange(false);
+  });
+
+  window.addEventListener('blur', () => {
+    if (bubbleKind !== 'chat') return;
+    const probed = probeCursorOverChat();
+    handleChatHoverChange(probed === true);
+  });
 
   chatContent.addEventListener('scroll', () => {
     if (bubbleKind === 'chat') {

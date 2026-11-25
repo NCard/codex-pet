@@ -1430,6 +1430,11 @@ els.enableAlarmSound.addEventListener('change', () => {
   previewBroadcast();
 });
 
+els.chatAutoHideSeconds?.addEventListener('change', () => {
+  checkDirty();
+  previewBroadcast();
+});
+
 els.chatAutoHidePauseOnHover?.addEventListener('change', () => {
   checkDirty();
   previewBroadcast();

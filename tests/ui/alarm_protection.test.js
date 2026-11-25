@@ -314,4 +314,52 @@ describe('Alarm Protection & Interlock Unit Tests', () => {
     expect(chatBubble.style.display).toBe('block');
     expect(chatContent.innerHTML).toContain('45%');
   });
+
+  test('chat auto-hide should recover when mouseleave is dropped on transparent window (blur & OS cursor probe)', () => {
+    const container = document.getElementById('chat-container');
+    let cursorPos = {
+      x: 150,
+      y: 150,
+      windowBounds: { x: 100, y: 100, width: 400, height: 600 }
+    };
+    chatInput.getBoundingClientRect = () => ({ left: 20, top: 20, right: 300, bottom: 80, width: 280, height: 60 });
+    chatBubble.getBoundingClientRect = () => ({ left: 20, top: 80, right: 300, bottom: 260, width: 280, height: 180 });
+
+    const mockIpc = {
+      send: jest.fn(),
+      on: jest.fn(),
+      sendSync: jest.fn((channel) => (channel === 'get-cursor-pos' ? cursorPos : null)),
+      invoke: jest.fn().mockResolvedValue([])
+    };
+
+    const sharedState = { settings: { chatAutoHideSeconds: 10, chatAutoHidePauseOnHover: true } };
+    const instance = chatModule.init({
+      chatBubble, chatContent, chatClose, chatClear, chatInput, chatEscHint, customMenu,
+      kiwi, kiwiAccessory, namePrefix: 'Wiki: ',
+      petState: sharedState,
+      savePetState: jest.fn(), loadPetState: jest.fn(), applyOutfitPos: jest.fn(),
+      getIsWorking: () => false, setIsWorking: jest.fn(),
+      laser: { getIsLaserGameActive: () => false },
+      getAI: () => null, getMcpClient: () => null, getGeminiTools: () => null,
+      crypto: {}, saveChatHistory: jest.fn(), clearChatHistory: jest.fn(), resetIdle: jest.fn(),
+      ipcRenderer: mockIpc
+    });
+
+    // Cursor enters chat -> paused while physically inside
+    instance.openChat();
+    container.dispatchEvent(new MouseEvent('mouseenter'));
+    jest.advanceTimersByTime(15000);
+    expect(chatInput.style.display).toBe('block');
+
+    // Cursor slides directly outside transparent Electron window without firing mouseleave or blur
+    cursorPos = {
+      x: 900,
+      y: 500,
+      windowBounds: { x: 100, y: 100, width: 400, height: 600 }
+    };
+    // Within 500ms hover watch detects OS cursor left, then 10s later auto-hides cleanly
+    jest.advanceTimersByTime(11000);
+    expect(chatInput.style.display).toBe('none');
+    expect(chatBubble.style.display).toBe('none');
+  });
 });
