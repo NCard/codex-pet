@@ -157,6 +157,87 @@ function findOpaqueBounds(image, alphaThreshold = 20) {
   return { minX, minY, maxX, maxY };
 }
 
+function featherTransparentEdges(image, bgR = 255, bgG = 255, bgB = 255, hardThreshold = 28, softThreshold = 68, passes = 2) {
+  const { width, height, data } = image.bitmap;
+  const softSq = softThreshold * softThreshold;
+  for (let pass = 0; pass < passes; pass++) {
+    const toFade = [];
+    for (let y = 1; y < height - 1; y++) {
+      for (let x = 1; x < width - 1; x++) {
+        const idx = y * width + x;
+        const o = idx * 4;
+        if (data[o + 3] === 0) continue;
+
+        const touchesTransparent =
+          data[(idx - 1) * 4 + 3] === 0 ||
+          data[(idx + 1) * 4 + 3] === 0 ||
+          data[(idx - width) * 4 + 3] === 0 ||
+          data[(idx + width) * 4 + 3] === 0;
+
+        if (!touchesTransparent) continue;
+        const distSq = colorDistanceSq(data[o], data[o + 1], data[o + 2], bgR, bgG, bgB);
+        if (distSq <= softSq) {
+          const factor = Math.max(0, Math.min(1, (Math.sqrt(distSq) - hardThreshold * 0.55) / (softThreshold - hardThreshold * 0.55)));
+          toFade.push({ o, alpha: Math.round(data[o + 3] * factor) });
+        }
+      }
+    }
+    for (const item of toFade) {
+      data[item.o + 3] = item.alpha;
+    }
+  }
+}
+
+/**
+ * 清除被線條完全圍住的封閉純白背景孔洞（如嘴喙與翅膀夾縫），並同步柔化孔洞邊緣
+ */
+function clearWhitePocketsInRegions(image, regions = [], { hardThreshold = 38, softThreshold = 78 } = {}) {
+  if (!Array.isArray(regions) || regions.length === 0) return;
+  const { width, height, data } = image.bitmap;
+  const hardSq = hardThreshold * hardThreshold;
+  const total = width * height;
+  const visited = new Uint8Array(total);
+  const queue = new Int32Array(total);
+  let head = 0;
+  let tail = 0;
+
+  const trySeed = (x, y) => {
+    if (x < 0 || y < 0 || x >= width || y >= height) return;
+    const idx = y * width + x;
+    if (visited[idx]) return;
+    const o = idx * 4;
+    if (data[o + 3] < 10) return;
+    const distSq = colorDistanceSq(data[o], data[o + 1], data[o + 2], 255, 255, 255);
+    if (distSq <= hardSq) {
+      visited[idx] = 1;
+      queue[tail++] = idx;
+    }
+  };
+
+  for (const reg of regions) {
+    for (let y = Math.max(0, reg.y1); y <= Math.min(height - 1, reg.y2); y++) {
+      for (let x = Math.max(0, reg.x1); x <= Math.min(width - 1, reg.x2); x++) {
+        trySeed(x, y);
+      }
+    }
+  }
+
+  while (head < tail) {
+    const idx = queue[head++];
+    data[idx * 4 + 3] = 0;
+    const x = idx % width;
+    const y = (idx - x) / width;
+    trySeed(x + 1, y);
+    trySeed(x - 1, y);
+    trySeed(x, y + 1);
+    trySeed(x, y - 1);
+  }
+
+  if (tail > 0) {
+    featherTransparentEdges(image, 255, 255, 255, hardThreshold, softThreshold, 2);
+  }
+}
+
 /**
  * 處理單張精靈圖：
  * - 若傳入 sharedTransform（鎖定同一網格的等比縮放與偏移），保證同系列幀 0px 抖動
@@ -197,6 +278,10 @@ async function processSprite(inputPath, outputPath, options = {}) {
     const pasteX = Math.round((CANVAS_SIZE - contentW) / 2 + shiftX);
     const pasteY = Math.round(baselineY - contentH);
     canvas.composite(img, pasteX, Math.max(6, pasteY));
+  }
+
+  if (Array.isArray(options.clearPocketRegions) && options.clearPocketRegions.length > 0) {
+    clearWhitePocketsInRegions(canvas, options.clearPocketRegions);
   }
 
   const outDir = path.dirname(outputPath);
@@ -256,6 +341,7 @@ async function buildDanglingComposite(happyBodyPath, talkFacePath, outputPath, s
   const { scale, offsetX, offsetY } = sharedTransform;
   body.resize(Math.round(w * scale), Math.round(h * scale), Jimp.RESIZE_BICUBIC);
   canvas.composite(body, Math.round(offsetX), Math.round(offsetY));
+  clearWhitePocketsInRegions(canvas, [{ x1: 365, y1: 210, x2: 415, y2: 252 }]);
   canvas.deflateLevel(9);
   await canvas.writeAsync(outputPath);
   const stat = fs.statSync(outputPath);
@@ -289,20 +375,20 @@ async function runBatchFromArtifacts(artifactDir, outputDir) {
     ['kiwi_talk_1795575385546.jpg', 'kiwi_talk.png'],
     ['kiwi_walk1_v2_1795575402108.jpg', 'kiwi_walk1.png'],
     ['kiwi_walk2_v3_1795575428379.jpg', 'kiwi_walk2.png'],
-    ['kiwi_happy_v3_1795575423251.jpg', 'kiwi_happy.png'],
+    ['kiwi_happy_v3_1795575423251.jpg', 'kiwi_happy.png', [{ x1: 365, y1: 210, x2: 415, y2: 252 }]],
     ['kiwi_happy_v2_1795575403816.jpg', 'kiwi_jump.png'],
     ['kiwi_thinking_1795575419404.jpg', 'kiwi_thinking.png'],
     ['kiwi_tired_1795575430038.jpg', 'kiwi_tired.png'],
     ['kiwi_eating1_1795575449746.jpg', 'kiwi_eating.png'],
-    ['kiwi_eating1_1795575432479.jpg', 'kiwi_eating2.png']
+    ['kiwi_eating1_1795575432479.jpg', 'kiwi_eating2.png', [{ x1: 370, y1: 320, x2: 396, y2: 356 }]]
   ];
 
   const results = [];
-  for (const [srcName, dstName] of lockedJobs) {
+  for (const [srcName, dstName, clearPocketRegions] of lockedJobs) {
     const res = await processSprite(
       path.join(artifactDir, srcName),
       path.join(outputDir, dstName),
-      { sharedTransform: shared }
+      { sharedTransform: shared, clearPocketRegions }
     );
     results.push(res);
   }
