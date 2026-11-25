@@ -4,3 +4,6 @@ dist/
 data/
 logs/
 .idea/
+chat_error.log
+error.log
+temp.txt
