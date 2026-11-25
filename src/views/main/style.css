@@ -38,11 +38,52 @@ body, html {
 }
 
 #kiwi-img {
-  width: 180px;
+  width: var(--pet-scale, 180px);
   height: auto;
   user-select: none;
   -webkit-user-drag: none; /* 防止圖片被原生拖曳 */
-  transition: filter 0.5s ease;
+  transition: filter 0.35s ease;
+  filter: drop-shadow(0 2px 4px rgba(74, 48, 28, 0.14));
+}
+
+/* 動態接地陰影：讓日系繪本奇異鳥自然「站在」桌面上 */
+.kiwi-shadow {
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  width: calc(var(--pet-scale, 180px) * 0.62);
+  height: 15px;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(62, 39, 25, 0.28) 0%, rgba(62, 39, 25, 0.1) 55%, transparent 75%);
+  pointer-events: none;
+  z-index: -1;
+  transition: width 0.22s ease, opacity 0.22s ease, transform 0.22s ease;
+}
+
+.kiwi-shadow.shadow-idle {
+  opacity: 0.9;
+}
+
+.kiwi-shadow.shadow-walking {
+  width: calc(var(--pet-scale, 180px) * 0.56);
+  opacity: 0.78;
+}
+
+.kiwi-shadow.shadow-jumping {
+  width: calc(var(--pet-scale, 180px) * 0.42);
+  opacity: 0.45;
+}
+
+.kiwi-shadow.shadow-dangling {
+  width: calc(var(--pet-scale, 180px) * 0.3);
+  opacity: 0.15;
+}
+
+.kiwi-shadow.shadow-sleeping {
+  width: calc(var(--pet-scale, 180px) * 0.84);
+  height: 18px;
+  opacity: 0.88;
 }
 
 .kiwi-tired {
@@ -55,23 +96,24 @@ body, html {
 }
 
 @keyframes peck-eat {
-  0%, 100% { transform: rotate(0deg) translateY(0); }
-  25%, 75% { transform: rotate(25deg) translateY(12px) translateX(10px); }
-  50% { transform: rotate(35deg) translateY(18px) translateX(15px) scaleY(0.95); }
+  0%, 100% { transform: translateY(0) scale(1, 1); }
+  50% { transform: translateY(3px) scale(1.03, 0.97); }
 }
 
 .kiwi-pecking {
-  animation: peck-eat 0.5s ease-in-out infinite;
-  transform-origin: 60% 80%;
+  animation: peck-eat 0.72s ease-in-out infinite;
+  transform-origin: 50% 90%;
 }
 
 #kiwi-sprite-wrapper.kiwi-petting {
-  animation: happy-jump 0.4s ease-in-out infinite;
+  animation: happy-jump 0.48s ease-in-out infinite;
+  transform-origin: 50% 90%;
 }
 
 @keyframes happy-jump {
-  0%, 100% { transform: scale(1) translateY(0); }
-  50% { transform: scale(1.05, 0.95) translateY(-5px); }
+  0%, 100% { transform: scale(1, 1) translateY(0); }
+  35% { transform: scale(1.06, 0.94) translateY(2px); }
+  65% { transform: scale(0.96, 1.05) translateY(-7px); }
 }
 
 @keyframes floatHeart {
@@ -530,34 +572,34 @@ body, html {
   width: 0;
 }
 
-/* 動畫 keyframes */
+/* 動畫 keyframes（日系繪本 Q 彈果凍壓扁回彈 Squash & Stretch） */
 @keyframes breathe {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.05) translateY(-5px); }
-  100% { transform: scale(1); }
+  0%, 100% { transform: scale(1, 1) translateY(0); }
+  50% { transform: scale(1.03, 0.985) translateY(-2.5px); }
 }
 
 @keyframes shock {
   0% { transform: scale(1); }
-  20% { transform: scale(1.2) rotate(15deg); }
-  40% { transform: scale(1.2) rotate(-15deg); }
-  60% { transform: scale(1.2) rotate(15deg); }
-  80% { transform: scale(1.2) rotate(-15deg); }
+  20% { transform: scale(1.12) rotate(12deg); }
+  40% { transform: scale(1.12) rotate(-12deg); }
+  60% { transform: scale(1.12) rotate(10deg); }
+  80% { transform: scale(1.12) rotate(-10deg); }
   100% { transform: scale(1); }
 }
 
 @keyframes jump {
-  0% { transform: translateY(0); }
-  50% { transform: translateY(-20px); }
-  100% { transform: translateY(0); }
+  0% { transform: translateY(0) scale(1, 1); }
+  18% { transform: translateY(3px) scale(1.08, 0.91); }
+  48% { transform: translateY(-22px) scale(0.94, 1.08); }
+  80% { transform: translateY(2px) scale(1.06, 0.94); }
+  100% { transform: translateY(0) scale(1, 1); }
 }
 
 @keyframes walk {
-  0% { transform: rotate(0deg); }
-  25% { transform: rotate(5deg) translateY(-2px); }
-  50% { transform: rotate(0deg); }
-  75% { transform: rotate(-5deg) translateY(-2px); }
-  100% { transform: rotate(0deg); }
+  0%, 100% { transform: rotate(0deg) translateY(0); }
+  25% { transform: rotate(2.6deg) translateY(-3.5px); }
+  50% { transform: rotate(0deg) translateY(0.5px); }
+  75% { transform: rotate(-2.4deg) translateY(-3px); }
 }
 
 @keyframes float {

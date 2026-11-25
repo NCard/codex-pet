@@ -25,7 +25,8 @@ function init({
   getIsDragging,
   getIsLaserActive,
   getAI,
-  onClickContinueChat
+  onClickContinueChat,
+  onSpeakBurst
 }) {
   const picker = new MonologuePicker({ historyLimit: 40 });
   let scheduleTimer = null;
@@ -184,6 +185,9 @@ function init({
     bubbleEl.classList.toggle('dream-mode', Boolean(isDream));
     bubbleEl.style.display = 'flex';
     bubbleEl.classList.add('visible');
+    if (!isDream && typeof onSpeakBurst === 'function') {
+      onSpeakBurst(1000);
+    }
     scheduleHide();
   }
 

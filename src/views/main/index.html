@@ -81,8 +81,10 @@
         </div>
         <div id="kiwi-food" style="display: none; position: absolute; bottom: -2px; right: -25px; font-size: 32px; z-index: 5; pointer-events: none;">🥝</div>
       </div>
-      
-      <img src="../../../assets/images/bed.png" id="kiwi-bed" style="display: none; position: absolute; bottom: -10px; left: 50%; transform: translateX(-50%); margin-left: var(--bed-x, -4px); margin-bottom: var(--bed-y, -15px); width: var(--bed-scale, 170px); z-index: var(--bed-z, -1); pointer-events: none;">
+
+      <!-- 動態接地陰影：隨站立／跳躍／懸空／睡覺自然縮放 -->
+      <div id="kiwi-shadow" class="kiwi-shadow shadow-idle"></div>
+      <img src="../../../assets/images/bed.png" id="kiwi-bed" style="display: none; pointer-events: none;">
     </div>
   </div>
   <script src="renderer.js"></script>

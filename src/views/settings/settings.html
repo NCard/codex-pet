@@ -407,11 +407,11 @@
     </div>
   </div>
 
-  <!-- 外觀與互動設定頁籤（拆分為 3 大子頁籤：對話與動畫、床鋪微調、快捷與鬧鐘） -->
+  <!-- 外觀與互動設定頁籤（拆分為 3 大子頁籤：對話與自言自語、角色與動作、快捷與鬧鐘） -->
   <div id="tab-appearance" class="tab-content">
     <div class="sub-tabs">
-      <button class="sub-tab-btn active" data-subtab="subtab-chat-ui" type="button">💬 對話與動畫</button>
-      <button class="sub-tab-btn" data-subtab="subtab-bed" type="button">🛏️ 床鋪微調</button>
+      <button class="sub-tab-btn active" data-subtab="subtab-chat-ui" type="button">💬 對話互動</button>
+      <button class="sub-tab-btn" data-subtab="subtab-pet-visual" type="button">🎨 角色與動作</button>
       <button class="sub-tab-btn" data-subtab="subtab-controls" type="button">⏰ 快捷與鬧鐘</button>
     </div>
 
@@ -513,53 +513,59 @@
           </div>
         </div>
       </div>
-
-      <div class="section" data-search-path="外觀互動 › 對話與動畫" data-search-keywords="動畫 速度 呼吸 倍率 animation speed">
-        <div class="section-title">⚡ 動畫速度 (Animation)</div>
-        <div class="control-group">
-          <label>呼吸速度倍率 <span id="val-anim-speed">1.0x</span></label>
-          <input type="range" id="anim-speed" min="0.5" max="3.0" step="0.1" value="1.0">
-        </div>
-      </div>
     </div>
 
-    <!-- 外觀子分頁 B：床鋪編輯與微調 -->
-    <div id="subtab-bed" class="subtab-content">
-      <div class="section" data-search-path="外觀互動 › 床鋪微調" data-search-keywords="床鋪 編輯 模式 小鳥 坐床 睡覺 bed edit">
-        <div class="section-title"><i class="theme-icon icon-bed"></i> 床鋪狀態控制</div>
-        <button id="btn-toggle-bed-edit" class="bed-edit-btn">✏️ 開啟床鋪編輯模式 (小鳥坐床)</button>
-        <div id="bed-edit-tip" style="font-size: 11px; color: #e65100; margin-top: 6px; display: none;">
-          💡 編輯模式已開啟：奇異鳥已移至床上，您可以直接拖曳床鋪或調整下方數值！
+    <!-- 外觀子分頁 B：日系繪本角色外觀、動態陰影與動作預覽（取代舊版手動床鋪對齊） -->
+    <div id="subtab-pet-visual" class="subtab-content">
+      <div class="section" data-search-path="外觀互動 › 角色與動作" data-search-keywords="角色 大小 縮放 繪本 美術 動畫 速度 呼吸 眨眼 陰影 pet scale size shadow blink animation speed">
+        <div class="section-title">🎨 日系繪本角色外觀 (Visual & Motion)</div>
+
+        <div class="control-group" style="margin-bottom: 10px;">
+          <label>角色顯示大小 <span id="val-pet-scale">180px</span></label>
+          <input type="range" id="setting-petScale" min="130" max="240" step="5" value="180">
         </div>
-        <div id="bed-lock-tip" style="font-size: 11px; color: #888; margin-top: 6px;">
-          🔒 請先點擊上方按鈕開啟編輯模式以解鎖數值調整
+
+        <div class="control-group" style="margin-bottom: 12px;">
+          <label>呼吸與動作速度倍率 <span id="val-anim-speed">1.0x</span></label>
+          <input type="range" id="anim-speed" min="0.5" max="3.0" step="0.1" value="1.0">
+        </div>
+
+        <div class="control-group" style="margin-bottom: 10px;">
+          <label style="display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none;">
+            <span style="font-weight: bold;">🌑 顯示腳底柔和接地陰影</span>
+            <input type="checkbox" id="setting-enablePetShadow" checked style="width: 18px; height: 18px; cursor: pointer;">
+          </label>
+          <div style="font-size: 11px; color: #666; margin-top: 4px;">
+            * 陰影會隨跳躍、懸空與睡覺動態縮放，讓奇異鳥更自然融入桌面。
+          </div>
+        </div>
+
+        <div class="control-group">
+          <label style="display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none;">
+            <span style="font-weight: bold;">✨ 啟用自然眨眼與多幀表情動作</span>
+            <input type="checkbox" id="setting-enableSpriteAnim" checked style="width: 18px; height: 18px; cursor: pointer;">
+          </label>
+          <div style="font-size: 11px; color: #666; margin-top: 4px;">
+            * 開啟後支援定時自然眨眼、2 幀邁步走路、啄食嚼嚼、AI 托喙思考與說話嘴型動畫。
+          </div>
         </div>
       </div>
 
-      <div class="section" data-search-path="外觀互動 › 床鋪微調" data-search-keywords="床鋪 位置 偏移 x y 大小 圖層 前景 背景 bed position scale layer">
-        <div class="section-title">🎛️ 位置與圖層微調</div>
-        
-        <div class="control-group">
-          <label>X 軸偏移 <span id="val-bed-x">0px</span></label>
-          <input type="range" id="bed-x" min="-100" max="100" value="0">
+      <div class="section" data-search-path="外觀互動 › 角色與動作" data-search-keywords="床鋪 睡覺 一體化 睡姿 預覽 動作 姿勢 展演 bed sleep pose preview">
+        <div class="section-title">🎬 一體化睡姿與動作展演 (Pose Preview)</div>
+        <div style="font-size: 11.5px; color: #2e7d32; background: #f1f8e9; border: 1px solid #c5e1a5; border-radius: 8px; padding: 7px 10px; margin-bottom: 10px; line-height: 1.45;">
+          ✨ 新版日系繪本睡姿已將奇異鳥與毛絨針織小窩完美整合為一體插畫，不再需要手動微調床鋪座標與圖層！
         </div>
-        
-        <div class="control-group">
-          <label>Y 軸偏移 <span id="val-bed-y">0px</span></label>
-          <input type="range" id="bed-y" min="-100" max="100" value="0">
-        </div>
-        
-        <div class="control-group">
-          <label>床鋪大小 <span id="val-bed-scale">170px</span></label>
-          <input type="range" id="bed-scale" min="100" max="300" value="170">
-        </div>
-
-        <div class="control-group">
-          <label>圖層順序</label>
-          <select id="bed-z">
-            <option value="-1">小鳥下方 (背景)</option>
-            <option value="15">小鳥上方 (前景)</option>
-          </select>
+        <div class="pose-preview-grid">
+          <button type="button" class="pose-preview-btn" data-pose="sleep">🛏️ 一體化睡姿</button>
+          <button type="button" class="pose-preview-btn" data-pose="happy">🎉 開心拍翅</button>
+          <button type="button" class="pose-preview-btn" data-pose="jump">✨ 歡呼躍起</button>
+          <button type="button" class="pose-preview-btn" data-pose="thinking">🤔 AI 思考</button>
+          <button type="button" class="pose-preview-btn" data-pose="eating1">🥝 啄食奇異果</button>
+          <button type="button" class="pose-preview-btn" data-pose="talk">🗣️ 說話嘴型</button>
+          <button type="button" class="pose-preview-btn" data-pose="tired">😴 疲累冒汗</button>
+          <button type="button" class="pose-preview-btn" data-pose="dangling">😲 被抓懸空</button>
+          <button type="button" class="pose-preview-btn pose-preview-reset" data-pose="clear">🔄 恢復自動動作</button>
         </div>
       </div>
     </div>

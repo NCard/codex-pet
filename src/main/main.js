@@ -787,6 +787,12 @@ app.whenReady().then(() => {
     }
   });
 
+  ipcMain.on('preview-pet-pose', (_event, poseKey) => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('preview-pet-pose', poseKey);
+    }
+  });
+
   ipcMain.on('settings-dragged', (event, settingsData) => {
     if (settingsWindow) settingsWindow.webContents.send('update-settings-ui', settingsData);
   });

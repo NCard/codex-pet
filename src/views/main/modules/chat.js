@@ -72,7 +72,8 @@ function init({
   petState, savePetState, loadPetState, applyOutfitPos,
   getIsWorking, setIsWorking,
   laser, ai, getAI, mcpClient, getMcpClient, geminiTools, getGeminiTools, crypto,
-  saveChatHistory, clearChatHistory, resetIdle, ipcRenderer
+  saveChatHistory, clearChatHistory, resetIdle, ipcRenderer,
+  onThinkingChange, onSpeakBurst
 }) {
   const resolveAI = () => (typeof getAI === 'function' ? getAI() : ai);
   const resolveMcpClient = () => (typeof getMcpClient === 'function' ? getMcpClient() : mcpClient);
@@ -554,6 +555,7 @@ function init({
     
     // 停用並隱藏輸入框，顯示思考中
     isAIThinking = true;
+    if (typeof onThinkingChange === 'function') onThinkingChange(true);
     bubbleKind = 'chat';
     cancelChatAutoHide();
     if (bubbleTimeout) {
@@ -591,6 +593,7 @@ function init({
         } else if (cmd === '/laser') {
           try { laser.toggleLaserGame(); } catch (e) { require('fs').writeFileSync('error.log', e.stack); }
           isAIThinking = false;
+          if (typeof onThinkingChange === 'function') onThinkingChange(false);
           cancelChatAutoHide();
           chatInput.disabled = false;
           return;
@@ -697,6 +700,8 @@ function init({
         chatInput.placeholder = '對話... (Shift+Enter 換行)';
         chatInput.focus();
         isAIThinking = false;
+        if (typeof onThinkingChange === 'function') onThinkingChange(false);
+        if (typeof onSpeakBurst === 'function') onSpeakBurst(1000);
         bubbleKind = 'chat';
         scheduleChatAutoHide();
         
@@ -1071,6 +1076,8 @@ ${scenarioText}
         chatInput.placeholder = '對話... (Shift+Enter 換行)';
         chatInput.focus();
         isAIThinking = false;
+        if (typeof onThinkingChange === 'function') onThinkingChange(false);
+        if (typeof onSpeakBurst === 'function') onSpeakBurst(1300);
         bubbleKind = 'chat';
         scheduleChatAutoHide();
         
@@ -1079,6 +1086,7 @@ ${scenarioText}
         setTimeout(() => { kiwi.classList.remove('jumping'); }, 500);
       } catch (err) {
         isAIThinking = false;
+        if (typeof onThinkingChange === 'function') onThinkingChange(false);
         // 如果 API 呼叫失敗，安全回滾未完成的對話狀態，避免留存不完整的 user / function 訊息
         while (sessionContext.length > contextLengthBeforeTurn) {
           sessionContext.pop();
