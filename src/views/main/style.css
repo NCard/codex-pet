@@ -728,4 +728,94 @@ body, html {
   to { opacity: 1; transform: scale(1) translateY(0); }
 }
 
+/* 💭 獨立迷你自言自語泡泡 (Idle Monologue Pill) */
+.monologue-bubble {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  max-width: 268px;
+  padding: 8px 11px;
+  margin-bottom: 10px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.93);
+  border: 1.5px solid rgba(129, 199, 132, 0.72);
+  box-shadow: 0 6px 18px rgba(46, 125, 50, 0.14), 0 2px 6px rgba(0, 0, 0, 0.06);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  cursor: pointer;
+  user-select: none;
+  pointer-events: auto;
+  -webkit-app-region: no-drag;
+  z-index: 35;
+  animation: popIn 0.28s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+}
+
+.monologue-bubble::after {
+  content: '';
+  position: absolute;
+  bottom: -7px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 10px;
+  height: 10px;
+  background: rgba(255, 255, 255, 0.93);
+  border-right: 1.5px solid rgba(129, 199, 132, 0.72);
+  border-bottom: 1.5px solid rgba(129, 199, 132, 0.72);
+  transform: translateX(-50%) rotate(45deg);
+}
+
+.monologue-bubble:hover {
+  transform: translateY(-2px);
+  background: #ffffff;
+  box-shadow: 0 8px 22px rgba(46, 125, 50, 0.22);
+}
+
+.monologue-bubble.dream-mode {
+  background: rgba(248, 250, 255, 0.9);
+  border-color: rgba(147, 197, 253, 0.78);
+  box-shadow: 0 5px 16px rgba(99, 102, 241, 0.14);
+}
+
+.monologue-bubble.dream-mode::after {
+  background: rgba(248, 250, 255, 0.9);
+  border-right-color: rgba(147, 197, 253, 0.78);
+  border-bottom-color: rgba(147, 197, 253, 0.78);
+}
+
+.monologue-icon {
+  font-size: 14px;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.monologue-text {
+  font-family: var(--theme-font-main, sans-serif);
+  font-size: 12px;
+  line-height: 1.45;
+  color: #334155;
+  word-break: break-word;
+}
+
+.monologue-bubble.dream-mode .monologue-text {
+  color: #475569;
+  font-style: italic;
+}
+
+.monologue-close {
+  font-size: 10.5px;
+  color: #94a3b8;
+  padding: 2px 4px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  line-height: 1;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.monologue-close:hover {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+}
+
 

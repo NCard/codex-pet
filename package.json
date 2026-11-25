@@ -8,7 +8,7 @@
     "dev": "node scripts/dev.js",
     "pack": "electron-builder --dir",
     "dist": "electron-builder --win",
-    "test": "node --test tests/crypto_utils.test.js tests/paths.test.js tests/sanitization.test.js tests/clipboard_watcher.test.js tests/clipboard_analyzer.test.js tests/markdown.test.js tests/usage_tracker.test.js tests/dialogues.test.js tests/thinking_level.test.js tests/compute_hash.test.js tests/ai_provider.test.js tests/model_cache.test.js tests/scenarios.test.js tests/chat_sizing.test.js tests/dev_instance.test.js",
+    "test": "node --test tests/crypto_utils.test.js tests/paths.test.js tests/sanitization.test.js tests/clipboard_watcher.test.js tests/clipboard_analyzer.test.js tests/markdown.test.js tests/usage_tracker.test.js tests/dialogues.test.js tests/thinking_level.test.js tests/compute_hash.test.js tests/ai_provider.test.js tests/model_cache.test.js tests/scenarios.test.js tests/chat_sizing.test.js tests/dev_instance.test.js tests/monologue.test.js",
     "lint": "eslint src",
     "lint:fix": "eslint src --fix",
     "test:ui": "jest"

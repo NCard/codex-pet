@@ -54,6 +54,11 @@ describe('Settings Sub-tabs & Model Info Card UI Tests', () => {
     expect(container.querySelector('#subtab-chat-ui #setting-chatSizeMode')).not.toBeNull();
     expect(container.querySelector('#subtab-chat-ui #setting-chatAutoHideSeconds')).not.toBeNull();
     expect(container.querySelector('#subtab-chat-ui #setting-chatAutoHidePauseOnHover')).not.toBeNull();
+    expect(container.querySelector('#subtab-chat-ui #setting-enableMonologue')).not.toBeNull();
+    expect(container.querySelector('#subtab-chat-ui #setting-monologueFrequency')).not.toBeNull();
+    expect(container.querySelector('#subtab-chat-ui #setting-monologueSleepDream')).not.toBeNull();
+    expect(container.querySelector('#subtab-chat-ui #setting-monologueUseAI')).not.toBeNull();
+    expect(container.querySelector('#subtab-chat-ui #btn-test-monologue')).not.toBeNull();
     expect(container.querySelector('#subtab-chat-ui #anim-speed')).not.toBeNull();
     expect(container.querySelector('#subtab-bed #btn-toggle-bed-edit')).not.toBeNull();
     expect(container.querySelector('#subtab-bed #bed-x')).not.toBeNull();

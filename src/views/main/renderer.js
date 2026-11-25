@@ -16,6 +16,9 @@ const clipboardBadge = document.getElementById('clipboard-badge');
 const clipboardBadgeIcon = document.getElementById('clipboard-badge-icon');
 const clipboardBadgeText = document.getElementById('clipboard-badge-text');
 const clipboardBadgeClose = document.getElementById('clipboard-badge-close');
+const monologueBubble = document.getElementById('monologue-bubble');
+const monologueText = document.getElementById('monologue-text');
+const monologueClose = document.getElementById('monologue-close');
 const customMenu = document.getElementById('custom-menu');
 const menuSleep = document.getElementById('menu-sleep');
 const menuClose = document.getElementById('menu-close');
@@ -218,6 +221,7 @@ ipcRenderer.on('settings-closed', () => {
 });
 
 let refreshChatAutoHide = null;
+let refreshMonologueSchedule = null;
 
 // 監聽設定更新
 ipcRenderer.on('update-settings', (event, newSettings) => {
@@ -226,6 +230,7 @@ ipcRenderer.on('update-settings', (event, newSettings) => {
   savePetState();
   initAI();
   if (typeof refreshChatAutoHide === 'function') refreshChatAutoHide();
+  if (typeof refreshMonologueSchedule === 'function') refreshMonologueSchedule();
 });
 
 ipcRenderer.on('preview-settings', (event, newSettings) => {
@@ -233,6 +238,7 @@ ipcRenderer.on('preview-settings', (event, newSettings) => {
   applySettings(petState.settings);
   initAI();
   if (typeof refreshChatAutoHide === 'function') refreshChatAutoHide();
+  if (typeof refreshMonologueSchedule === 'function') refreshMonologueSchedule();
 });
 
 
@@ -392,6 +398,7 @@ wandering.init({
 });
 // CPU 監控與狀態隨時間遞減
 let lastCpu = os.cpus();
+let latestCpuUsage = 0;
 setInterval(() => {
   const currentCpu = os.cpus();
   let idle = 0, total = 0;
@@ -402,6 +409,7 @@ setInterval(() => {
     }
   }
   const usage = total === 0 ? 0 : 100 - ~~(100 * idle / total);
+  latestCpuUsage = usage;
   lastCpu = currentCpu;
 
   // 隨時間降低飢餓與心情 (不會小於 0)
@@ -458,7 +466,7 @@ window.addEventListener('mousemove', (event) => {
     return;
   }
 
-  const isInteractive = !!event.target.closest('.chat-bubble, #chat-input, #custom-menu, #kiwi-sprite-wrapper, #kiwi-bed, #chat-close, #chat-expand-btn, .chat-action-btn, #clipboard-badge, .clipboard-badge');
+  const isInteractive = !!event.target.closest('.chat-bubble, #chat-input, #custom-menu, #kiwi-sprite-wrapper, #kiwi-bed, #chat-close, #chat-expand-btn, .chat-action-btn, #clipboard-badge, .clipboard-badge, #monologue-bubble, .monologue-bubble');
   const ignore = !isInteractive;
 
   if (lastIgnoreState !== ignore) {
@@ -485,7 +493,7 @@ const physicsCtx = {
 physics.initDragging(physicsCtx);
 
 const chat = require('./modules/chat');
-const { showTempBubble, showAlarmBubble, updateAlarmDialogue, openChat, sendMessage, refreshAutoHideTimer, getIsAlarmActive, dismissAlarm } = chat.init({
+const { showTempBubble, showAlarmBubble, updateAlarmDialogue, openChat, openChatWithSeed, sendMessage, refreshAutoHideTimer, getIsAlarmActive, dismissAlarm } = chat.init({
   chatBubble, chatContent, chatClose, chatClear, chatInput, chatEscHint, customMenu,
   kiwi, kiwiAccessory, namePrefix: '<span style="color: #c97a2e; font-weight: 900;">Wiki Wiki：</span>',
   petState, savePetState, loadPetState, applyOutfitPos,
@@ -503,6 +511,32 @@ refreshChatAutoHide = refreshAutoHideTimer;
 physicsCtx.openChat = openChat;
 physicsCtx.getIsAlarmActive = getIsAlarmActive;
 physicsCtx.dismissAlarm = dismissAlarm;
+
+// 💭 啟動 Wiki Wiki 自言自語模組
+const monologueModule = require('./modules/monologue');
+const monologueController = monologueModule.init({
+  bubbleEl: monologueBubble,
+  textEl: monologueText,
+  closeEl: monologueClose,
+  chatBubble,
+  chatInput,
+  customMenu,
+  clipboardBadge,
+  getPetState: () => petState,
+  getCurrentAction: () => currentAction,
+  getCpuUsage: () => latestCpuUsage,
+  getIsAlarmActive,
+  getIsWorking: () => isWorking,
+  getIsDragging: () => physics.getIsDragging() || outfit.getIsDraggingOutfit() || isDraggingBed || isResizingChat,
+  getIsLaserActive: () => laser.getIsLaserGameActive(),
+  getAI: () => ai,
+  onClickContinueChat: (seedText) => openChatWithSeed(seedText)
+});
+refreshMonologueSchedule = monologueController.refreshSchedule;
+
+ipcRenderer.on('trigger-monologue-now', () => {
+  monologueController.triggerNow({ force: true });
+});
 
 ipcRenderer.on('alarm-enabled-notify', (event, alarm) => {
   if (kiwi) {

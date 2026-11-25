@@ -28,6 +28,10 @@ const defaultSettings = {
   chatHeight: 250,
   chatAutoHideSeconds: 0,
   chatAutoHidePauseOnHover: true,
+  enableMonologue: true,
+  monologueFrequency: 'normal',
+  monologueSleepDream: true,
+  monologueUseAI: false,
   aiProvider: 'gemini',
   apiKey: '',
   aiBaseUrl: '',
@@ -80,6 +84,10 @@ const els = {
   chatHeight: document.getElementById('setting-chatHeight'),
   chatAutoHideSeconds: document.getElementById('setting-chatAutoHideSeconds'),
   chatAutoHidePauseOnHover: document.getElementById('setting-chatAutoHidePauseOnHover'),
+  enableMonologue: document.getElementById('setting-enableMonologue'),
+  monologueFrequency: document.getElementById('setting-monologueFrequency'),
+  monologueSleepDream: document.getElementById('setting-monologueSleepDream'),
+  monologueUseAI: document.getElementById('setting-monologueUseAI'),
   aiProvider: document.getElementById('setting-aiProvider'),
   apiKey: document.getElementById('setting-apiKey'),
   baseUrl: document.getElementById('setting-baseUrl'),
@@ -352,6 +360,24 @@ function initUI() {
     els.chatAutoHidePauseOnHover.checked = s.chatAutoHidePauseOnHover !== undefined
       ? Boolean(s.chatAutoHidePauseOnHover)
       : defaultSettings.chatAutoHidePauseOnHover;
+  }
+  if (els.enableMonologue) {
+    els.enableMonologue.checked = s.enableMonologue !== undefined
+      ? Boolean(s.enableMonologue)
+      : defaultSettings.enableMonologue;
+  }
+  if (els.monologueFrequency) {
+    els.monologueFrequency.value = s.monologueFrequency ?? defaultSettings.monologueFrequency;
+  }
+  if (els.monologueSleepDream) {
+    els.monologueSleepDream.checked = s.monologueSleepDream !== undefined
+      ? Boolean(s.monologueSleepDream)
+      : defaultSettings.monologueSleepDream;
+  }
+  if (els.monologueUseAI) {
+    els.monologueUseAI.checked = s.monologueUseAI !== undefined
+      ? Boolean(s.monologueUseAI)
+      : defaultSettings.monologueUseAI;
   }
   els.summonShortcut.value = s.summonShortcut ?? defaultSettings.summonShortcut;
   els.enableClipboard.checked = s.enableClipboard !== undefined ? Boolean(s.enableClipboard) : defaultSettings.enableClipboard;
@@ -1181,6 +1207,10 @@ function checkDirty() {
     )) ||
     current.chatAutoHideSeconds !== (s.chatAutoHideSeconds ?? defaultSettings.chatAutoHideSeconds) ||
     current.chatAutoHidePauseOnHover !== (s.chatAutoHidePauseOnHover ?? defaultSettings.chatAutoHidePauseOnHover) ||
+    current.enableMonologue !== (s.enableMonologue ?? defaultSettings.enableMonologue) ||
+    current.monologueFrequency !== (s.monologueFrequency ?? defaultSettings.monologueFrequency) ||
+    current.monologueSleepDream !== (s.monologueSleepDream ?? defaultSettings.monologueSleepDream) ||
+    current.monologueUseAI !== (s.monologueUseAI ?? defaultSettings.monologueUseAI) ||
     current.aiProvider !== (s.aiProvider ?? defaultSettings.aiProvider) ||
     current.apiKey !== (s.apiKey ?? defaultSettings.apiKey) ||
     current.aiBaseUrl !== (s.aiBaseUrl ?? defaultSettings.aiBaseUrl) ||
@@ -1223,6 +1253,10 @@ function getFormValues() {
     chatHeight: els.chatHeight ? parseInt(els.chatHeight.value, 10) : defaultSettings.chatHeight,
     chatAutoHideSeconds: els.chatAutoHideSeconds ? (parseInt(els.chatAutoHideSeconds.value, 10) || 0) : defaultSettings.chatAutoHideSeconds,
     chatAutoHidePauseOnHover: els.chatAutoHidePauseOnHover ? Boolean(els.chatAutoHidePauseOnHover.checked) : defaultSettings.chatAutoHidePauseOnHover,
+    enableMonologue: els.enableMonologue ? Boolean(els.enableMonologue.checked) : defaultSettings.enableMonologue,
+    monologueFrequency: els.monologueFrequency ? els.monologueFrequency.value : defaultSettings.monologueFrequency,
+    monologueSleepDream: els.monologueSleepDream ? Boolean(els.monologueSleepDream.checked) : defaultSettings.monologueSleepDream,
+    monologueUseAI: els.monologueUseAI ? Boolean(els.monologueUseAI.checked) : defaultSettings.monologueUseAI,
     aiProvider: providerId,
     apiKey: els.apiKey.value.trim(),
     aiBaseUrl: els.baseUrl ? els.baseUrl.value.trim() : '',
@@ -1438,6 +1472,31 @@ els.chatAutoHideSeconds?.addEventListener('change', () => {
 els.chatAutoHidePauseOnHover?.addEventListener('change', () => {
   checkDirty();
   previewBroadcast();
+});
+
+els.enableMonologue?.addEventListener('change', () => {
+  checkDirty();
+  previewBroadcast();
+});
+
+els.monologueFrequency?.addEventListener('change', () => {
+  checkDirty();
+  previewBroadcast();
+});
+
+els.monologueSleepDream?.addEventListener('change', () => {
+  checkDirty();
+  previewBroadcast();
+});
+
+els.monologueUseAI?.addEventListener('change', () => {
+  checkDirty();
+  previewBroadcast();
+});
+
+document.getElementById('btn-test-monologue')?.addEventListener('click', () => {
+  previewBroadcast();
+  ipcRenderer.send('trigger-monologue-now');
 });
 
 els.aiModel.addEventListener('change', () => {

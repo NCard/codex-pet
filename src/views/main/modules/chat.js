@@ -16,6 +16,7 @@ let lastInteractionTime = 0;
 let lastRealReply = '';
 let lastRealReplyRaw = '';
 let lastReasoningTrajectory = null;
+let pendingMonologueContext = '';
 const MAX_HISTORY_MESSAGES = 20;
 
 function getThinkingStepLimit(thinkingLevel) {
@@ -330,11 +331,20 @@ function init({
     }
   });
   
+  function hideMonologueIfPresent() {
+    const monoEl = document.getElementById('monologue-bubble');
+    if (monoEl) {
+      monoEl.style.display = 'none';
+      monoEl.classList.remove('dream-mode', 'visible');
+    }
+  }
+
   if (chatClear) {
     chatClear.addEventListener('click', () => {
       sessionContext = [];
       lastRealReply = '';
       lastRealReplyRaw = '';
+      pendingMonologueContext = '';
       chatContent.innerHTML = `${namePrefix}${getDialogue('system', 'clearChat')}`;
       if (bubbleKind === 'chat') {
         scheduleChatAutoHide();
@@ -361,6 +371,7 @@ function init({
         chatBubble.style.display = 'none';
         chatInput.value = '';
       }
+      hideMonologueIfPresent();
     }
   });
   
@@ -458,6 +469,7 @@ function init({
     currentAlarmDismissCallback = onDismiss || null;
     bubbleKind = 'alarm';
     cancelChatAutoHide();
+    hideMonologueIfPresent();
     chatBubble.style.display = 'block';
     if (bubbleTimeout) {
       clearTimeout(bubbleTimeout);
@@ -731,13 +743,17 @@ function init({
         const scenarioId = petState.settings?.aiScenario || 'general';
         const customScenario = petState.settings?.aiCustomScenario || '';
         const scenarioText = buildScenarioPrompt(scenarioId, customScenario);
+        const monologueNote = pendingMonologueContext
+          ? `\n【剛才的自言自語】\n你剛剛在桌面上對自己嘀咕了一句：「${pendingMonologueContext}」，主人點了這句話來接話聊天，請自然接續這個話題！\n`
+          : '';
+        pendingMonologueContext = '';
 
         const sysInstruction = `你是生活在電腦桌面上的奇異鳥，名字叫 Wiki Wiki。
 【性格與說話風格】
 ${personaText}
 - 說話與自稱請完全自然地融入你的性格（例如平常自然用「我」或偶爾自稱「Wiki Wiki」，傲嬌時帶點懶洋洋的口吻，吟遊詩人時自然帶詩意），不要每句都硬塞制式自我介紹。
 - 嚴禁在回答中唸出情境／模式名稱，也不要自稱「資深工程師、專業秘書、家教老師、某某模式上線」等出戲頭銜，直接自然地切入回應即可。
-
+${monologueNote}
 ${scenarioText}
 
 【Agent 行動準則】
@@ -1112,6 +1128,7 @@ ${scenarioText}
       return;
     }
 
+    hideMonologueIfPresent();
     if (bubbleTimeout) {
       clearTimeout(bubbleTimeout);
       bubbleTimeout = null;
@@ -1146,12 +1163,45 @@ ${scenarioText}
     chatInput.focus();
     scheduleChatAutoHide();
   }
+
+  function openChatWithSeed(seedText) {
+    if (isAlarmActive) return;
+    hideMonologueIfPresent();
+    if (bubbleTimeout) {
+      clearTimeout(bubbleTimeout);
+      bubbleTimeout = null;
+    }
+    const cleanSeed = String(seedText || '').trim();
+    pendingMonologueContext = cleanSeed;
+    lastInteractionTime = Date.now();
+    bubbleKind = 'chat';
+
+    if (cleanSeed) {
+      const rendered = `${namePrefix}${escapeHtml(cleanSeed)}`;
+      lastRealReply = rendered;
+      lastRealReplyRaw = cleanSeed;
+      chatContent.innerHTML = rendered;
+      chatBubble.style.display = 'block';
+    } else {
+      chatBubble.style.display = 'none';
+    }
+
+    chatInput.style.display = 'block';
+    if (typeof chatEscHint !== 'undefined' && chatEscHint) {
+      chatEscHint.style.display = 'block';
+    }
+    chatInput.disabled = false;
+    chatInput.placeholder = '接續聊聊... (Shift+Enter 換行)';
+    chatInput.focus();
+    scheduleChatAutoHide();
+  }
   
   return {
     showTempBubble,
     showAlarmBubble,
     updateAlarmDialogue,
     openChat,
+    openChatWithSeed,
     sendMessage,
     refreshAutoHideTimer,
     getIsAlarmActive: () => isAlarmActive,

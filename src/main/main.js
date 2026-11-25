@@ -781,6 +781,12 @@ app.whenReady().then(() => {
     if (mainWindow) mainWindow.webContents.send('preview-settings', settingsData);
   });
 
+  ipcMain.on('trigger-monologue-now', () => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('trigger-monologue-now');
+    }
+  });
+
   ipcMain.on('settings-dragged', (event, settingsData) => {
     if (settingsWindow) settingsWindow.webContents.send('update-settings-ui', settingsData);
   });
