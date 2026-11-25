@@ -449,6 +449,31 @@
         </div>
       </div>
 
+      <div class="section" data-search-path="外觀互動 › 對話與動畫" data-search-keywords="對話 對話窗 氣泡 自動 消失 關閉 隱藏 時間 秒數 倒數 滑鼠 停留 暫停 chat auto hide close timeout seconds hover">
+        <div class="section-title">⏱️ 對話窗自動消失 (Auto-Hide Chat)</div>
+        <div class="control-group" style="margin-bottom: 10px;">
+          <label>無操作自動關閉時間</label>
+          <select id="setting-chatAutoHideSeconds" style="width: 100%; box-sizing: border-box; padding: 6px; border-radius: 5px; border: 1px solid #ccc; margin-top: 4px;">
+            <option value="0" selected>不自動消失（手動按 ESC 或 ✕ 關閉，預設）</option>
+            <option value="10">10 秒後自動消失</option>
+            <option value="15">15 秒後自動消失</option>
+            <option value="30">30 秒後自動消失（推薦）</option>
+            <option value="60">1 分鐘後自動消失</option>
+            <option value="120">2 分鐘後自動消失</option>
+            <option value="300">5 分鐘後自動消失</option>
+          </select>
+        </div>
+        <div class="control-group">
+          <label style="display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none;">
+            <span style="font-weight: bold;">🖱️ 滑鼠停留在對話框時暫停倒數</span>
+            <input type="checkbox" id="setting-chatAutoHidePauseOnHover" checked style="width: 18px; height: 18px; cursor: pointer;">
+          </label>
+          <div style="font-size: 11px; color: #666; margin-top: 5px;">
+            * 僅套用於一般對話視窗，不會影響鬧鐘提醒、番茄鐘提示與系統更新進度；輸入文字或 AI 思考期間亦不會中斷關閉。
+          </div>
+        </div>
+      </div>
+
       <div class="section" data-search-path="外觀互動 › 對話與動畫" data-search-keywords="動畫 速度 呼吸 倍率 animation speed">
         <div class="section-title">⚡ 動畫速度 (Animation)</div>
         <div class="control-group">

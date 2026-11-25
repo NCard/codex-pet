@@ -196,4 +196,122 @@ describe('Alarm Protection & Interlock Unit Tests', () => {
 
     if (watcher.destroy) watcher.destroy();
   });
+
+  test('chat auto-hide should close idle chat window after configured seconds but never when disabled (0)', () => {
+    const sharedState = { settings: { chatAutoHideSeconds: 0, chatAutoHidePauseOnHover: true } };
+    const instance = chatModule.init({
+      chatBubble, chatContent, chatClose, chatClear, chatInput, chatEscHint, customMenu,
+      kiwi, kiwiAccessory, namePrefix: 'Wiki: ',
+      petState: sharedState,
+      savePetState: jest.fn(), loadPetState: jest.fn(), applyOutfitPos: jest.fn(),
+      getIsWorking: () => false, setIsWorking: jest.fn(),
+      laser: { getIsLaserGameActive: () => false },
+      getAI: () => null, getMcpClient: () => null, getGeminiTools: () => null,
+      crypto: {}, saveChatHistory: jest.fn(), clearChatHistory: jest.fn(), resetIdle: jest.fn(),
+      ipcRenderer
+    });
+
+    instance.openChat();
+    expect(chatInput.style.display).toBe('block');
+    jest.advanceTimersByTime(60000);
+    // Disabled (0) must remain open
+    expect(chatInput.style.display).toBe('block');
+
+    // Enable 15s auto-hide and refresh
+    sharedState.settings.chatAutoHideSeconds = 15;
+    instance.refreshAutoHideTimer();
+    jest.advanceTimersByTime(14000);
+    expect(chatInput.style.display).toBe('block');
+    jest.advanceTimersByTime(1500);
+    expect(chatInput.style.display).toBe('none');
+    expect(chatBubble.style.display).toBe('none');
+    expect(chatEscHint.style.display).toBe('none');
+  });
+
+  test('chat auto-hide should pause on hover and while user has draft text in input', () => {
+    const container = document.getElementById('chat-container');
+    const sharedState = { settings: { chatAutoHideSeconds: 10, chatAutoHidePauseOnHover: true } };
+    const instance = chatModule.init({
+      chatBubble, chatContent, chatClose, chatClear, chatInput, chatEscHint, customMenu,
+      kiwi, kiwiAccessory, namePrefix: 'Wiki: ',
+      petState: sharedState,
+      savePetState: jest.fn(), loadPetState: jest.fn(), applyOutfitPos: jest.fn(),
+      getIsWorking: () => false, setIsWorking: jest.fn(),
+      laser: { getIsLaserGameActive: () => false },
+      getAI: () => null, getMcpClient: () => null, getGeminiTools: () => null,
+      crypto: {}, saveChatHistory: jest.fn(), clearChatHistory: jest.fn(), resetIdle: jest.fn(),
+      ipcRenderer
+    });
+
+    instance.openChat();
+    // Hover pauses countdown
+    container.dispatchEvent(new MouseEvent('mouseenter'));
+    jest.advanceTimersByTime(30000);
+    expect(chatInput.style.display).toBe('block');
+
+    // Draft text in input keeps chat open even after mouseleave
+    chatInput.value = '正在輸入一半的句子';
+    chatInput.dispatchEvent(new Event('input'));
+    container.dispatchEvent(new MouseEvent('mouseleave'));
+    jest.advanceTimersByTime(30000);
+    expect(chatInput.style.display).toBe('block');
+
+    // Clearing draft resumes countdown and hides after 10s
+    chatInput.value = '';
+    chatInput.dispatchEvent(new Event('input'));
+    jest.advanceTimersByTime(10000);
+    expect(chatInput.style.display).toBe('none');
+  });
+
+  test('chat auto-hide must NEVER hide active alarm bubbles, pomodoro reminders, or update progress', async () => {
+    const ipcHandlers = {};
+    const mockIpc = {
+      send: jest.fn(),
+      on: jest.fn((channel, cb) => { ipcHandlers[channel] = cb; }),
+      invoke: jest.fn().mockResolvedValue([])
+    };
+    const sharedState = { settings: { chatAutoHideSeconds: 10, chatAutoHidePauseOnHover: false } };
+    const instance = chatModule.init({
+      chatBubble, chatContent, chatClose, chatClear, chatInput, chatEscHint, customMenu,
+      kiwi, kiwiAccessory, namePrefix: 'Wiki: ',
+      petState: sharedState,
+      savePetState: jest.fn(), loadPetState: jest.fn(), applyOutfitPos: jest.fn(),
+      getIsWorking: () => false, setIsWorking: jest.fn(),
+      laser: { getIsLaserGameActive: () => false },
+      getAI: () => ({ generateContent: jest.fn() }),
+      getMcpClient: () => null, getGeminiTools: () => null,
+      crypto: { randomUUID: () => 'uuid-1' },
+      saveChatHistory: jest.fn(), clearChatHistory: jest.fn(), resetIdle: jest.fn(),
+      ipcRenderer: mockIpc
+    });
+
+    // 1. Open chat (starts 10s timer), then alarm fires at 5s -> alarm must cancel timer & stay visible forever
+    instance.openChat();
+    jest.advanceTimersByTime(5000);
+    instance.showAlarmBubble({ message: '重要會議鬧鐘！', snoozeInterval: 5 });
+    jest.advanceTimersByTime(120000);
+    expect(instance.getIsAlarmActive()).toBe(true);
+    expect(chatBubble.style.display).toBe('block');
+    expect(chatContent.innerHTML).toContain('重要會議鬧鐘！');
+    instance.dismissAlarm('ok');
+
+    // 2. Pomodoro reminder fires -> must stay visible even past 10s auto-hide
+    await instance.sendMessage('/pomodoro 1');
+    // The confirmation chat bubble hides after 10s
+    jest.advanceTimersByTime(10000);
+    expect(chatBubble.style.display).toBe('none');
+    // At 60s, pomodoro completion alert appears
+    jest.advanceTimersByTime(50000);
+    expect(chatBubble.style.display).toBe('block');
+    // Even after another 120s, pomodoro alert must NOT be auto-hidden!
+    jest.advanceTimersByTime(120000);
+    expect(chatBubble.style.display).toBe('block');
+
+    // 3. System update progress must NOT be auto-hidden
+    expect(typeof ipcHandlers['show-update-progress']).toBe('function');
+    ipcHandlers['show-update-progress']({}, { percent: 45, speed: '2.1 MB/s' });
+    jest.advanceTimersByTime(120000);
+    expect(chatBubble.style.display).toBe('block');
+    expect(chatContent.innerHTML).toContain('45%');
+  });
 });

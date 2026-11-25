@@ -217,18 +217,22 @@ ipcRenderer.on('settings-closed', () => {
   }
 });
 
+let refreshChatAutoHide = null;
+
 // 監聽設定更新
 ipcRenderer.on('update-settings', (event, newSettings) => {
   petState.settings = { ...(petState.settings || {}), ...(newSettings || {}) };
   applySettings(petState.settings);
   savePetState();
   initAI();
+  if (typeof refreshChatAutoHide === 'function') refreshChatAutoHide();
 });
 
 ipcRenderer.on('preview-settings', (event, newSettings) => {
   petState.settings = { ...(petState.settings || {}), ...(newSettings || {}) };
   applySettings(petState.settings);
   initAI();
+  if (typeof refreshChatAutoHide === 'function') refreshChatAutoHide();
 });
 
 
@@ -481,7 +485,7 @@ const physicsCtx = {
 physics.initDragging(physicsCtx);
 
 const chat = require('./modules/chat');
-const { showTempBubble, showAlarmBubble, updateAlarmDialogue, openChat, sendMessage, getIsAlarmActive, dismissAlarm } = chat.init({
+const { showTempBubble, showAlarmBubble, updateAlarmDialogue, openChat, sendMessage, refreshAutoHideTimer, getIsAlarmActive, dismissAlarm } = chat.init({
   chatBubble, chatContent, chatClose, chatClear, chatInput, chatEscHint, customMenu,
   kiwi, kiwiAccessory, namePrefix: '<span style="color: #c97a2e; font-weight: 900;">Wiki Wiki：</span>',
   petState, savePetState, loadPetState, applyOutfitPos,
@@ -495,6 +499,7 @@ const { showTempBubble, showAlarmBubble, updateAlarmDialogue, openChat, sendMess
   clearChatHistory: () => stateManager.clearChatHistory(),
   resetIdle, ipcRenderer
 });
+refreshChatAutoHide = refreshAutoHideTimer;
 physicsCtx.openChat = openChat;
 physicsCtx.getIsAlarmActive = getIsAlarmActive;
 physicsCtx.dismissAlarm = dismissAlarm;

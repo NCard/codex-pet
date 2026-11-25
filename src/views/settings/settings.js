@@ -26,6 +26,8 @@ const defaultSettings = {
   chatSizeMode: 'auto',
   chatWidth: 350,
   chatHeight: 250,
+  chatAutoHideSeconds: 0,
+  chatAutoHidePauseOnHover: true,
   aiProvider: 'gemini',
   apiKey: '',
   aiBaseUrl: '',
@@ -76,6 +78,8 @@ const els = {
   chatSizeMode: document.getElementById('setting-chatSizeMode'),
   chatWidth: document.getElementById('setting-chatWidth'),
   chatHeight: document.getElementById('setting-chatHeight'),
+  chatAutoHideSeconds: document.getElementById('setting-chatAutoHideSeconds'),
+  chatAutoHidePauseOnHover: document.getElementById('setting-chatAutoHidePauseOnHover'),
   aiProvider: document.getElementById('setting-aiProvider'),
   apiKey: document.getElementById('setting-apiKey'),
   baseUrl: document.getElementById('setting-baseUrl'),
@@ -341,6 +345,14 @@ function initUI() {
   els.aiPersonality.value = s.aiPersonality ?? defaultSettings.aiPersonality;
   els.aiCustomPrompt.value = s.aiCustomPrompt ?? defaultSettings.aiCustomPrompt;
   els.contextTimeout.value = s.contextTimeout ?? defaultSettings.contextTimeout;
+  if (els.chatAutoHideSeconds) {
+    els.chatAutoHideSeconds.value = String(s.chatAutoHideSeconds ?? defaultSettings.chatAutoHideSeconds);
+  }
+  if (els.chatAutoHidePauseOnHover) {
+    els.chatAutoHidePauseOnHover.checked = s.chatAutoHidePauseOnHover !== undefined
+      ? Boolean(s.chatAutoHidePauseOnHover)
+      : defaultSettings.chatAutoHidePauseOnHover;
+  }
   els.summonShortcut.value = s.summonShortcut ?? defaultSettings.summonShortcut;
   els.enableClipboard.checked = s.enableClipboard !== undefined ? Boolean(s.enableClipboard) : defaultSettings.enableClipboard;
   els.enableClipboardSmartWatch.checked = s.enableClipboardSmartWatch !== undefined ? Boolean(s.enableClipboardSmartWatch) : defaultSettings.enableClipboardSmartWatch;
@@ -1167,6 +1179,8 @@ function checkDirty() {
       current.chatWidth !== (s.chatWidth ?? defaultSettings.chatWidth) ||
       current.chatHeight !== (s.chatHeight ?? defaultSettings.chatHeight)
     )) ||
+    current.chatAutoHideSeconds !== (s.chatAutoHideSeconds ?? defaultSettings.chatAutoHideSeconds) ||
+    current.chatAutoHidePauseOnHover !== (s.chatAutoHidePauseOnHover ?? defaultSettings.chatAutoHidePauseOnHover) ||
     current.aiProvider !== (s.aiProvider ?? defaultSettings.aiProvider) ||
     current.apiKey !== (s.apiKey ?? defaultSettings.apiKey) ||
     current.aiBaseUrl !== (s.aiBaseUrl ?? defaultSettings.aiBaseUrl) ||
@@ -1207,6 +1221,8 @@ function getFormValues() {
     chatSizeMode: els.chatSizeMode ? els.chatSizeMode.value : 'auto',
     chatWidth: els.chatWidth ? parseInt(els.chatWidth.value, 10) : defaultSettings.chatWidth,
     chatHeight: els.chatHeight ? parseInt(els.chatHeight.value, 10) : defaultSettings.chatHeight,
+    chatAutoHideSeconds: els.chatAutoHideSeconds ? (parseInt(els.chatAutoHideSeconds.value, 10) || 0) : defaultSettings.chatAutoHideSeconds,
+    chatAutoHidePauseOnHover: els.chatAutoHidePauseOnHover ? Boolean(els.chatAutoHidePauseOnHover.checked) : defaultSettings.chatAutoHidePauseOnHover,
     aiProvider: providerId,
     apiKey: els.apiKey.value.trim(),
     aiBaseUrl: els.baseUrl ? els.baseUrl.value.trim() : '',
@@ -1410,6 +1426,11 @@ els.enableAlarmStalking.addEventListener('change', () => {
 });
 
 els.enableAlarmSound.addEventListener('change', () => {
+  checkDirty();
+  previewBroadcast();
+});
+
+els.chatAutoHidePauseOnHover?.addEventListener('change', () => {
   checkDirty();
   previewBroadcast();
 });

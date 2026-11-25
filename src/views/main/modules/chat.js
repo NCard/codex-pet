@@ -5,6 +5,7 @@ const { getDialogue } = require('../../../utils/dialogues');
 const { buildScenarioPrompt } = require('../../../utils/scenarios');
 
 let bubbleTimeout = null;
+let chatAutoHideTimer = null;
 let isAlarmActive = false;
 let currentAlarmDismissCallback = null;
 let pomodoroTimer = null;
@@ -74,6 +75,65 @@ function init({
   const resolveAI = () => (typeof getAI === 'function' ? getAI() : ai);
   const resolveMcpClient = () => (typeof getMcpClient === 'function' ? getMcpClient() : mcpClient);
   const resolveGeminiTools = () => (typeof getGeminiTools === 'function' ? getGeminiTools() : geminiTools);
+
+  // 對話窗自動消失狀態機（與鬧鐘、番茄鐘提醒、系統更新進度嚴格隔離）
+  let bubbleKind = 'none'; // 'none' | 'chat' | 'temp' | 'alarm' | 'reminder' | 'system'
+  let isAIThinking = false;
+  let isHoveringChat = false;
+
+  if (chatAutoHideTimer) {
+    clearTimeout(chatAutoHideTimer);
+    chatAutoHideTimer = null;
+  }
+
+  function getChatAutoHideMs() {
+    const raw = Number(petState.settings?.chatAutoHideSeconds);
+    if (!Number.isFinite(raw) || raw <= 0) return 0;
+    return Math.round(raw * 1000);
+  }
+
+  function shouldPauseOnHover() {
+    return petState.settings?.chatAutoHidePauseOnHover !== false;
+  }
+
+  function cancelChatAutoHide() {
+    if (chatAutoHideTimer) {
+      clearTimeout(chatAutoHideTimer);
+      chatAutoHideTimer = null;
+    }
+  }
+
+  function executeChatAutoHide() {
+    chatAutoHideTimer = null;
+    // 嚴格防護：絕不隱藏鬧鐘、番茄鐘提醒、系統進度、思考中、滑鼠停留中或正在輸入中的對話框
+    if (isAlarmActive || isAIThinking || bubbleKind !== 'chat') return;
+    if (shouldPauseOnHover() && isHoveringChat) return;
+    if (chatInput && typeof chatInput.value === 'string' && chatInput.value.trim().length > 0) return;
+
+    chatInput.style.display = 'none';
+    if (typeof chatEscHint !== 'undefined' && chatEscHint) chatEscHint.style.display = 'none';
+    chatBubble.style.display = 'none';
+    bubbleKind = 'none';
+  }
+
+  function scheduleChatAutoHide() {
+    cancelChatAutoHide();
+    if (isAlarmActive || isAIThinking || bubbleKind !== 'chat') return;
+    const hideMs = getChatAutoHideMs();
+    if (hideMs <= 0) return;
+    if (shouldPauseOnHover() && isHoveringChat) return;
+    if (chatInput && typeof chatInput.value === 'string' && chatInput.value.trim().length > 0) return;
+
+    chatAutoHideTimer = setTimeout(executeChatAutoHide, hideMs);
+  }
+
+  function refreshAutoHideTimer() {
+    if (bubbleKind === 'chat' && !isAlarmActive && !isAIThinking) {
+      scheduleChatAutoHide();
+    } else {
+      cancelChatAutoHide();
+    }
+  }
   
   // 監聽對話框狀態，更新父容器樣式以提高效能
   const container = chatBubble.parentElement;
@@ -92,13 +152,53 @@ function init({
   observer.observe(chatBubble, { attributes: true, attributeFilter: ['style'] });
   observer.observe(chatInput, { attributes: true, attributeFilter: ['style'] });
   updateContainerStyles();
+
+  // 滑鼠停留、捲動、點擊或輸入時暫停／重設自動消失倒數，避免閱讀或打字到一半視窗消失
+  if (container) {
+    container.addEventListener('mouseenter', () => {
+      isHoveringChat = true;
+      if (shouldPauseOnHover()) {
+        cancelChatAutoHide();
+      }
+    });
+    container.addEventListener('mouseleave', () => {
+      isHoveringChat = false;
+      if (bubbleKind === 'chat') {
+        scheduleChatAutoHide();
+      }
+    });
+    container.addEventListener('mousedown', () => {
+      if (bubbleKind === 'chat') {
+        scheduleChatAutoHide();
+      }
+    });
+  }
+
+  chatContent.addEventListener('scroll', () => {
+    if (bubbleKind === 'chat') {
+      scheduleChatAutoHide();
+    }
+  });
+
+  chatInput.addEventListener('input', () => {
+    if (bubbleKind !== 'chat') return;
+    if (chatInput.value && chatInput.value.trim().length > 0) {
+      cancelChatAutoHide();
+    } else {
+      scheduleChatAutoHide();
+    }
+  });
   
   // 點擊關閉按鈕隱藏泡泡
   chatClose.addEventListener('click', () => {
     if (isAlarmActive) {
       dismissAlarm('close');
     } else {
+      cancelChatAutoHide();
+      bubbleKind = 'none';
       chatBubble.style.display = 'none';
+      chatInput.style.display = 'none';
+      if (typeof chatEscHint !== 'undefined' && chatEscHint) chatEscHint.style.display = 'none';
     }
   });
 
@@ -141,6 +241,9 @@ function init({
       lastRealReply = '';
       lastRealReplyRaw = '';
       chatContent.innerHTML = `${namePrefix}${getDialogue('system', 'clearChat')}`;
+      if (bubbleKind === 'chat') {
+        scheduleChatAutoHide();
+      }
     });
   }
   
@@ -156,6 +259,8 @@ function init({
         return;
       }
       if (chatInput.style.display !== 'none' || chatBubble.style.display !== 'none') {
+        cancelChatAutoHide();
+        bubbleKind = 'none';
         chatInput.style.display = 'none';
         if (typeof chatEscHint !== 'undefined' && chatEscHint) chatEscHint.style.display = 'none';
         chatBubble.style.display = 'none';
@@ -168,13 +273,17 @@ function init({
   
 
   function showTempBubble(text, duration = 5000) {
-    if (isAlarmActive) return; // 不要覆蓋提醒氣泡
+    if (isAlarmActive || bubbleKind === 'reminder' || bubbleKind === 'system') return; // 不要覆蓋提醒、鬧鐘或系統進度氣泡
+    cancelChatAutoHide();
+    bubbleKind = 'temp';
     chatBubble.style.display = 'block';
     chatContent.innerHTML = `${namePrefix}${text}`;
     
     if (bubbleTimeout) clearTimeout(bubbleTimeout);
     bubbleTimeout = setTimeout(() => {
+      if (isAlarmActive || bubbleKind !== 'temp') return;
       chatBubble.style.display = 'none';
+      bubbleKind = 'none';
     }, duration);
   }
   
@@ -202,6 +311,8 @@ function init({
   
   ipcRenderer.on('show-update-progress', (event, { percent, speed, text }) => {
     if (isAlarmActive) return;
+    cancelChatAutoHide();
+    bubbleKind = 'system';
     chatBubble.style.display = 'block';
     if (bubbleTimeout) clearTimeout(bubbleTimeout);
     
@@ -232,6 +343,8 @@ function init({
     if (!isAlarmActive) return;
     isAlarmActive = false;
     currentAlarm = null;
+    bubbleKind = 'none';
+    cancelChatAutoHide();
     chatBubble.style.display = 'none';
     if (bubbleTimeout) {
       clearTimeout(bubbleTimeout);
@@ -248,6 +361,8 @@ function init({
     isAlarmActive = true;
     currentAlarm = alarm;
     currentAlarmDismissCallback = onDismiss || null;
+    bubbleKind = 'alarm';
+    cancelChatAutoHide();
     chatBubble.style.display = 'block';
     if (bubbleTimeout) {
       clearTimeout(bubbleTimeout);
@@ -314,16 +429,30 @@ function init({
     const currentAI = resolveAI();
     // 防呆：如果沒有設定 API Key
     if (!currentAI) {
+      cancelChatAutoHide();
       chatInput.value = '';
       chatInput.style.display = 'none';
       if(typeof chatEscHint !== 'undefined') chatEscHint.style.display = 'none';
+      bubbleKind = 'temp';
       chatBubble.innerHTML = `${namePrefix}${getDialogue('system', 'missingApiKey')}`;
       chatBubble.style.display = 'block';
-      setTimeout(() => { chatBubble.style.display = 'none'; }, 3000);
+      if (bubbleTimeout) clearTimeout(bubbleTimeout);
+      bubbleTimeout = setTimeout(() => {
+        if (isAlarmActive || bubbleKind !== 'temp') return;
+        chatBubble.style.display = 'none';
+        bubbleKind = 'none';
+      }, 3000);
       return;
     }
     
     // 停用並隱藏輸入框，顯示思考中
+    isAIThinking = true;
+    bubbleKind = 'chat';
+    cancelChatAutoHide();
+    if (bubbleTimeout) {
+      clearTimeout(bubbleTimeout);
+      bubbleTimeout = null;
+    }
     chatInput.style.display = 'none';
     if(typeof chatEscHint !== 'undefined') chatEscHint.style.display = 'none';
     chatInput.disabled = true;
@@ -354,6 +483,8 @@ function init({
                   '<b>/clear</b> : 清除歷史對話紀錄';
         } else if (cmd === '/laser') {
           try { laser.toggleLaserGame(); } catch (e) { require('fs').writeFileSync('error.log', e.stack); }
+          isAIThinking = false;
+          cancelChatAutoHide();
           chatInput.disabled = false;
           return;
         } else if (cmd === '/md5') {
@@ -422,8 +553,15 @@ function init({
           clearTimeout(pomodoroTimer);
           
           pomodoroTimer = setTimeout(() => {
-          setIsWorking(false);
+            setIsWorking(false);
             kiwiAccessory.style.display = 'none';
+            if (isAlarmActive) return; // 不覆蓋進行中的鬧鐘
+            cancelChatAutoHide();
+            if (bubbleTimeout) {
+              clearTimeout(bubbleTimeout);
+              bubbleTimeout = null;
+            }
+            bubbleKind = 'reminder';
             chatBubble.style.display = 'block';
             chatContent.innerHTML = `${namePrefix}${getDialogue('system', 'pomodoro', mins)}`;
           }, mins * 60 * 1000);
@@ -451,6 +589,9 @@ function init({
         chatInput.disabled = false;
         chatInput.placeholder = '對話... (Shift+Enter 換行)';
         chatInput.focus();
+        isAIThinking = false;
+        bubbleKind = 'chat';
+        scheduleChatAutoHide();
         
         kiwi.classList.add('jumping');
         setTimeout(() => { kiwi.classList.remove('jumping'); }, 500);
@@ -818,11 +959,15 @@ ${scenarioText}
         chatInput.disabled = false;
         chatInput.placeholder = '對話... (Shift+Enter 換行)';
         chatInput.focus();
+        isAIThinking = false;
+        bubbleKind = 'chat';
+        scheduleChatAutoHide();
         
         // 收到回答後開心地跳躍
         kiwi.classList.add('jumping');
         setTimeout(() => { kiwi.classList.remove('jumping'); }, 500);
       } catch (err) {
+        isAIThinking = false;
         // 如果 API 呼叫失敗，安全回滾未完成的對話狀態，避免留存不完整的 user / function 訊息
         while (sessionContext.length > contextLengthBeforeTurn) {
           sessionContext.pop();
@@ -857,6 +1002,8 @@ ${scenarioText}
         chatInput.disabled = false;
         chatInput.placeholder = '對話... (Shift+Enter 換行)';
         chatInput.focus();
+        bubbleKind = 'chat';
+        scheduleChatAutoHide();
       }
     }
 
@@ -869,6 +1016,12 @@ ${scenarioText}
       }
       return;
     }
+
+    if (bubbleTimeout) {
+      clearTimeout(bubbleTimeout);
+      bubbleTimeout = null;
+    }
+    bubbleKind = 'chat';
 
     const now = Date.now();
     let hasMemory = false;
@@ -896,6 +1049,7 @@ ${scenarioText}
     chatInput.disabled = false;
     chatInput.placeholder = '對話... (Shift+Enter 換行)';
     chatInput.focus();
+    scheduleChatAutoHide();
   }
   
   return {
@@ -904,6 +1058,7 @@ ${scenarioText}
     updateAlarmDialogue,
     openChat,
     sendMessage,
+    refreshAutoHideTimer,
     getIsAlarmActive: () => isAlarmActive,
     dismissAlarm
   };

@@ -52,6 +52,8 @@ describe('Settings Sub-tabs & Model Info Card UI Tests', () => {
 
     // Verify controls are organized into their respective appearance sub-tabs
     expect(container.querySelector('#subtab-chat-ui #setting-chatSizeMode')).not.toBeNull();
+    expect(container.querySelector('#subtab-chat-ui #setting-chatAutoHideSeconds')).not.toBeNull();
+    expect(container.querySelector('#subtab-chat-ui #setting-chatAutoHidePauseOnHover')).not.toBeNull();
     expect(container.querySelector('#subtab-chat-ui #anim-speed')).not.toBeNull();
     expect(container.querySelector('#subtab-bed #btn-toggle-bed-edit')).not.toBeNull();
     expect(container.querySelector('#subtab-bed #bed-x')).not.toBeNull();
