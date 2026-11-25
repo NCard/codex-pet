@@ -11,23 +11,52 @@ describe('Settings Sub-tabs & Model Info Card UI Tests', () => {
     container.innerHTML = htmlContent;
   });
 
-  test('settings.html should contain the sub-tabs navigation container and 4 sub-tab buttons', () => {
-    const subTabs = container.querySelector('.sub-tabs');
-    expect(subTabs).not.toBeNull();
+  test('settings.html should contain AI sub-tabs (4) and Appearance sub-tabs (3) with proper defaults', () => {
+    const aiTab = container.querySelector('#tab-general');
+    const aiSubTabs = aiTab.querySelector('.sub-tabs');
+    expect(aiSubTabs).not.toBeNull();
 
-    const buttons = Array.from(subTabs.querySelectorAll('.sub-tab-btn'));
-    expect(buttons.length).toBe(4);
+    const aiButtons = Array.from(aiSubTabs.querySelectorAll('.sub-tab-btn'));
+    expect(aiButtons.length).toBe(4);
 
-    const subtabTargets = buttons.map(b => b.getAttribute('data-subtab'));
-    expect(subtabTargets).toContain('subtab-model');
-    expect(subtabTargets).toContain('subtab-quota');
-    expect(subtabTargets).toContain('subtab-personality');
-    expect(subtabTargets).toContain('subtab-data');
+    const aiSubtabTargets = aiButtons.map(b => b.getAttribute('data-subtab'));
+    expect(aiSubtabTargets).toEqual([
+      'subtab-model',
+      'subtab-personality',
+      'subtab-quota',
+      'subtab-data'
+    ]);
 
-    // Default active subtab should be subtab-model
-    const activeBtn = subTabs.querySelector('.sub-tab-btn.active');
-    expect(activeBtn).not.toBeNull();
-    expect(activeBtn.getAttribute('data-subtab')).toBe('subtab-model');
+    const activeAiBtn = aiSubTabs.querySelector('.sub-tab-btn.active');
+    expect(activeAiBtn).not.toBeNull();
+    expect(activeAiBtn.getAttribute('data-subtab')).toBe('subtab-model');
+
+    // Appearance tab should be split into 3 sub-tabs
+    const appTab = container.querySelector('#tab-appearance');
+    const appSubTabs = appTab.querySelector('.sub-tabs');
+    expect(appSubTabs).not.toBeNull();
+
+    const appButtons = Array.from(appSubTabs.querySelectorAll('.sub-tab-btn'));
+    expect(appButtons.length).toBe(3);
+
+    const appSubtabTargets = appButtons.map(b => b.getAttribute('data-subtab'));
+    expect(appSubtabTargets).toEqual([
+      'subtab-chat-ui',
+      'subtab-bed',
+      'subtab-controls'
+    ]);
+
+    const activeAppBtn = appSubTabs.querySelector('.sub-tab-btn.active');
+    expect(activeAppBtn).not.toBeNull();
+    expect(activeAppBtn.getAttribute('data-subtab')).toBe('subtab-chat-ui');
+
+    // Verify controls are organized into their respective appearance sub-tabs
+    expect(container.querySelector('#subtab-chat-ui #setting-chatSizeMode')).not.toBeNull();
+    expect(container.querySelector('#subtab-chat-ui #anim-speed')).not.toBeNull();
+    expect(container.querySelector('#subtab-bed #btn-toggle-bed-edit')).not.toBeNull();
+    expect(container.querySelector('#subtab-bed #bed-x')).not.toBeNull();
+    expect(container.querySelector('#subtab-controls #setting-shortcut')).not.toBeNull();
+    expect(container.querySelector('#subtab-controls #setting-enableAlarmStalking')).not.toBeNull();
   });
 
   test('settings.html should contain 4 subtab-content sections with proper default visibility', () => {
@@ -139,15 +168,42 @@ describe('Settings Sub-tabs & Model Info Card UI Tests', () => {
     expect(mainHtml).toContain('id="chat-resize-handle"');
   });
 
-  test('sub-tab buttons should correctly toggle active class on clicks', () => {
-    const buttons = container.querySelectorAll('.sub-tab-btn');
-    const contents = container.querySelectorAll('.subtab-content');
+  test('settings.html should provide live cross-tab search bar and searchable metadata on every section', () => {
+    expect(container.querySelector('#settings-search-input')).not.toBeNull();
+    expect(container.querySelector('#btn-clear-search')).not.toBeNull();
+    expect(container.querySelector('#search-status-bar')).not.toBeNull();
+    expect(container.querySelector('#search-status-text')).not.toBeNull();
+    expect(container.querySelector('#btn-exit-search')).not.toBeNull();
+    expect(container.querySelector('#search-empty-state')).not.toBeNull();
 
-    // Attach click handler simulating settings.js
+    const sections = Array.from(container.querySelectorAll('.tab-content .section'));
+    expect(sections.length).toBeGreaterThanOrEqual(10);
+
+    sections.forEach(sec => {
+      const searchPath = sec.getAttribute('data-search-path');
+      const keywords = sec.getAttribute('data-search-keywords');
+      expect(searchPath && searchPath.trim().length > 0).toBe(true);
+      expect(keywords && keywords.trim().length > 0).toBe(true);
+    });
+
+    // Searching for 手動 + 對話 should match the Chat Bubble Size section
+    const matched = sections.filter(sec => {
+      const hay = `${sec.getAttribute('data-search-keywords')} ${sec.getAttribute('data-search-path')} ${sec.textContent}`.toLowerCase();
+      return ['手動', '對話'].every(t => hay.includes(t));
+    });
+    expect(matched.length).toBeGreaterThanOrEqual(1);
+    expect(matched.some(s => s.querySelector('#setting-chatSizeMode') !== null)).toBe(true);
+  });
+
+  test('sub-tab buttons should toggle active class scoped to their parent tab-content', () => {
+    const buttons = container.querySelectorAll('.sub-tab-btn');
+
+    // Attach scoped click handler matching settings.js
     buttons.forEach(btn => {
       btn.addEventListener('click', () => {
-        buttons.forEach(b => b.classList.remove('active'));
-        contents.forEach(c => c.classList.remove('active'));
+        const scope = btn.closest('.tab-content') || container;
+        scope.querySelectorAll('.sub-tab-btn').forEach(b => b.classList.remove('active'));
+        scope.querySelectorAll('.subtab-content').forEach(c => c.classList.remove('active'));
         btn.classList.add('active');
         const targetId = btn.getAttribute('data-subtab');
         const target = container.querySelector('#' + targetId);
@@ -161,5 +217,14 @@ describe('Settings Sub-tabs & Model Info Card UI Tests', () => {
     expect(quotaBtn.classList.contains('active')).toBe(true);
     expect(container.querySelector('#subtab-quota').classList.contains('active')).toBe(true);
     expect(container.querySelector('#subtab-model').classList.contains('active')).toBe(false);
+    // Appearance tab's default subtab must remain untouched
+    expect(container.querySelector('#subtab-chat-ui').classList.contains('active')).toBe(true);
+
+    // Switching appearance subtab should not disturb AI tab's active subtab
+    const bedBtn = container.querySelector('[data-subtab="subtab-bed"]');
+    bedBtn.click();
+    expect(container.querySelector('#subtab-bed').classList.contains('active')).toBe(true);
+    expect(container.querySelector('#subtab-chat-ui').classList.contains('active')).toBe(false);
+    expect(container.querySelector('#subtab-quota').classList.contains('active')).toBe(true);
   });
 });

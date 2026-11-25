@@ -132,14 +132,21 @@ function updateChatSizeInfoBanner() {
 const tabBtns = document.querySelectorAll('.tab-btn');
 const tabContents = document.querySelectorAll('.tab-content');
 
+function activateTab(targetTabId) {
+  tabBtns.forEach(b => {
+    b.classList.toggle('active', b.dataset.tab === targetTabId);
+  });
+  tabContents.forEach(c => {
+    c.classList.toggle('active', c.id === targetTabId);
+  });
+  if (targetTabId === 'tab-appearance') {
+    updateChatSizeInfoBanner();
+  }
+}
+
 tabBtns.forEach(btn => {
   btn.addEventListener('click', () => {
-    const targetTabId = btn.dataset.tab;
-    tabBtns.forEach(b => b.classList.remove('active'));
-    tabContents.forEach(c => c.classList.remove('active'));
-    
-    btn.classList.add('active');
-    document.getElementById(targetTabId).classList.add('active');
+    activateTab(btn.dataset.tab);
   });
 });
 
@@ -705,22 +712,170 @@ btnTestModel?.addEventListener('click', async () => {
   }
 });
 
-// 內頁膠囊小頁籤 (Sub-tabs) 切換委派
+// 內頁膠囊小頁籤 (Sub-tabs) 切換委派（依所屬父分頁隔離，互不干擾）
+function activateSubTab(targetId, scopeEl) {
+  const scope = scopeEl || document;
+  scope.querySelectorAll('.sub-tab-btn').forEach(b => {
+    b.classList.toggle('active', b.getAttribute('data-subtab') === targetId);
+  });
+  scope.querySelectorAll('.subtab-content').forEach(c => {
+    c.classList.toggle('active', c.id === targetId);
+  });
+  if (targetId === 'subtab-data') {
+    updateDataManagementUI();
+  } else if (targetId === 'subtab-quota') {
+    updateQuotaUI();
+  } else if (targetId === 'subtab-chat-ui') {
+    updateChatSizeInfoBanner();
+  }
+}
+
 document.querySelectorAll('.sub-tab-btn').forEach(btn => {
   btn.addEventListener('click', () => {
-    document.querySelectorAll('.sub-tab-btn').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('.subtab-content').forEach(c => c.classList.remove('active'));
-    btn.classList.add('active');
+    const parentTab = btn.closest('.tab-content') || document;
     const targetId = btn.getAttribute('data-subtab');
-    const targetContent = document.getElementById(targetId);
-    if (targetContent) targetContent.classList.add('active');
-    if (targetId === 'subtab-data') {
-      updateDataManagementUI();
-    } else if (targetId === 'subtab-quota') {
-      updateQuotaUI();
-    }
+    activateSubTab(targetId, parentTab);
   });
 });
+
+// 🔍 即時跨分頁搜尋設定 (Settings Live Search)
+function initSettingsSearch() {
+  const searchInput = document.getElementById('settings-search-input');
+  const clearBtn = document.getElementById('btn-clear-search');
+  const statusBar = document.getElementById('search-status-bar');
+  const statusText = document.getElementById('search-status-text');
+  const exitBtn = document.getElementById('btn-exit-search');
+  const emptyState = document.getElementById('search-empty-state');
+
+  if (!searchInput) return;
+
+  const allSections = Array.from(document.querySelectorAll('.tab-content .section'));
+
+  function navigateToSection(sectionEl) {
+    if (!sectionEl) return;
+    // 離開搜尋模式並切換至對應頂層分頁與子分頁
+    searchInput.value = '';
+    applySearch('');
+
+    const parentTab = sectionEl.closest('.tab-content');
+    if (parentTab && parentTab.id) {
+      activateTab(parentTab.id);
+    }
+    const parentSubTab = sectionEl.closest('.subtab-content');
+    if (parentSubTab && parentSubTab.id) {
+      activateSubTab(parentSubTab.id, parentTab || document);
+    }
+
+    if (typeof sectionEl.scrollIntoView === 'function') {
+      sectionEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    sectionEl.classList.remove('section-jump-highlight');
+    // 觸發重排以重播動畫
+    void sectionEl.offsetWidth;
+    sectionEl.classList.add('section-jump-highlight');
+    setTimeout(() => sectionEl.classList.remove('section-jump-highlight'), 1200);
+  }
+
+  // 為每個設定區塊準備可點擊的來源位置標籤（僅在搜尋模式顯示）
+  allSections.forEach(section => {
+    const locationPath = section.getAttribute('data-search-path') || '';
+    if (!locationPath || section.querySelector('.search-location-chip')) return;
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'search-location-chip';
+    chip.title = '點擊離開搜尋並定位至此分頁';
+    chip.innerText = `📍 ${locationPath}  ↗`;
+    chip.addEventListener('click', () => navigateToSection(section));
+    section.insertBefore(chip, section.firstChild);
+  });
+
+  function applySearch(rawQuery) {
+    const query = String(rawQuery || '').trim().toLowerCase();
+    const tokens = query ? query.split(/\s+/).filter(Boolean) : [];
+
+    if (tokens.length === 0) {
+      document.body.classList.remove('is-searching');
+      allSections.forEach(s => s.classList.remove('search-match'));
+      if (clearBtn) clearBtn.style.display = 'none';
+      if (statusBar) statusBar.style.display = 'none';
+      if (emptyState) emptyState.style.display = 'none';
+      return;
+    }
+
+    document.body.classList.add('is-searching');
+    if (clearBtn) clearBtn.style.display = 'inline-flex';
+    if (statusBar) statusBar.style.display = 'flex';
+
+    let matchCount = 0;
+    let matchedData = false;
+    let matchedQuota = false;
+    let matchedChatUi = false;
+
+    allSections.forEach(section => {
+      const keywords = (section.getAttribute('data-search-keywords') || '').toLowerCase();
+      const locPath = (section.getAttribute('data-search-path') || '').toLowerCase();
+      const visibleText = (section.textContent || '').toLowerCase();
+      const haystack = `${keywords} ${locPath} ${visibleText}`;
+
+      const isMatch = tokens.every(token => haystack.includes(token));
+      section.classList.toggle('search-match', isMatch);
+
+      if (isMatch) {
+        matchCount += 1;
+        if (section.closest('#subtab-data')) matchedData = true;
+        if (section.closest('#subtab-quota')) matchedQuota = true;
+        if (section.closest('#subtab-chat-ui')) matchedChatUi = true;
+      }
+    });
+
+    if (matchedData) updateDataManagementUI();
+    if (matchedQuota) updateQuotaUI();
+    if (matchedChatUi) updateChatSizeInfoBanner();
+
+    if (statusText) {
+      statusText.innerText = matchCount > 0
+        ? `找到 ${matchCount} 個相關設定（可直接調整，或點位置標籤前往分頁）`
+        : '找不到符合條件的設定';
+    }
+    if (emptyState) {
+      emptyState.style.display = matchCount === 0 ? 'block' : 'none';
+    }
+  }
+
+  searchInput.addEventListener('input', () => {
+    applySearch(searchInput.value);
+  });
+
+  searchInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      searchInput.value = '';
+      applySearch('');
+      searchInput.blur();
+    }
+  });
+
+  clearBtn?.addEventListener('click', () => {
+    searchInput.value = '';
+    applySearch('');
+    searchInput.focus();
+  });
+
+  exitBtn?.addEventListener('click', () => {
+    searchInput.value = '';
+    applySearch('');
+  });
+
+  // 支援 Ctrl+F 快速聚焦搜尋列
+  document.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
+      e.preventDefault();
+      searchInput.focus();
+      searchInput.select();
+    }
+  });
+}
+
+initSettingsSearch();
 
 function formatBytes(bytes) {
   if (!bytes || bytes <= 0) return '0 B';
