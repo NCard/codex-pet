@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <title>Wiki Wiki 新手導覽與功能介紹</title>
+  <link rel="stylesheet" href="../common/theme.css">
+  <link rel="stylesheet" href="guide.css">
+</head>
+<body>
+  <div class="guide-shell">
+    <!-- 頂部 Hero 與模式切換 -->
+    <header class="guide-header">
+      <div class="brand-row">
+        <img src="../../../assets/images/kiwi.png" alt="Wiki Wiki" class="brand-avatar">
+        <div>
+          <h1 class="brand-title">Wiki Wiki 奇異鳥小助手</h1>
+          <div class="brand-sub" id="guide-version-sub">你的桌面 AI 效率與療癒夥伴 🥝</div>
+        </div>
+      </div>
+
+      <div class="mode-tabs" role="tablist">
+        <button type="button" class="mode-tab-btn active" data-mode="onboarding" id="tab-btn-onboarding">🚀 初次使用指引</button>
+        <button type="button" class="mode-tab-btn" data-mode="features" id="tab-btn-features">📖 完整功能介紹</button>
+      </div>
+    </header>
+
+    <!-- ══════════════════════════════════════════════ -->
+    <!-- 模式 1：初次使用指引 (4 步驟互動精靈) -->
+    <!-- ══════════════════════════════════════════════ -->
+    <main id="panel-onboarding" class="mode-panel active">
+      <!-- 步驟進度條 -->
+      <div class="stepper" id="onboarding-stepper">
+        <button type="button" class="step-pill active" data-step="1"><span class="step-num">1</span> 認識互動</button>
+        <div class="step-line"></div>
+        <button type="button" class="step-pill" data-step="2"><span class="step-num">2</span> 連接 AI</button>
+        <div class="step-line"></div>
+        <button type="button" class="step-pill" data-step="3"><span class="step-num">3</span> 使用情境</button>
+        <div class="step-line"></div>
+        <button type="button" class="step-pill" data-step="4"><span class="step-num">4</span> 準備出發</button>
+      </div>
+
+      <!-- Step 1：認識互動 -->
+      <section class="step-pane active" id="step-pane-1" data-step="1">
+        <div class="welcome-banner">
+          <div class="welcome-emoji">👋🥝</div>
+          <div>
+            <h2>歡迎領養 Wiki Wiki！</h2>
+            <p>我會常駐在您的桌面上陪伴您工作與生活。只要花 1 分鐘完成簡單設定，我就能幫您管理待辦、設鬧鐘、讀剪貼簿並即時解答問題！</p>
+          </div>
+        </div>
+
+        <div class="quick-gesture-grid">
+          <div class="gesture-card">
+            <div class="gesture-icon">🖱️</div>
+            <div class="gesture-title">左鍵雙擊奇異鳥</div>
+            <div class="gesture-desc">立即彈出 AI 對話框，輸入任何問題或交辦任務</div>
+          </div>
+          <div class="gesture-card">
+            <div class="gesture-icon">📋</div>
+            <div class="gesture-title">右鍵點擊奇異鳥</div>
+            <div class="gesture-desc">開啟效率工具、互動玩耍、換裝衣櫥與設定中心</div>
+          </div>
+          <div class="gesture-card">
+            <div class="gesture-icon">⌨️</div>
+            <div class="gesture-title">Ctrl + Shift + K</div>
+            <div class="gesture-desc">隨時隨地一鍵召喚奇異鳥飛到您的滑鼠旁邊</div>
+          </div>
+          <div class="gesture-card">
+            <div class="gesture-icon">✋</div>
+            <div class="gesture-title">按住拖曳移動</div>
+            <div class="gesture-desc">自由拖曳奇異鳥到螢幕任意角落，支援多螢幕</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Step 2：連接 AI 服務商與金鑰 -->
+      <section class="step-pane" id="step-pane-2" data-step="2">
+        <div class="step-intro">
+          <h2>🔑 連接您的 AI 引擎</h2>
+          <p>支援 8 大主流服務商！推薦使用免費額度高的 <strong>Google Gemini</strong>、<strong>Groq</strong>、<strong>OpenRouter</strong>，或完全免金鑰的 <strong>Ollama 本機離線模型</strong>。</p>
+        </div>
+
+        <div class="wizard-form-card">
+          <div class="form-row">
+            <label for="guide-provider">AI 服務商 (Provider)</label>
+            <div class="inline-field">
+              <select id="guide-provider">
+                <option value="gemini">Google Gemini (官方免費層)</option>
+                <option value="groq">Groq (高速免費額度 • 推薦備援)</option>
+                <option value="openrouter">OpenRouter (多模型聚合 • 含免費模型)</option>
+                <option value="openai">OpenAI (GPT 系列)</option>
+                <option value="deepseek">DeepSeek (高性價比中文)</option>
+                <option value="anthropic">Anthropic Claude (原生支援)</option>
+                <option value="ollama">Ollama (本機離線 • 完全免費)</option>
+                <option value="custom">自訂 OpenAI 相容端點</option>
+              </select>
+              <button type="button" id="guide-btn-get-key" class="btn-outline">🔑 取得金鑰</button>
+            </div>
+            <div id="guide-provider-desc" class="field-hint">Google 官方模型，支援 1M 超長上下文與免費層額度。</div>
+          </div>
+
+          <div class="form-row">
+            <label id="guide-label-apikey" for="guide-apikey">Gemini API Key</label>
+            <input type="password" id="guide-apikey" placeholder="AIzaSy...">
+          </div>
+
+          <div class="form-row" id="guide-baseurl-row" style="display: none;">
+            <label for="guide-baseurl">API 端點網址 (Base URL)</label>
+            <input type="text" id="guide-baseurl" placeholder="http://localhost:11434/v1">
+          </div>
+
+          <div class="form-row">
+            <label for="guide-model">預設模型 (Model)</label>
+            <div class="inline-field">
+              <input type="text" id="guide-model" value="gemini-3.5-flash-lite" placeholder="輸入或使用推薦模型 ID">
+              <button type="button" id="guide-btn-test" class="btn-test">🧪 快速測試</button>
+            </div>
+            <div id="guide-test-result" class="test-banner" style="display: none;"></div>
+          </div>
+        </div>
+
+        <div class="skip-note">💡 暫時還沒有 API Key 嗎？沒關係，您也可以先跳過此步驟體驗互動功能，之後隨時到「設定中心」補填即可。</div>
+      </section>
+
+      <!-- Step 3：選擇使用情境 -->
+      <section class="step-pane" id="step-pane-3" data-step="3">
+        <div class="step-intro">
+          <h2>🎯 挑選最貼近您的使用情境</h2>
+          <p>選擇您的主要需求，Wiki Wiki 會自動調整回覆專業度、思考深度與剪貼簿主動感知重點。</p>
+        </div>
+
+        <div class="guide-scenario-grid" id="guide-scenario-grid">
+          <button type="button" class="guide-scenario-card active" data-scenario="general">
+            <span class="sc-icon">🌟</span>
+            <div>
+              <div class="sc-title">全能日常</div>
+              <div class="sc-sub">均衡問答、待辦與鬧鐘</div>
+            </div>
+          </button>
+          <button type="button" class="guide-scenario-card" data-scenario="developer">
+            <span class="sc-icon">💻</span>
+            <div>
+              <div class="sc-title">程式開發</div>
+              <div class="sc-sub">除錯修復、代碼與 CLI</div>
+            </div>
+          </button>
+          <button type="button" class="guide-scenario-card" data-scenario="office">
+            <span class="sc-icon">📊</span>
+            <div>
+              <div class="sc-title">辦公效率</div>
+              <div class="sc-sub">會議摘要、信件與排程</div>
+            </div>
+          </button>
+          <button type="button" class="guide-scenario-card" data-scenario="study">
+            <span class="sc-icon">📚</span>
+            <div>
+              <div class="sc-title">學習進修</div>
+              <div class="sc-sub">觀念拆解、外語與筆記</div>
+            </div>
+          </button>
+          <button type="button" class="guide-scenario-card" data-scenario="creative">
+            <span class="sc-icon">✍️</span>
+            <div>
+              <div class="sc-title">靈感寫作</div>
+              <div class="sc-sub">標題發想與多風格潤飾</div>
+            </div>
+          </button>
+          <button type="button" class="guide-scenario-card" data-scenario="companion">
+            <span class="sc-icon">🧸</span>
+            <div>
+              <div class="sc-title">療癒陪伴</div>
+              <div class="sc-sub">輕鬆聊天與健康提醒</div>
+            </div>
+          </button>
+        </div>
+
+        <div class="clipboard-opt-card">
+          <label class="toggle-row">
+            <div>
+              <div class="toggle-title">💡 同步開啟「智慧剪貼簿主動感知」</div>
+              <div class="toggle-sub">複製報錯、程式碼、英文或重點段落時自動浮現小燈泡一鍵分析（本機離線過濾，零額外 Token；預設關閉保障隱私）。</div>
+            </div>
+            <input type="checkbox" id="guide-enable-clipboard">
+          </label>
+        </div>
+      </section>
+
+      <!-- Step 4：完成準備 -->
+      <section class="step-pane" id="step-pane-4" data-step="4">
+        <div class="finish-hero">
+          <div class="finish-badge">🎉 準備就緒！</div>
+          <h2>一切都設定好了，快來跟我打聲招呼吧！</h2>
+          <div class="summary-chips" id="guide-summary-chips"></div>
+        </div>
+
+        <div class="try-prompts-card">
+          <div class="try-title">💬 試試雙擊奇異鳥，對我說這些話：</div>
+          <div class="try-list">
+            <div class="try-item" data-prompt="幫我新增待辦：下午三點前寄出週報，並設一個 14:45 的鬧鐘提醒我">
+              <span class="try-tag">效率任務</span>
+              <span>「幫我新增待辦：下午三點前寄出週報，並設一個 14:45 的鬧鐘」</span>
+            </div>
+            <div class="try-item" data-prompt="幫我戴上皇冠和墨鏡！">
+              <span class="try-tag">自主換裝</span>
+              <span>「幫我戴上皇冠和墨鏡！」</span>
+            </div>
+            <div class="try-item" data-prompt="把剪貼簿的內容幫我轉成 SHA256">
+              <span class="try-tag">開發工具</span>
+              <span>「把剪貼簿的內容幫我轉成 SHA256」</span>
+            </div>
+          </div>
+          <div class="field-hint" style="margin-top: 6px;">* 點擊任一句範例即可複製到剪貼簿，隨時貼給 Wiki Wiki 體驗！</div>
+        </div>
+
+        <div class="finish-extra-row">
+          <button type="button" id="guide-btn-go-features" class="btn-outline">📖 先瀏覽完整功能介紹</button>
+        </div>
+      </section>
+
+      <!-- 精靈底部操作列 -->
+      <footer class="wizard-footer">
+        <button type="button" id="btn-step-skip" class="btn-ghost">跳過導覽</button>
+        <div class="wizard-nav-btns">
+          <button type="button" id="btn-step-prev" class="btn-secondary" style="display: none;">← 上一步</button>
+          <button type="button" id="btn-step-next" class="btn-primary">下一步 →</button>
+          <button type="button" id="btn-step-finish" class="btn-primary" style="display: none;">🚀 儲存並開始使用</button>
+        </div>
+      </footer>
+    </main>
+
+    <!-- ══════════════════════════════════════════════ -->
+    <!-- 模式 2：完整功能介紹頁面 (Feature Showcase) -->
+    <!-- ══════════════════════════════════════════════ -->
+    <main id="panel-features" class="mode-panel">
+      <div class="feature-hero">
+        <h2>✨ 探索 Wiki Wiki 的全部能力</h2>
+        <p>結合多引擎自主 AI Agent、本機零 Token 剪貼簿感知與軟萌桌面陪伴，打造專屬於您的桌邊小助手。</p>
+      </div>
+
+      <div class="feature-grid">
+        <article class="feature-card">
+          <div class="feature-head">
+            <span class="feature-icon">🤖</span>
+            <h3>多引擎 AI 與自主 Agent 工具</h3>
+          </div>
+          <p>支援 Google Gemini、Groq、OpenRouter、OpenAI、DeepSeek、Anthropic Claude、Ollama 本機離線與自訂端點。可依任務自動規劃多步驟工具調用，並提供三段思考深度（Low / Medium / High）與連線快測。</p>
+          <div class="feature-tags">
+            <span>8 大服務商</span><span>多步推理</span><span>獨立配額</span>
+          </div>
+        </article>
+
+        <article class="feature-card">
+          <div class="feature-head">
+            <span class="feature-icon">🎯</span>
+            <h3>7 大使用情境 × 自由混搭個性</h3>
+          </div>
+          <p>「使用情境」控制專業輔助焦點（程式開發、辦公效率、學習進修、靈感寫作、療癒陪伴、自訂規則），「語氣個性」控制說話口吻（親切、吟遊詩人、傲嬌、自訂），兩者獨立搭配！</p>
+          <div class="feature-tags">
+            <span>專業模式</span><span>自訂規則</span><span>情境連動</span>
+          </div>
+        </article>
+
+        <article class="feature-card">
+          <div class="feature-head">
+            <span class="feature-icon">💡</span>
+            <h3>智慧剪貼簿主動感知</h3>
+          </div>
+          <p>內建本機離線意圖引擎，複製 Stack Trace 報錯、程式碼、CLI 指令、JSON、英文單字或段落時自動浮現氣泡一鍵解析。預設關閉保護隱私，純本機過濾零額外 Token 消耗。</p>
+          <div class="feature-tags">
+            <span>零 Token 偵測</span><span>隱私優先</span><span>一鍵分析</span>
+          </div>
+        </article>
+
+        <article class="feature-card">
+          <div class="feature-head">
+            <span class="feature-icon">⏰</span>
+            <h3>效率工具箱與頑皮鬧鐘</h3>
+          </div>
+          <p>內建待辦事項清單、iOS 滾輪鬧鐘排程、加密對話歷史與 MD5/SHA256 雜湊計算。鬧鐘逾時會觸發三階段「頑皮跟隨 + 跨螢幕跳躍」撒嬌催促，再也不怕錯過會議！</p>
+          <div class="feature-tags">
+            <span>待辦事項</span><span>跨螢幕鬧鐘</span><span>加密紀錄</span>
+          </div>
+        </article>
+
+        <article class="feature-card">
+          <div class="feature-head">
+            <span class="feature-icon">🎩</span>
+            <h3>療癒互動、換裝與多螢幕雷射筆</h3>
+          </div>
+          <p>可以餵食、摸摸奇異鳥、幫牠戴上多層疊加飾品並微調小床位置；工作累了還能開啟「🔴 雷射筆小遊戲」，看奇異鳥跨螢幕追逐紅點點放鬆心情！</p>
+          <div class="feature-tags">
+            <span>自由換裝</span><span>雷射筆遊戲</span><span>多螢幕支援</span>
+          </div>
+        </article>
+
+        <article class="feature-card">
+          <div class="feature-head">
+            <span class="feature-icon">🗄️</span>
+            <h3>獨立快取與資料自主管理</h3>
+          </div>
+          <p>模型清單快取、連線測試紀錄與用量配額各自獨立儲存，升級版本不歸零配額、關閉設定不遺失測試紀錄，隨時可在設定中心檢視與一鍵清理。</p>
+          <div class="feature-tags">
+            <span>零遺失升級</span><span>快取管理</span><span>一鍵清理</span>
+          </div>
+        </article>
+      </div>
+
+      <!-- 快捷鍵與操作速查表 -->
+      <section class="shortcuts-section">
+        <h3>⌨️ 常用操作與快捷鍵速查表</h3>
+        <div class="shortcut-grid">
+          <div class="shortcut-item"><kbd>雙擊奇異鳥</kbd><span>開啟 / 收起 AI 對話框</span></div>
+          <div class="shortcut-item"><kbd>右鍵點擊</kbd><span>開啟效率工具與系統選單</span></div>
+          <div class="shortcut-item"><kbd>Ctrl + Shift + K</kbd><span>全域召喚奇異鳥至游標旁（可自訂）</span></div>
+          <div class="shortcut-item"><kbd>ESC</kbd><span>快速關閉對話氣泡、鬧鐘或雷射筆</span></div>
+          <div class="shortcut-item"><kbd>Shift + Enter</kbd><span>在對話輸入框內換行</span></div>
+          <div class="shortcut-item"><kbd>🔍 展開按鈕</kbd><span>開啟檢閱板閱讀長文、思考軌跡與複製代碼</span></div>
+        </div>
+      </section>
+
+      <footer class="features-footer">
+        <button type="button" id="btn-features-open-settings" class="btn-primary">⚙️ 前往設定中心</button>
+        <button type="button" id="btn-features-restart-onboarding" class="btn-secondary">🚀 重新執行初次導覽</button>
+        <button type="button" id="btn-features-close" class="btn-ghost">關閉視窗</button>
+      </footer>
+    </main>
+  </div>
+
+  <script src="guide.js"></script>
+</body>
+</html>

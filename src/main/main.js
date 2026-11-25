@@ -61,6 +61,7 @@ let alarmWin = null;
 let todoWin = null;
 let historyWin = null;
 let settingsWindow = null;
+let guideWindow = null;
 
 let splashWindow = null;
 const SPLASH_MIN_MS = 500; // Splash 最短顯示時間
@@ -219,9 +220,75 @@ function registerGlobalShortcut() {
   }
 }
 
+function shouldAutoOpenOnboarding() {
+  try {
+    if (fs.existsSync(petStatePath)) {
+      const state = JSON.parse(fs.readFileSync(petStatePath, 'utf8'));
+      if (state.onboardingCompleted) return false;
+      const s = state.settings || {};
+      if (s.apiKey && s.apiKey.trim()) return false;
+      if (s.providerConfigs && typeof s.providerConfigs === 'object') {
+        const hasAnyProviderKey = Object.values(s.providerConfigs).some(cfg => cfg && cfg.apiKey && cfg.apiKey.trim());
+        if (hasAnyProviderKey) return false;
+      }
+    }
+  } catch (_) {}
+  return true;
+}
+
+function openGuideWindow(mode = 'features') {
+  const safeMode = mode === 'onboarding' ? 'onboarding' : 'features';
+  if (guideWindow && !guideWindow.isDestroyed()) {
+    guideWindow.focus();
+    guideWindow.webContents.send('switch-guide-mode', safeMode);
+    return;
+  }
+  guideWindow = new BrowserWindow({
+    icon: path.join(__dirname, '../../assets/images/kiwi.png'),
+    width: 720,
+    height: 640,
+    minWidth: 580,
+    minHeight: 520,
+    title: 'Wiki Wiki 新手導覽與功能介紹',
+    autoHideMenuBar: true,
+    show: false,
+    webPreferences: {
+      nodeIntegration: true,
+      contextIsolation: false
+    }
+  });
+  guideWindow.loadFile(path.join(__dirname, '../views/guide/guide.html'), {
+    query: { mode: safeMode }
+  });
+  guideWindow.once('ready-to-show', () => {
+    if (guideWindow && !guideWindow.isDestroyed()) guideWindow.show();
+  });
+  guideWindow.on('closed', () => {
+    // 若初次導覽被直接關閉，自動標記已完成避免每次啟動重複打擾
+    if (safeMode === 'onboarding') {
+      try {
+        let state = {};
+        if (fs.existsSync(petStatePath)) {
+          state = JSON.parse(fs.readFileSync(petStatePath, 'utf8'));
+        }
+        if (!state.onboardingCompleted) {
+          state.onboardingCompleted = true;
+          fs.writeFileSync(petStatePath, JSON.stringify(state, null, 2), 'utf8');
+        }
+      } catch (_) {}
+    }
+    guideWindow = null;
+  });
+}
+
 // Renderer 完成初始化後，關閉 Splash 顯示主視窗
 ipcMain.once('app-ready', () => {
   closeSplashAndShowMain();
+  if (shouldAutoOpenOnboarding()) {
+    setTimeout(() => {
+      openGuideWindow('onboarding');
+    }, 650);
+  }
 });
 
 app.whenReady().then(() => {
@@ -603,6 +670,19 @@ app.whenReady().then(() => {
       settingsWindow = null;
       if (mainWindow) mainWindow.webContents.send('settings-closed');
     });
+  });
+
+  ipcMain.on('open-guide', (event, mode = 'features') => {
+    openGuideWindow(mode);
+  });
+
+  ipcMain.on('onboarding-completed', (event, payload) => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('onboarding-completed', payload);
+    }
+    if (settingsWindow && !settingsWindow.isDestroyed()) {
+      settingsWindow.webContents.send('reload-data');
+    }
   });
 
   ipcMain.on('toggle-bed-edit', (event, isEditing) => {

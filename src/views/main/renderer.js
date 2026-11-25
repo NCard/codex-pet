@@ -581,5 +581,17 @@ ipcRenderer.on('menu-action', (event, action) => {
     case 'laser': document.getElementById('menu-laser')?.click(); break;
     case 'outfit': document.getElementById('menu-outfit')?.click(); break;
     case 'settings': document.getElementById('menu-settings')?.click(); break;
+    case 'guide': ipcRenderer.send('open-guide', 'features'); break;
   }
+});
+
+document.getElementById('menu-guide')?.addEventListener('click', () => {
+  customMenu.style.display = 'none';
+  ipcRenderer.send('open-guide', 'features');
+});
+
+ipcRenderer.on('onboarding-completed', () => {
+  loadPetState();
+  initAI();
+  showTempBubble('🎉 歡迎來到桌面！雙擊我隨時聊天，右鍵可開啟工具與導覽喔～🥝', 6000);
 });

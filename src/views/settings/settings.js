@@ -1324,6 +1324,14 @@ document.getElementById('link-issues').addEventListener('click', (e) => {
   shell.openExternal('https://github.com/NCard/codex-pet/issues');
 });
 
+document.getElementById('btn-open-onboarding')?.addEventListener('click', () => {
+  ipcRenderer.send('open-guide', 'onboarding');
+});
+
+document.getElementById('btn-open-features')?.addEventListener('click', () => {
+  ipcRenderer.send('open-guide', 'features');
+});
+
 // 檢查更新
 const btnCheckUpdate = document.getElementById('btn-check-update');
 const updateMsg = document.getElementById('update-msg');
