@@ -47,6 +47,8 @@ function getToolStatusHint(toolName) {
       return '正在讀取剪貼簿... 📋';
     case 'compute_hash':
       return '正在用力計算雜湊與轉換... 🔐';
+    case 'get_app_info':
+      return '正在翻閱我的版本檔案與使用說明... 📖';
     default:
       return `正在執行 ${toolName}... (•ө•)و`;
   }
@@ -771,7 +773,8 @@ ${scenarioText}
    - 使用者說「脫下/摘掉/拿下XX」時，mode 請用 "remove"。
    - 使用者說「全部脫掉/脫光」時，mode 請用 "clear"。
 5. 當主人要求計算 MD5、SHA256、雜湊值 (Hash) 或進行字串編碼轉換時，嚴禁自行心算或臆測雜湊值，必須優先呼叫 compute_hash 工具以保證 100% 精準。若主人說「把剪貼簿的內容轉成 MD5」，請先呼叫 read_clipboard 取得文字，再呼叫 compute_hash。
-6. 完成所有步驟後，請完全依你的性格自然且清晰地回覆執行結果。`;
+6. 當主人詢問「你是什麼版本」「有哪些功能」「怎麼使用」「有哪些斜線指令或快捷鍵」「目前設定是什麼（例如哪個模型、資料存在哪裡）」等關於 Wiki Wiki 自身資訊與教學時，務必優先呼叫 get_app_info 工具取得真實資訊後再回覆，嚴禁憑空臆測版本號或不存在的功能。
+7. 完成所有步驟後，請完全依你的性格自然且清晰地回覆執行結果。`;
         
         sessionContext.push({ role: 'user', parts: [{ text: text }] });
         
@@ -941,6 +944,29 @@ ${scenarioText}
                 textResult = `【${algo.toUpperCase()} 計算成功】\n計算結果：${computed}\n（已自動將結果複製到主人剪貼簿）`;
               } catch (err) {
                 textResult = `計算失敗: ${err.message}`;
+              }
+              stepRecord.responses.push({
+                name: call.name,
+                result: textResult
+              });
+              broadcastLiveInspector('');
+              const fnResp = {
+                name: call.name,
+                response: { result: textResult }
+              };
+              if (call.id) fnResp.id = call.id;
+              functionResponses.push({ functionResponse: fnResp });
+              continue;
+            }
+
+            if (call.name === 'get_app_info') {
+              let textResult = '';
+              try {
+                const { getAppInfo } = require('../../../utils/app_info');
+                const topic = (call.args && call.args.topic) ? String(call.args.topic) : 'all';
+                textResult = getAppInfo(topic, { state: petState });
+              } catch (err) {
+                textResult = `取得應用程式資訊失敗: ${err.message}`;
               }
               stepRecord.responses.push({
                 name: call.name,
