@@ -98,7 +98,7 @@ function init({
       }
       lastSeenText = text;
 
-      const intent = detectClipboardIntent(text);
+      const intent = detectClipboardIntent(text, settings.aiScenario || 'general');
       if (intent) {
         showBadge(intent.icon, intent.label, intent.prompt);
       } else {

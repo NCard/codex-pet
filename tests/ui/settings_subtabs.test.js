@@ -103,6 +103,27 @@ describe('Settings Sub-tabs & Model Info Card UI Tests', () => {
     expect(container.querySelector('#setting-customModel')).not.toBeNull();
   });
 
+  test('settings.html should provide usage scenario cards, custom textarea and detail preview card', () => {
+    const scenarioInput = container.querySelector('#setting-aiScenario');
+    expect(scenarioInput).not.toBeNull();
+    expect(scenarioInput.value).toBe('general');
+
+    const cards = Array.from(container.querySelectorAll('.scenario-card'));
+    expect(cards.length).toBe(7);
+
+    const scenarios = cards.map(c => c.getAttribute('data-scenario'));
+    expect(scenarios).toEqual(expect.arrayContaining([
+      'general', 'developer', 'office', 'study', 'creative', 'companion', 'custom'
+    ]));
+
+    expect(container.querySelector('#custom-scenario-group')).not.toBeNull();
+    expect(container.querySelector('#setting-customScenario')).not.toBeNull();
+    expect(container.querySelector('#scenario-detail-card')).not.toBeNull();
+    expect(container.querySelector('#scenario-detail-style')).not.toBeNull();
+    expect(container.querySelector('#scenario-detail-clipboard')).not.toBeNull();
+    expect(container.querySelector('#btn-apply-scenario-thinking')).not.toBeNull();
+  });
+
   test('sub-tab buttons should correctly toggle active class on clicks', () => {
     const buttons = container.querySelectorAll('.sub-tab-btn');
     const contents = container.querySelectorAll('.subtab-content');

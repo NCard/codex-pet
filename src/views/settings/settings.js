@@ -11,6 +11,7 @@ const {
 const { getUsageSummary, loadUsageData, resetUsageData } = require('../../utils/usage_tracker');
 const modelCache = require('../../utils/model_cache');
 const cryptoUtils = require('../../utils/crypto_utils');
+const { getScenarioPreset } = require('../../utils/scenarios');
 require('dotenv').config({ path: path.resolve(__dirname, '../../../.env') });
 const { AIProviderFactory } = require('../../services/ai_provider');
 
@@ -27,6 +28,8 @@ const defaultSettings = {
   aiModel: 'gemini-3.5-flash-lite',
   providerConfigs: {},
   thinkingLevel: 'medium',
+  aiScenario: 'general',
+  aiCustomScenario: '',
   aiPersonality: 'default',
   aiCustomPrompt: '',
   contextTimeout: 5,
@@ -72,6 +75,8 @@ const els = {
   aiModel: document.getElementById('setting-aiModel'),
   customModel: document.getElementById('setting-customModel'),
   thinkingLevel: document.getElementById('setting-thinkingLevel'),
+  aiScenario: document.getElementById('setting-aiScenario'),
+  aiCustomScenario: document.getElementById('setting-customScenario'),
   aiPersonality: document.getElementById('ai-personality'),
   aiCustomPrompt: document.getElementById('custom-personality-input'),
   contextTimeout: document.getElementById('setting-contextTimeout'),
@@ -283,6 +288,9 @@ function initUI() {
   applyProviderUI(initialProvider, { loadSavedValues: true });
 
   if (els.thinkingLevel) els.thinkingLevel.value = s.thinkingLevel ?? defaultSettings.thinkingLevel;
+  if (els.aiScenario) els.aiScenario.value = s.aiScenario ?? defaultSettings.aiScenario;
+  if (els.aiCustomScenario) els.aiCustomScenario.value = s.aiCustomScenario ?? defaultSettings.aiCustomScenario;
+  updateScenarioUI(els.aiScenario ? els.aiScenario.value : defaultSettings.aiScenario);
   els.aiPersonality.value = s.aiPersonality ?? defaultSettings.aiPersonality;
   els.aiCustomPrompt.value = s.aiCustomPrompt ?? defaultSettings.aiCustomPrompt;
   els.contextTimeout.value = s.contextTimeout ?? defaultSettings.contextTimeout;
@@ -962,6 +970,8 @@ function checkDirty() {
     current.aiBaseUrl !== (s.aiBaseUrl ?? defaultSettings.aiBaseUrl) ||
     current.aiModel !== (s.aiModel ?? defaultSettings.aiModel) ||
     current.thinkingLevel !== (s.thinkingLevel ?? defaultSettings.thinkingLevel) ||
+    current.aiScenario !== (s.aiScenario ?? defaultSettings.aiScenario) ||
+    current.aiCustomScenario !== (s.aiCustomScenario ?? defaultSettings.aiCustomScenario) ||
     current.aiPersonality !== (s.aiPersonality ?? defaultSettings.aiPersonality) ||
     current.aiCustomPrompt !== (s.aiCustomPrompt ?? defaultSettings.aiCustomPrompt) ||
     current.contextTimeout !== (s.contextTimeout ?? defaultSettings.contextTimeout) ||
@@ -998,6 +1008,8 @@ function getFormValues() {
     aiModel: getEffectiveModelId(),
     providerConfigs: JSON.parse(JSON.stringify(workingProviderConfigs)),
     thinkingLevel: els.thinkingLevel ? els.thinkingLevel.value : 'medium',
+    aiScenario: els.aiScenario ? els.aiScenario.value : 'general',
+    aiCustomScenario: els.aiCustomScenario ? els.aiCustomScenario.value.trim() : '',
     aiPersonality: els.aiPersonality.value,
     aiCustomPrompt: els.aiCustomPrompt.value.trim(),
     contextTimeout: parseInt(els.contextTimeout.value, 10),
@@ -1044,14 +1056,95 @@ function revertSettings() {
   setDirty(false);
 }
 
+const THINKING_LABEL_MAP = {
+  low: 'Low (輕量快速，最多 3 輪)',
+  medium: 'Medium (平衡模式，最多 5 輪)',
+  high: 'High (深度推理，最多 10 輪)'
+};
+
+function updateCustomScenarioCount() {
+  const countEl = document.getElementById('custom-scenario-count');
+  if (countEl && els.aiCustomScenario) {
+    countEl.innerText = `${els.aiCustomScenario.value.length} / 200 字`;
+  }
+}
+
+function updateScenarioUI(scenarioId = 'general') {
+  const preset = getScenarioPreset(scenarioId);
+  if (els.aiScenario) els.aiScenario.value = preset.id;
+
+  document.querySelectorAll('.scenario-card').forEach(card => {
+    card.classList.toggle('active', card.dataset.scenario === preset.id);
+  });
+
+  const customGroup = document.getElementById('custom-scenario-group');
+  if (customGroup) {
+    customGroup.style.display = preset.id === 'custom' ? 'block' : 'none';
+  }
+  updateCustomScenarioCount();
+
+  const titleEl = document.getElementById('scenario-detail-title');
+  const tagsEl = document.getElementById('scenario-detail-tags');
+  const descEl = document.getElementById('scenario-detail-desc');
+  const styleEl = document.getElementById('scenario-detail-style');
+  const clipEl = document.getElementById('scenario-detail-clipboard');
+  const thinkEl = document.getElementById('scenario-detail-thinking');
+  const applyThinkBtn = document.getElementById('btn-apply-scenario-thinking');
+
+  if (titleEl) titleEl.innerText = `${preset.icon} ${preset.name}`;
+  if (tagsEl) {
+    tagsEl.innerHTML = (preset.tags || [])
+      .map(tag => `<span class="scenario-tag">${escapeHtmlBasic(tag)}</span>`)
+      .join('');
+  }
+  if (descEl) descEl.innerText = preset.shortDesc;
+  if (styleEl) styleEl.innerText = preset.responseStyle;
+  if (clipEl) clipEl.innerText = preset.clipboardFocus;
+  if (thinkEl) {
+    const rec = preset.recommendedThinking || 'medium';
+    thinkEl.innerText = `🧠 推薦思考層級：${THINKING_LABEL_MAP[rec] || rec}`;
+  }
+  if (applyThinkBtn) {
+    const currentThink = els.thinkingLevel ? els.thinkingLevel.value : 'medium';
+    const isMatched = currentThink === (preset.recommendedThinking || 'medium');
+    applyThinkBtn.innerText = isMatched ? '✅ 已套用' : '套用推薦層級';
+    applyThinkBtn.disabled = isMatched;
+  }
+}
+
+document.querySelectorAll('.scenario-card').forEach(card => {
+  card.addEventListener('click', () => {
+    const nextScenario = card.dataset.scenario || 'general';
+    updateScenarioUI(nextScenario);
+    checkDirty();
+    previewBroadcast();
+  });
+});
+
+document.getElementById('btn-apply-scenario-thinking')?.addEventListener('click', () => {
+  const preset = getScenarioPreset(els.aiScenario ? els.aiScenario.value : 'general');
+  if (els.thinkingLevel && preset.recommendedThinking) {
+    els.thinkingLevel.value = preset.recommendedThinking;
+    updateScenarioUI(preset.id);
+    checkDirty();
+    previewBroadcast();
+  }
+});
+
 // 監聽變更
 Object.keys(els).forEach(key => {
-  if (key === 'summonShortcut' || key === 'aiProvider' || !els[key]) {
+  if (key === 'summonShortcut' || key === 'aiProvider' || key === 'aiScenario' || !els[key]) {
     return; // 獨立處理
   }
   els[key].addEventListener('input', () => {
     if (key === 'aiPersonality') {
       document.getElementById('custom-personality-group').style.display = els.aiPersonality.value === 'custom' ? 'block' : 'none';
+    }
+    if (key === 'aiCustomScenario') {
+      updateCustomScenarioCount();
+    }
+    if (key === 'thinkingLevel') {
+      updateScenarioUI(els.aiScenario ? els.aiScenario.value : 'general');
     }
     if (key === 'customModel') {
       updateQuotaUI();

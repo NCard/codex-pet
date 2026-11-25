@@ -2,6 +2,7 @@
 const { renderMarkdown, escapeHtml } = require('../../../utils/markdown');
 const { recordUsage, getUsageSummary } = require('../../../utils/usage_tracker');
 const { getDialogue } = require('../../../utils/dialogues');
+const { buildScenarioPrompt } = require('../../../utils/scenarios');
 
 let bubbleTimeout = null;
 let isAlarmActive = false;
@@ -491,8 +492,13 @@ function init({
           personaText = getDialogue('personalityPrompts', 'custom', customP);
         }
   
+        const scenarioId = petState.settings?.aiScenario || 'general';
+        const customScenario = petState.settings?.aiCustomScenario || '';
+        const scenarioText = buildScenarioPrompt(scenarioId, customScenario);
+
         const sysInstruction = `你現在是一隻生活在電腦桌面上的奇異鳥助理，名字叫 Wiki Wiki。
 ${personaText}
+${scenarioText}
 【Agent 行動準則】
 1. 你是一個具備自主規劃與執行能力的桌面寵物 Agent。面對主人的複雜需求（例如同時要記待辦、設定鬧鐘、更換飾品、讀取剪貼簿或查詢狀態），你可以自主規劃並分步驟呼叫工具來完成任務。
 2. 當需要操作或查詢系統資料時，必須優先呼叫系統提供的工具 (Tools)。

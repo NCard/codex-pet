@@ -22,7 +22,7 @@
     <div class="sub-tabs">
       <button class="sub-tab-btn active" data-subtab="subtab-model" type="button">🤖 模型 API</button>
       <button class="sub-tab-btn" data-subtab="subtab-quota" type="button">📊 用量配額</button>
-      <button class="sub-tab-btn" data-subtab="subtab-personality" type="button">💬 個性記憶</button>
+      <button class="sub-tab-btn" data-subtab="subtab-personality" type="button">🎯 情境個性</button>
       <button class="sub-tab-btn" data-subtab="subtab-data" type="button">🗄️ 資料快取</button>
     </div>
 
@@ -171,8 +171,97 @@
       </div>
     </div>
 
-    <!-- 子分頁 3：個性與記憶 -->
+    <!-- 子分頁 3：情境、個性與記憶 -->
     <div id="subtab-personality" class="subtab-content">
+      <div class="section">
+        <div class="section-title">🎯 使用情境專注模式 (Usage Scenario)</div>
+        <div style="font-size: 11px; color: #64748b; margin-bottom: 10px;">
+          選擇最貼近您目前需求的使用情境，讓 Wiki Wiki 自動調整專業回答深度與剪貼簿主動感知重點。
+        </div>
+        <input type="hidden" id="setting-aiScenario" value="general">
+        <div class="scenario-grid" id="scenario-grid">
+          <button type="button" class="scenario-card active" data-scenario="general">
+            <span class="scenario-icon">🌟</span>
+            <div class="scenario-card-text">
+              <div class="scenario-card-title">全能日常</div>
+              <div class="scenario-card-sub">均衡問答與日常待辦</div>
+            </div>
+          </button>
+          <button type="button" class="scenario-card" data-scenario="developer">
+            <span class="scenario-icon">💻</span>
+            <div class="scenario-card-text">
+              <div class="scenario-card-title">程式開發</div>
+              <div class="scenario-card-sub">除錯、代碼與 CLI 指令</div>
+            </div>
+          </button>
+          <button type="button" class="scenario-card" data-scenario="office">
+            <span class="scenario-icon">📊</span>
+            <div class="scenario-card-text">
+              <div class="scenario-card-title">辦公效率</div>
+              <div class="scenario-card-sub">會議摘要、信件與排程</div>
+            </div>
+          </button>
+          <button type="button" class="scenario-card" data-scenario="study">
+            <span class="scenario-icon">📚</span>
+            <div class="scenario-card-text">
+              <div class="scenario-card-title">學習進修</div>
+              <div class="scenario-card-sub">觀念拆解、外語與筆記</div>
+            </div>
+          </button>
+          <button type="button" class="scenario-card" data-scenario="creative">
+            <span class="scenario-icon">✍️</span>
+            <div class="scenario-card-text">
+              <div class="scenario-card-title">靈感寫作</div>
+              <div class="scenario-card-sub">企劃發想、標題與文案</div>
+            </div>
+          </button>
+          <button type="button" class="scenario-card" data-scenario="companion">
+            <span class="scenario-icon">🧸</span>
+            <div class="scenario-card-text">
+              <div class="scenario-card-title">療癒陪伴</div>
+              <div class="scenario-card-sub">輕鬆聊天與健康提醒</div>
+            </div>
+          </button>
+          <button type="button" class="scenario-card scenario-card-wide" data-scenario="custom">
+            <span class="scenario-icon">🛠️</span>
+            <div class="scenario-card-text">
+              <div class="scenario-card-title">自訂專屬情境</div>
+              <div class="scenario-card-sub">自由定義您的職業角色、技術領域或專屬回答規則</div>
+            </div>
+          </button>
+        </div>
+
+        <!-- 自訂情境描述輸入框 -->
+        <div class="control-group" id="custom-scenario-group" style="display: none; margin-top: 10px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <label>自訂情境規則描述</label>
+            <span id="custom-scenario-count" style="font-size: 10.5px; color: #64748b;">0 / 200 字</span>
+          </div>
+          <textarea id="setting-customScenario" maxlength="200" rows="3" placeholder="例如：我是前端工程師，主要寫 Vue 3 + TypeScript，回答請用繁體中文並優先附上精簡範例..." style="width: 100%; box-sizing: border-box; padding: 7px; border-radius: 6px; border: 1px solid #cbd5e1; margin-top: 5px; font-family: inherit; font-size: 12px; resize: vertical;"></textarea>
+        </div>
+
+        <!-- 情境細節預覽卡 -->
+        <div id="scenario-detail-card" class="scenario-detail-card">
+          <div class="scenario-detail-header">
+            <span id="scenario-detail-title" class="scenario-detail-title">🌟 全能日常</span>
+            <div id="scenario-detail-tags" class="scenario-detail-tags"></div>
+          </div>
+          <div id="scenario-detail-desc" class="scenario-detail-desc">平衡支援日常問答、待辦事項、鬧鐘與基本查詢，適合大多數使用情境。</div>
+          <div class="scenario-detail-row">
+            <span class="detail-label">📝 回覆策略：</span>
+            <span id="scenario-detail-style" class="detail-val">簡潔親切，簡單對話精簡扼要，查詢任務時條理清晰。</span>
+          </div>
+          <div class="scenario-detail-row">
+            <span class="detail-label">📋 剪貼簿側重：</span>
+            <span id="scenario-detail-clipboard" class="detail-val">均衡偵測報錯、代碼、英文翻譯與一般文字。</span>
+          </div>
+          <div class="scenario-detail-footer">
+            <span id="scenario-detail-thinking">🧠 推薦思考層級：Medium</span>
+            <button type="button" id="btn-apply-scenario-thinking" class="btn-mini">套用推薦層級</button>
+          </div>
+        </div>
+      </div>
+
       <div class="section">
         <div class="section-title">💬 AI 個性與記憶 (Personality & Memory)</div>
         <div class="control-group">
@@ -183,6 +272,7 @@
             <option value="grumpy">傲嬌模式 (覺得麻煩但會幫忙)</option>
             <option value="custom">自訂模式 (自己設定個性)</option>
           </select>
+          <div style="font-size: 11px; color: #64748b; margin-top: 4px;">* 「使用情境」決定輔助方向與專業度，「語氣個性」決定說話口吻，兩者可自由混搭！</div>
         </div>
         
         <div class="control-group" id="custom-personality-group" style="display: none; margin-top: 10px;">

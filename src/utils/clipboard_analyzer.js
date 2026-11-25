@@ -3,6 +3,8 @@
  * 具備語法特徵提取、CLI 指令偵測、檔案路徑識別、停用詞自然語言消歧與結構化資料分析
  */
 
+const { adaptClipboardIntentForScenario } = require('./scenarios');
+
 // 常見命令列執行指令集合
 const CLI_COMMAND_PREFIX_REGEX = /^(?:python3?|node|deno|bun|ts-node|npm|pnpm|yarn|npx|git|docker|kubectl|pip3?|cargo|rustc|go|mvn|gradle|dotnet|gcc|g\+\+|clang|bash|sh|zsh|powershell|pwsh|cmd|curl|wget|pytest|uvicorn|gunicorn|pipx|poetry|brew|apt|yum|winget|choco)\b/i;
 
@@ -137,9 +139,15 @@ function isEnglishWord(text) {
 /**
  * 主要意圖分析入口函式
  * @param {string} rawText 剪貼簿原始文字
+ * @param {string} [scenarioId='general'] 使用情境 ID
  * @returns {Object|null} 意圖結構物件，包含 icon, label, prompt, category
  */
-function analyzeClipboardText(rawText) {
+function analyzeClipboardText(rawText, scenarioId = 'general') {
+  const baseIntent = detectBaseClipboardIntent(rawText);
+  return adaptClipboardIntentForScenario(baseIntent, rawText, scenarioId);
+}
+
+function detectBaseClipboardIntent(rawText) {
   const text = (rawText || '').trim();
   if (text.length < 3 || text.length > 6000) return null;
 
