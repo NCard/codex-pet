@@ -10,7 +10,7 @@
 :root[data-theme="kiwi"] {
   --theme-bg-color: #f7faf3;
   --theme-bg-gradient: linear-gradient(145deg, #fbfdf8 0%, #f2f7ec 100%);
-  --theme-bg-pattern: url('../../assets/images/themes/kiwi/bg_pattern.svg');
+  --theme-bg-pattern: url('../../assets/images/themes/kiwi/bg_pattern.png');
   
   --theme-card-bg: rgba(255, 255, 255, 0.94);
   --theme-card-border: 1px solid rgba(197, 225, 165, 0.45);
@@ -84,7 +84,7 @@ body {
     radial-gradient(circle at 85% 85%, rgba(220, 237, 200, 0.55) 0%, transparent 45%),
     var(--theme-bg-pattern);
   background-repeat: repeat;
-  background-size: auto, auto, 300px 300px;
+  background-size: auto, auto, 300px 600px;
   background-attachment: fixed;
 }
 
