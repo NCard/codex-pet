@@ -186,7 +186,7 @@ function init({
     bubbleEl.style.display = 'flex';
     bubbleEl.classList.add('visible');
     if (!isDream && typeof onSpeakBurst === 'function') {
-      onSpeakBurst(1000);
+      onSpeakBurst(1600);
     }
     scheduleHide();
   }

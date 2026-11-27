@@ -416,26 +416,7 @@ setInterval(() => {
   petState.hunger = Math.max(0, petState.hunger - 1);
   petState.mood = Math.max(0, petState.mood - 1);
 
-  const isExcludedState = currentAction === 'sleeping' || kiwi.classList.contains('sleeping') || currentAction === 'grabbed' || physics.getIsDragging();
-
-  if (usage > 70) {
-    if (!isWorking && kiwiAccessory.style.display === 'none' && !isExcludedState) {
-      kiwiAccessory.innerText = '💦';
-      kiwiAccessory.style.display = 'block';
-    }
-    if (!isExcludedState) {
-      const img = document.getElementById('kiwi-img');
-      if (img) img.classList.add('kiwi-tired');
-    }
-  } else {
-    if (!isWorking && kiwiAccessory.innerText === '💦') {
-      kiwiAccessory.style.display = 'none';
-    }
-    if (!isExcludedState) {
-      const img = document.getElementById('kiwi-img');
-      if (img) img.classList.remove('kiwi-tired');
-    }
-  }
+  // 由 sprite_animator 統一管理高 CPU 間歇流汗節奏、對話保護期與 💦 / .kiwi-tired 視覺狀態
   if (spriteAnimatorRef) spriteAnimatorRef.tick(false);
 
   // 定期自動存檔
@@ -519,7 +500,28 @@ spriteAnimatorRef = spriteAnimatorModule.init({
   getPetState: () => petState,
   getCpuUsage: () => latestCpuUsage,
   getIsAlarmActive,
-  getIsDragging: () => physics.getIsDragging()
+  getIsDragging: () => physics.getIsDragging(),
+  getIsDialogueActive: () => {
+    const chatOpen = Boolean(chatBubble && chatBubble.style.display !== 'none');
+    const inputOpen = Boolean(chatInput && chatInput.style.display !== 'none');
+    const monologueOpen = Boolean(
+      monologueBubble &&
+      (monologueBubble.classList.contains('visible') || (monologueBubble.style.display && monologueBubble.style.display !== 'none'))
+    );
+    return chatOpen || inputOpen || monologueOpen;
+  },
+  onTiredStateChange: (isTired) => {
+    if (!kiwiAccessory) return;
+    const alarmActive = typeof getIsAlarmActive === 'function' && getIsAlarmActive();
+    if (isTired) {
+      if (!isWorking && !alarmActive && kiwiAccessory.style.display === 'none') {
+        kiwiAccessory.innerText = '💦';
+        kiwiAccessory.style.display = 'block';
+      }
+    } else if (!isWorking && !alarmActive && kiwiAccessory.innerText === '💦') {
+      kiwiAccessory.style.display = 'none';
+    }
+  }
 });
 
 ipcRenderer.on('preview-pet-pose', (_event, poseKey) => {

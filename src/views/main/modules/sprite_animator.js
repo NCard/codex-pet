@@ -32,6 +32,12 @@ function preloadSprites() {
   });
 }
 
+const CPU_HIGH_THRESHOLD = 75;
+const CPU_SWEAT_DURATION_MS = 6000;
+const CPU_SWEAT_COOLDOWN_MS = 55000;
+const CPU_RECOVERY_HYSTERESIS_MS = 15000;
+const POST_DIALOGUE_GRACE_MS = 4000;
+
 function init({
   kiwiImg,
   kiwiWrapper,
@@ -40,7 +46,9 @@ function init({
   getPetState,
   getCpuUsage,
   getIsAlarmActive,
-  getIsDragging
+  getIsDragging,
+  getIsDialogueActive,
+  onTiredStateChange
 }) {
   preloadSprites();
 
@@ -50,6 +58,12 @@ function init({
   let talkUntil = 0;
   let previewPose = null;
   let previewTimer = null;
+
+  let cpuSweatActiveUntil = 0;
+  let cpuSweatCooldownUntil = 0;
+  let wasDialogueActive = false;
+  let dialogueGraceUntil = 0;
+  let lastNotifiedTired = false;
 
   let isBlinking = false;
   let blinkScheduleTimer = null;
@@ -99,9 +113,18 @@ function init({
     }
   }
 
-  function resolveVisualState() {
+  function resolveVisualState(now = Date.now()) {
     if (previewPose && SPRITE_ASSETS[previewPose]) {
       return previewPose;
+    }
+
+    const dialogueActive = typeof getIsDialogueActive === 'function' && Boolean(getIsDialogueActive());
+    if (dialogueActive) {
+      wasDialogueActive = true;
+      cpuSweatActiveUntil = 0;
+    } else if (wasDialogueActive) {
+      wasDialogueActive = false;
+      dialogueGraceUntil = Math.max(dialogueGraceUntil, now + POST_DIALOGUE_GRACE_MS);
     }
 
     const action = typeof getCurrentAction === 'function' ? getCurrentAction() : 'idle';
@@ -115,7 +138,7 @@ function init({
 
     const alarmActive = typeof getIsAlarmActive === 'function' && getIsAlarmActive();
     if (alarmActive) return 'talking';
-    if (Date.now() < talkUntil) return 'talking';
+    if (now < talkUntil) return 'talking';
 
     if (
       action === 'moving' ||
@@ -124,21 +147,61 @@ function init({
       return 'walking';
     }
 
+    // 對話或自言自語氣泡尚在顯示時，保持專注可愛的待機神情，不突然切換成流汗
+    if (dialogueActive) {
+      return 'idle';
+    }
+
     const state = typeof getPetState === 'function' ? getPetState() : {};
     const hunger = typeof state.hunger === 'number' ? state.hunger : 100;
+    if (hunger <= 20) return 'tired';
+
     const cpu = typeof getCpuUsage === 'function' ? getCpuUsage() : 0;
-    if (hunger <= 20 || cpu > 70) return 'tired';
+    if (cpu > CPU_HIGH_THRESHOLD) {
+      if (now < dialogueGraceUntil) {
+        return 'idle';
+      }
+      if (now < cpuSweatActiveUntil) {
+        return 'tired';
+      }
+      if (now >= cpuSweatCooldownUntil) {
+        cpuSweatActiveUntil = now + CPU_SWEAT_DURATION_MS;
+        cpuSweatCooldownUntil = cpuSweatActiveUntil + CPU_SWEAT_COOLDOWN_MS;
+        return 'tired';
+      }
+      return 'idle';
+    }
+
+    // CPU 回落時結束本次流汗，並保留短暫防抖冷卻避免在門檻邊緣反覆閃爍
+    if (cpuSweatActiveUntil > 0) {
+      cpuSweatActiveUntil = 0;
+      cpuSweatCooldownUntil = Math.min(cpuSweatCooldownUntil, now + CPU_RECOVERY_HYSTERESIS_MS);
+    }
 
     return 'idle';
+  }
+
+  function syncTiredEffects(state) {
+    const isTired = state === 'tired';
+    if (kiwiImg && kiwiImg.classList) {
+      kiwiImg.classList.toggle('kiwi-tired', isTired);
+    }
+    if (isTired !== lastNotifiedTired) {
+      lastNotifiedTired = isTired;
+      if (typeof onTiredStateChange === 'function') {
+        onTiredStateChange(isTired);
+      }
+    }
   }
 
   function tick(force = false) {
     if (isDestroyed) return;
     const now = Date.now();
-    const state = resolveVisualState();
+    const state = resolveVisualState(now);
     const stateChanged = state !== currentVisualState;
     currentVisualState = state;
     applyShadowState(state);
+    syncTiredEffects(state);
 
     if (previewPose && SPRITE_ASSETS[previewPose]) {
       applySprite(previewPose);
@@ -244,8 +307,11 @@ function init({
     tick(true);
   }
 
-  function triggerSpeakBurst(durationMs = 1100) {
-    talkUntil = Math.max(talkUntil, Date.now() + durationMs);
+  function triggerSpeakBurst(durationMs = 1400) {
+    const now = Date.now();
+    talkUntil = Math.max(talkUntil, now + durationMs);
+    cpuSweatActiveUntil = 0;
+    dialogueGraceUntil = Math.max(dialogueGraceUntil, talkUntil + POST_DIALOGUE_GRACE_MS);
     tick(true);
   }
 
@@ -294,5 +360,9 @@ function init({
 
 module.exports = {
   SPRITE_ASSETS,
+  CPU_HIGH_THRESHOLD,
+  CPU_SWEAT_DURATION_MS,
+  CPU_SWEAT_COOLDOWN_MS,
+  POST_DIALOGUE_GRACE_MS,
   init
 };

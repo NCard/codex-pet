@@ -15,6 +15,8 @@ describe('Sprite Animator & Japanese Picture-Book Assets UI Tests', () => {
   let cpuUsage;
   let isAlarmActive;
   let isDragging;
+  let isDialogueActive;
+  let tiredChanges;
   let controller;
 
   beforeEach(() => {
@@ -44,6 +46,8 @@ describe('Sprite Animator & Japanese Picture-Book Assets UI Tests', () => {
     cpuUsage = 10;
     isAlarmActive = false;
     isDragging = false;
+    isDialogueActive = false;
+    tiredChanges = [];
 
     controller = spriteAnimator.init({
       kiwiImg,
@@ -53,7 +57,9 @@ describe('Sprite Animator & Japanese Picture-Book Assets UI Tests', () => {
       getPetState: () => petState,
       getCpuUsage: () => cpuUsage,
       getIsAlarmActive: () => isAlarmActive,
-      getIsDragging: () => isDragging
+      getIsDragging: () => isDragging,
+      getIsDialogueActive: () => isDialogueActive,
+      onTiredStateChange: (val) => tiredChanges.push(val)
     });
   });
 
@@ -153,5 +159,58 @@ describe('Sprite Animator & Japanese Picture-Book Assets UI Tests', () => {
     petState.settings.enablePetShadow = false;
     controller.tick(true);
     expect(kiwiShadow.style.display).toBe('none');
+  });
+
+  test('sustained high CPU sweats intermittently instead of continuously and syncs .kiwi-tired class', () => {
+    cpuUsage = 90;
+    controller.tick(true);
+
+    // Starts brief sweat pulse
+    expect(controller.getCurrentState()).toBe('tired');
+    expect(controller.getCurrentSpriteKey()).toBe('tired');
+    expect(kiwiImg.classList.contains('kiwi-tired')).toBe(true);
+    expect(tiredChanges).toEqual([true]);
+
+    // After sweat duration (~6s), cools down back to cute idle even though CPU is still 90%
+    jest.advanceTimersByTime(spriteAnimator.CPU_SWEAT_DURATION_MS + 200);
+    expect(controller.getCurrentState()).toBe('idle');
+    expect(['idle', 'blink']).toContain(controller.getCurrentSpriteKey());
+    expect(kiwiImg.classList.contains('kiwi-tired')).toBe(false);
+    expect(tiredChanges).toEqual([true, false]);
+
+    // Stays calm during cooldown (e.g. 30s later)
+    jest.advanceTimersByTime(30000);
+    expect(controller.getCurrentState()).toBe('idle');
+
+    // Only triggers next brief pulse after full cooldown elapses
+    jest.advanceTimersByTime(spriteAnimator.CPU_SWEAT_COOLDOWN_MS - 30000 + 200);
+    expect(controller.getCurrentState()).toBe('tired');
+    expect(kiwiImg.classList.contains('kiwi-tired')).toBe(true);
+  });
+
+  test('never switches to sweating while dialogue/monologue bubble is visible or during post-dialogue grace period', () => {
+    cpuUsage = 95;
+    isDialogueActive = true;
+    controller.triggerSpeakBurst(1200);
+
+    expect(controller.getCurrentState()).toBe('talking');
+    expect(kiwiImg.classList.contains('kiwi-tired')).toBe(false);
+
+    // After talking burst finishes, bubble is STILL visible -> must stay idle, NEVER sweat!
+    jest.advanceTimersByTime(5000);
+    expect(controller.getCurrentState()).toBe('idle');
+    expect(kiwiImg.classList.contains('kiwi-tired')).toBe(false);
+    expect(tiredChanges).toEqual([]);
+
+    // Bubble closes -> still protected during grace period
+    isDialogueActive = false;
+    jest.advanceTimersByTime(2000);
+    expect(controller.getCurrentState()).toBe('idle');
+    expect(kiwiImg.classList.contains('kiwi-tired')).toBe(false);
+
+    // After grace period ends -> allowed to pulse high-CPU sweat again
+    jest.advanceTimersByTime(spriteAnimator.POST_DIALOGUE_GRACE_MS);
+    expect(controller.getCurrentState()).toBe('tired');
+    expect(kiwiImg.classList.contains('kiwi-tired')).toBe(true);
   });
 });

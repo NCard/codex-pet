@@ -703,7 +703,7 @@ function init({
         chatInput.focus();
         isAIThinking = false;
         if (typeof onThinkingChange === 'function') onThinkingChange(false);
-        if (typeof onSpeakBurst === 'function') onSpeakBurst(1000);
+        if (typeof onSpeakBurst === 'function') onSpeakBurst(1500);
         bubbleKind = 'chat';
         scheduleChatAutoHide();
         
@@ -1103,7 +1103,7 @@ ${scenarioText}
         chatInput.focus();
         isAIThinking = false;
         if (typeof onThinkingChange === 'function') onThinkingChange(false);
-        if (typeof onSpeakBurst === 'function') onSpeakBurst(1300);
+        if (typeof onSpeakBurst === 'function') onSpeakBurst(1800);
         bubbleKind = 'chat';
         scheduleChatAutoHide();
         
