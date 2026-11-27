@@ -213,4 +213,15 @@ describe('Sprite Animator & Japanese Picture-Book Assets UI Tests', () => {
     expect(controller.getCurrentState()).toBe('tired');
     expect(kiwiImg.classList.contains('kiwi-tired')).toBe(true);
   });
+
+  test('low hunger (<= 20) also uses intermittent tired pulses instead of locking permanently', () => {
+    cpuUsage = 20;
+    petState.hunger = 10;
+    controller.tick(true);
+
+    expect(controller.getCurrentState()).toBe('tired');
+    jest.advanceTimersByTime(spriteAnimator.CPU_SWEAT_DURATION_MS + 200);
+    expect(controller.getCurrentState()).toBe('idle');
+    expect(kiwiImg.classList.contains('kiwi-tired')).toBe(false);
+  });
 });

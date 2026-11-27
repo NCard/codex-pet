@@ -110,11 +110,7 @@ function initDragging(ctx) {
       }
       const img = document.getElementById('kiwi-img');
       if (img && ctx.getCurrentAction() !== 'sleeping') {
-        if (ctx.getPetState().hunger <= 20) {
-          img.src = '../../../assets/images/kiwi_tired.png';
-        } else {
-          img.src = '../../../assets/images/kiwi.png';
-        }
+        img.src = '../../../assets/images/kiwi.png';
       }
     }
   });

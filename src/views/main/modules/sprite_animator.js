@@ -154,10 +154,10 @@ function init({
 
     const state = typeof getPetState === 'function' ? getPetState() : {};
     const hunger = typeof state.hunger === 'number' ? state.hunger : 100;
-    if (hunger <= 20) return 'tired';
-
     const cpu = typeof getCpuUsage === 'function' ? getCpuUsage() : 0;
-    if (cpu > CPU_HIGH_THRESHOLD) {
+    const isStressed = hunger <= 20 || cpu > CPU_HIGH_THRESHOLD;
+
+    if (isStressed) {
       if (now < dialogueGraceUntil) {
         return 'idle';
       }
@@ -172,7 +172,7 @@ function init({
       return 'idle';
     }
 
-    // CPU 回落時結束本次流汗，並保留短暫防抖冷卻避免在門檻邊緣反覆閃爍
+    // 壓力解除時結束本次流汗，並保留短暫防抖冷卻避免在門檻邊緣反覆閃爍
     if (cpuSweatActiveUntil > 0) {
       cpuSweatActiveUntil = 0;
       cpuSweatCooldownUntil = Math.min(cpuSweatCooldownUntil, now + CPU_RECOVERY_HYSTERESIS_MS);

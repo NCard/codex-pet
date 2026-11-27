@@ -399,6 +399,9 @@ wandering.init({
 // CPU 監控與狀態隨時間遞減
 let lastCpu = os.cpus();
 let latestCpuUsage = 0;
+let lastStatDecayAt = Date.now();
+const STAT_DECAY_INTERVAL_MS = 3 * 60 * 1000; // 每 3 分鐘才扣 1 點飢餓與心情（100→20 約 4 小時）
+
 setInterval(() => {
   const currentCpu = os.cpus();
   let idle = 0, total = 0;
@@ -412,15 +415,17 @@ setInterval(() => {
   latestCpuUsage = usage;
   lastCpu = currentCpu;
 
-  // 隨時間降低飢餓與心情 (不會小於 0)
-  petState.hunger = Math.max(0, petState.hunger - 1);
-  petState.mood = Math.max(0, petState.mood - 1);
+  // 每 3 分鐘隨時間緩慢降低飢餓與心情 (不會小於 0)
+  const now = Date.now();
+  if (now - lastStatDecayAt >= STAT_DECAY_INTERVAL_MS) {
+    lastStatDecayAt = now;
+    petState.hunger = Math.max(0, petState.hunger - 1);
+    petState.mood = Math.max(0, petState.mood - 1);
+    savePetState();
+  }
 
-  // 由 sprite_animator 統一管理高 CPU 間歇流汗節奏、對話保護期與 .kiwi-tired 視覺狀態
+  // 由 sprite_animator 統一管理疲勞／高 CPU 間歇流汗節奏、對話保護期與 .kiwi-tired 視覺狀態
   if (spriteAnimatorRef) spriteAnimatorRef.tick(false);
-
-  // 定期自動存檔
-  if (Math.random() < 0.2) savePetState();
 }, 10000);
 
 // 強制切換一次穿透狀態，打破 Electron 內部快取，修復 Windows 熱重載失效的 Bug
