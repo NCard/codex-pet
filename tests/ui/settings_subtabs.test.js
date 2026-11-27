@@ -64,6 +64,7 @@ describe('Settings Sub-tabs & Model Info Card UI Tests', () => {
     expect(container.querySelector('#subtab-pet-visual #setting-enablePetShadow')).not.toBeNull();
     expect(container.querySelector('#subtab-pet-visual #setting-enableSpriteAnim')).not.toBeNull();
     expect(container.querySelector('#subtab-pet-visual #setting-showStatusBars')).not.toBeNull();
+    expect(container.querySelector('#subtab-pet-visual #setting-showStatusBarNumbers')).not.toBeNull();
     expect(container.querySelector('#subtab-pet-visual #setting-enableHungerSystem')).not.toBeNull();
     expect(container.querySelector('#subtab-pet-visual #setting-enableCpuSweat')).not.toBeNull();
     expect(container.querySelectorAll('#subtab-pet-visual .pose-preview-btn').length).toBeGreaterThanOrEqual(8);

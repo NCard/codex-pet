@@ -67,32 +67,16 @@ body, html {
   color: #86efac;
 }
 
-.hud-hp.is-warn .hud-label {
-  color: #fde047;
-}
-
-.hud-hp.is-danger .hud-label {
-  color: #fca5a5;
-}
-
 .hud-mp .hud-label {
   color: #7dd3fc;
-}
-
-.hud-mp.is-low .hud-label {
-  color: #d8b4fe;
 }
 
 .hud-sp .hud-label {
   color: #fde047;
 }
 
-.hud-sp.is-warn .hud-label {
-  color: #fdba74;
-}
-
-.hud-sp.is-danger .hud-label {
-  color: #fca5a5;
+.pet-status-hud.hide-numbers .hud-val {
+  display: none;
 }
 
 .hud-track {

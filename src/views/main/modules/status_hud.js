@@ -1,13 +1,35 @@
 /**
  * Wiki Wiki 底部 RPG 風格狀態條模組 (status_hud.js)
  * HP（飽食度，最低保留 1）、MP（心情值）、SP（剩餘 CPU 耐力 100 - CPU%），
- * 全部以純數值顯示（不加 % 符號），並依設定動態開關與變色。
+ * 全部以純數值顯示（不加 % 符號），支援獨立開關數值顯示與 HP 見底極低機率自行覓食判定。
  */
+
+const AUTO_SELF_FEED_CHANCE = 0.08; // HP 降至 1 後，每次衰減判定約 8% 極低機率偷吃點心
+const AUTO_SELF_FEED_RESTORE = 25;
 
 function clampPercent(value, fallback = 0, min = 0) {
   const num = Number(value);
   if (!Number.isFinite(num)) return fallback;
   return Math.max(min, Math.min(100, Math.round(num)));
+}
+
+/**
+ * 判斷 HP <= 1 且嘗試繼續下降時，是否觸發極低機率自行吃飯
+ */
+function shouldAutoSelfFeed({
+  hunger,
+  hungerEnabled = true,
+  action = 'idle',
+  isWorking = false,
+  isDragging = false,
+  isAlarmActive = false,
+  rng = Math.random
+} = {}) {
+  if (!hungerEnabled) return false;
+  if (typeof hunger !== 'number' || hunger > 1) return false;
+  if (action !== 'idle' && action !== 'moving') return false;
+  if (isWorking || isDragging || isAlarmActive) return false;
+  return rng() < AUTO_SELF_FEED_CHANCE;
 }
 
 function init({ hudEl, getPetState, getCpuUsage }) {
@@ -34,6 +56,7 @@ function init({ hudEl, getPetState, getCpuUsage }) {
     const settings = state.settings || {};
 
     const showBars = settings.showStatusBars !== false;
+    const showNumbers = settings.showStatusBarNumbers !== false;
     const hungerEnabled = settings.enableHungerSystem !== false;
 
     if (!showBars) {
@@ -42,6 +65,7 @@ function init({ hudEl, getPetState, getCpuUsage }) {
     }
 
     hudEl.style.display = 'flex';
+    hudEl.classList.toggle('hide-numbers', !showNumbers);
 
     // HP 至少保留 1，不會掉到 0
     const hp = clampPercent(state.hunger, 100, 1);
@@ -55,14 +79,20 @@ function init({ hudEl, getPetState, getCpuUsage }) {
       hpRow.classList.toggle('is-danger', hp <= 20);
     }
     if (hpFill) hpFill.style.width = `${hp}%`;
-    if (hpVal) hpVal.textContent = `${hp}`;
+    if (hpVal) {
+      hpVal.textContent = `${hp}`;
+      hpVal.style.display = showNumbers ? '' : 'none';
+    }
 
     if (mpRow) {
       mpRow.style.display = hungerEnabled ? 'flex' : 'none';
       mpRow.classList.toggle('is-low', mp <= 30);
     }
     if (mpFill) mpFill.style.width = `${mp}%`;
-    if (mpVal) mpVal.textContent = `${mp}`;
+    if (mpVal) {
+      mpVal.textContent = `${mp}`;
+      mpVal.style.display = showNumbers ? '' : 'none';
+    }
 
     if (spRow) {
       spRow.style.display = 'flex';
@@ -70,7 +100,10 @@ function init({ hudEl, getPetState, getCpuUsage }) {
       spRow.classList.toggle('is-danger', sp < 25);
     }
     if (spFill) spFill.style.width = `${sp}%`;
-    if (spVal) spVal.textContent = `${sp}`;
+    if (spVal) {
+      spVal.textContent = `${sp}`;
+      spVal.style.display = showNumbers ? '' : 'none';
+    }
   }
 
   update();
@@ -80,5 +113,8 @@ function init({ hudEl, getPetState, getCpuUsage }) {
 
 module.exports = {
   init,
-  clampPercent
+  clampPercent,
+  shouldAutoSelfFeed,
+  AUTO_SELF_FEED_CHANCE,
+  AUTO_SELF_FEED_RESTORE
 };

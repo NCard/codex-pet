@@ -90,6 +90,32 @@ describe('Pet RPG Status HUD Unit Tests (HP / MP / SP)', () => {
     expect(hudEl.style.display).toBe('none');
   });
 
+  test('toggles number visibility via showStatusBarNumbers setting', () => {
+    petState.settings.showStatusBarNumbers = false;
+    hud.update();
+
+    expect(hudEl.classList.contains('hide-numbers')).toBe(true);
+    expect(document.getElementById('hud-val-hp').style.display).toBe('none');
+    expect(document.getElementById('hud-val-mp').style.display).toBe('none');
+    expect(document.getElementById('hud-val-sp').style.display).toBe('none');
+
+    petState.settings.showStatusBarNumbers = true;
+    hud.update();
+
+    expect(hudEl.classList.contains('hide-numbers')).toBe(false);
+    expect(document.getElementById('hud-val-hp').style.display).toBe('');
+  });
+
+  test('shouldAutoSelfFeed triggers only when HP <= 1, idle/moving, uninterrupted, and rare roll succeeds', () => {
+    expect(statusHud.shouldAutoSelfFeed({ hunger: 2, rng: () => 0.01 })).toBe(false);
+    expect(statusHud.shouldAutoSelfFeed({ hunger: 1, hungerEnabled: false, rng: () => 0.01 })).toBe(false);
+    expect(statusHud.shouldAutoSelfFeed({ hunger: 1, action: 'sleeping', rng: () => 0.01 })).toBe(false);
+    expect(statusHud.shouldAutoSelfFeed({ hunger: 1, isAlarmActive: true, rng: () => 0.01 })).toBe(false);
+    expect(statusHud.shouldAutoSelfFeed({ hunger: 1, rng: () => 0.5 })).toBe(false);
+    expect(statusHud.shouldAutoSelfFeed({ hunger: 1, rng: () => 0.01 })).toBe(true);
+    expect(statusHud.shouldAutoSelfFeed({ hunger: 0, rng: () => 0.01 })).toBe(true);
+  });
+
   test('petting interaction recovers +15 MP immediately on every stroke (not only on completion)', () => {
     jest.useFakeTimers();
     document.body.innerHTML += `

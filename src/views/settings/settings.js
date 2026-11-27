@@ -22,6 +22,7 @@ const defaultSettings = {
   enablePetShadow: true,
   enableSpriteAnim: true,
   showStatusBars: true,
+  showStatusBarNumbers: true,
   enableHungerSystem: true,
   enableCpuSweat: true,
   animSpeed: 1.0,
@@ -80,6 +81,7 @@ const els = {
   enablePetShadow: document.getElementById('setting-enablePetShadow'),
   enableSpriteAnim: document.getElementById('setting-enableSpriteAnim'),
   showStatusBars: document.getElementById('setting-showStatusBars'),
+  showStatusBarNumbers: document.getElementById('setting-showStatusBarNumbers'),
   enableHungerSystem: document.getElementById('setting-enableHungerSystem'),
   enableCpuSweat: document.getElementById('setting-enableCpuSweat'),
   animSpeed: document.getElementById('anim-speed'),
@@ -308,6 +310,9 @@ function initUI() {
   }
   if (els.showStatusBars) {
     els.showStatusBars.checked = s.showStatusBars !== undefined ? Boolean(s.showStatusBars) : defaultSettings.showStatusBars;
+  }
+  if (els.showStatusBarNumbers) {
+    els.showStatusBarNumbers.checked = s.showStatusBarNumbers !== undefined ? Boolean(s.showStatusBarNumbers) : defaultSettings.showStatusBarNumbers;
   }
   if (els.enableHungerSystem) {
     els.enableHungerSystem.checked = s.enableHungerSystem !== undefined ? Boolean(s.enableHungerSystem) : defaultSettings.enableHungerSystem;
@@ -1211,6 +1216,7 @@ function checkDirty() {
     current.enablePetShadow !== (s.enablePetShadow ?? defaultSettings.enablePetShadow) ||
     current.enableSpriteAnim !== (s.enableSpriteAnim ?? defaultSettings.enableSpriteAnim) ||
     current.showStatusBars !== (s.showStatusBars ?? defaultSettings.showStatusBars) ||
+    current.showStatusBarNumbers !== (s.showStatusBarNumbers ?? defaultSettings.showStatusBarNumbers) ||
     current.enableHungerSystem !== (s.enableHungerSystem ?? defaultSettings.enableHungerSystem) ||
     current.enableCpuSweat !== (s.enableCpuSweat ?? defaultSettings.enableCpuSweat) ||
     current.animSpeed !== (s.animSpeed ?? defaultSettings.animSpeed) ||
@@ -1261,6 +1267,7 @@ function getFormValues() {
     enablePetShadow: els.enablePetShadow ? Boolean(els.enablePetShadow.checked) : defaultSettings.enablePetShadow,
     enableSpriteAnim: els.enableSpriteAnim ? Boolean(els.enableSpriteAnim.checked) : defaultSettings.enableSpriteAnim,
     showStatusBars: els.showStatusBars ? Boolean(els.showStatusBars.checked) : defaultSettings.showStatusBars,
+    showStatusBarNumbers: els.showStatusBarNumbers ? Boolean(els.showStatusBarNumbers.checked) : defaultSettings.showStatusBarNumbers,
     enableHungerSystem: els.enableHungerSystem ? Boolean(els.enableHungerSystem.checked) : defaultSettings.enableHungerSystem,
     enableCpuSweat: els.enableCpuSweat ? Boolean(els.enableCpuSweat.checked) : defaultSettings.enableCpuSweat,
     animSpeed: parseFloat(els.animSpeed.value),
@@ -1586,6 +1593,11 @@ els.enableSpriteAnim?.addEventListener('change', () => {
 });
 
 els.showStatusBars?.addEventListener('change', () => {
+  checkDirty();
+  previewBroadcast();
+});
+
+els.showStatusBarNumbers?.addEventListener('change', () => {
   checkDirty();
   previewBroadcast();
 });

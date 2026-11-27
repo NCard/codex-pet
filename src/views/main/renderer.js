@@ -431,9 +431,32 @@ setInterval(() => {
   if (now - lastStatDecayAt >= STAT_DECAY_INTERVAL_MS) {
     lastStatDecayAt = now;
     if (hungerEnabled) {
-      petState.hunger = Math.max(1, petState.hunger - 1);
+      const prevHunger = typeof petState.hunger === 'number' ? petState.hunger : 100;
       petState.mood = Math.max(0, petState.mood - 1);
-      savePetState();
+
+      if (prevHunger <= 1) {
+        petState.hunger = 1;
+        // HP 見底 (<= 1) 且仍嘗試下降時，極低機率自己偷吃一口私藏點心
+        const alarmActive = typeof getIsAlarmActive === 'function' && getIsAlarmActive();
+        if (
+          typeof triggerAutoSelfFeed === 'function' &&
+          statusHudModule.shouldAutoSelfFeed({
+            hunger: prevHunger,
+            hungerEnabled,
+            action: currentAction,
+            isWorking,
+            isDragging: physics.getIsDragging(),
+            isAlarmActive: alarmActive
+          })
+        ) {
+          triggerAutoSelfFeed();
+        } else {
+          savePetState();
+        }
+      } else {
+        petState.hunger = Math.max(1, prevHunger - 1);
+        savePetState();
+      }
     }
   }
 
@@ -511,13 +534,40 @@ physicsCtx.openChat = openChat;
 physicsCtx.getIsAlarmActive = getIsAlarmActive;
 physicsCtx.dismissAlarm = dismissAlarm;
 
-// 📊 啟動底部 RPG 風格狀態條（HP 飽食 / MP 心情 / CPU 負載）
+// 📊 啟動底部 RPG 風格狀態條（HP 飽食 / MP 心情 / SP 剩餘 CPU 耐力）
 const statusHudModule = require('./modules/status_hud');
 statusHudRef = statusHudModule.init({
   hudEl: document.getElementById('pet-status-hud'),
   getPetState: () => petState,
   getCpuUsage: () => latestCpuUsage
 });
+
+const SELF_FEED_LINES = [
+  '咕嚕…實在太餓了，偷偷啃了一口私藏的奇異果乾！(嚼嚼) 🥝',
+  '肚子快抗議啦～自己翻出一小塊點心補充體力！(啄啄) 🍎',
+  '趁你不注意偷偷加餐一口，元氣稍微回來一點了！✨'
+];
+
+function triggerAutoSelfFeed() {
+  petState.hunger = Math.min(100, Math.max(1, petState.hunger) + statusHudModule.AUTO_SELF_FEED_RESTORE);
+  savePetState();
+  currentAction = 'eating';
+  const character = document.getElementById('kiwi-character');
+  if (character) character.classList.add('kiwi-pecking');
+  if (spriteAnimatorRef) spriteAnimatorRef.tick(true);
+
+  setTimeout(() => {
+    if (character) character.classList.remove('kiwi-pecking');
+    const line = SELF_FEED_LINES[Math.floor(Math.random() * SELF_FEED_LINES.length)];
+    showTempBubble(line, 4000);
+    if (kiwi) kiwi.classList.add('jumping');
+    setTimeout(() => {
+      if (kiwi) kiwi.classList.remove('jumping');
+      if (currentAction === 'eating') currentAction = 'idle';
+      if (spriteAnimatorRef) spriteAnimatorRef.tick(true);
+    }, 500);
+  }, 2400);
+}
 
 // 🎨 啟動統一精靈圖動畫狀態機（自然眨眼、邁步走路、啄食雙幀、AI 思考、說話與動態陰影）
 const spriteAnimatorModule = require('./modules/sprite_animator');
