@@ -551,6 +551,40 @@
         </div>
       </div>
 
+      <div class="section" data-search-path="外觀互動 › 角色與動作" data-search-keywords="狀態條 HP MP SP CPU 飢餓 飽食 心情 流汗 疲勞 負載 status bar hud hunger mood cpu sweat">
+        <div class="section-title">📊 狀態條與生理機制 (Status &amp; Reactions)</div>
+
+        <div class="control-group" style="margin-bottom: 10px;">
+          <label style="display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none;">
+            <span style="font-weight: bold;">📊 顯示腳下狀態條（HP 飽食 / MP 心情 / CPU）</span>
+            <input type="checkbox" id="setting-showStatusBars" checked style="width: 18px; height: 18px; cursor: pointer;">
+          </label>
+          <div style="font-size: 11px; color: #666; margin-top: 4px;">
+            * 在奇異鳥腳下顯示精巧 RPG 風格狀態條，即時查看飽食度、心情值與主機 CPU 負載。
+          </div>
+        </div>
+
+        <div class="control-group" style="margin-bottom: 10px;">
+          <label style="display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none;">
+            <span style="font-weight: bold;">🍖 啟用飢餓與心情系統</span>
+            <input type="checkbox" id="setting-enableHungerSystem" checked style="width: 18px; height: 18px; cursor: pointer;">
+          </label>
+          <div style="font-size: 11px; color: #666; margin-top: 4px;">
+            * 開啟後飽食度與心情會隨時間緩慢下降（約 4 小時才餓），低於 20% 時偶爾出現疲累流汗；關閉後停止遞減、不觸發飢餓流汗並隱藏 HP / MP 條。
+          </div>
+        </div>
+
+        <div class="control-group">
+          <label style="display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none;">
+            <span style="font-weight: bold;">💦 啟用高 CPU 流汗反應</span>
+            <input type="checkbox" id="setting-enableCpuSweat" checked style="width: 18px; height: 18px; cursor: pointer;">
+          </label>
+          <div style="font-size: 11px; color: #666; margin-top: 4px;">
+            * 開啟後當主機 CPU 負載超過 75% 時，奇異鳥會偶爾短暫擦汗（對話期間不中斷）；關閉後高負載時不會流汗。
+          </div>
+        </div>
+      </div>
+
       <div class="section" data-search-path="外觀互動 › 角色與動作" data-search-keywords="床鋪 睡覺 一體化 睡姿 預覽 動作 姿勢 展演 bed sleep pose preview">
         <div class="section-title">🎬 一體化睡姿與動作展演 (Pose Preview)</div>
         <div style="font-size: 11.5px; color: #2e7d32; background: #f1f8e9; border: 1px solid #c5e1a5; border-radius: 8px; padding: 7px 10px; margin-bottom: 10px; line-height: 1.45;">

@@ -87,6 +87,8 @@ function applyChatSize(settings) {
   return resolved;
 }
 
+let statusHudRef = null;
+
 // 載入設定檔套用 CSS 變數
 function applySettings(settings) {
   if (!settings) return;
@@ -94,6 +96,8 @@ function applySettings(settings) {
   if (settings.animSpeed !== undefined) root.style.setProperty('--anim-speed', settings.animSpeed);
   if (settings.petScale !== undefined) root.style.setProperty('--pet-scale', `${settings.petScale}px`);
   applyChatSize(settings);
+  if (statusHudRef) statusHudRef.update();
+  if (spriteAnimatorRef) spriteAnimatorRef.tick(true);
 }
 
 // 初始化 MCP Client
@@ -136,8 +140,14 @@ let petState = stateManager.petState;
 stateManager.loadPetState();
 
 // 為了相容原本直接呼叫這幾個函式的地方，建立 alias
-const loadPetState = () => stateManager.loadPetState();
-const savePetState = () => stateManager.savePetState();
+const loadPetState = () => {
+  stateManager.loadPetState();
+  if (statusHudRef) statusHudRef.update();
+};
+const savePetState = () => {
+  stateManager.savePetState();
+  if (statusHudRef) statusHudRef.update();
+};
 const saveChatHistory = (role, message) => stateManager.saveChatHistory(role, message);
 const clearChatHistory = () => stateManager.clearChatHistory();
 applySettings(petState.settings);
@@ -415,14 +425,20 @@ setInterval(() => {
   latestCpuUsage = usage;
   lastCpu = currentCpu;
 
-  // 每 3 分鐘隨時間緩慢降低飢餓與心情 (不會小於 0)
+  // 每 3 分鐘隨時間緩慢降低飢餓與心情 (若在設定中啟用飢餓系統)
   const now = Date.now();
+  const hungerEnabled = petState.settings?.enableHungerSystem !== false;
   if (now - lastStatDecayAt >= STAT_DECAY_INTERVAL_MS) {
     lastStatDecayAt = now;
-    petState.hunger = Math.max(0, petState.hunger - 1);
-    petState.mood = Math.max(0, petState.mood - 1);
-    savePetState();
+    if (hungerEnabled) {
+      petState.hunger = Math.max(0, petState.hunger - 1);
+      petState.mood = Math.max(0, petState.mood - 1);
+      savePetState();
+    }
   }
+
+  // 更新底部 RPG 狀態條（HP / MP / CPU）
+  if (statusHudRef) statusHudRef.update();
 
   // 由 sprite_animator 統一管理疲勞／高 CPU 間歇流汗節奏、對話保護期與 .kiwi-tired 視覺狀態
   if (spriteAnimatorRef) spriteAnimatorRef.tick(false);
@@ -494,6 +510,14 @@ refreshChatAutoHide = refreshAutoHideTimer;
 physicsCtx.openChat = openChat;
 physicsCtx.getIsAlarmActive = getIsAlarmActive;
 physicsCtx.dismissAlarm = dismissAlarm;
+
+// 📊 啟動底部 RPG 風格狀態條（HP 飽食 / MP 心情 / CPU 負載）
+const statusHudModule = require('./modules/status_hud');
+statusHudRef = statusHudModule.init({
+  hudEl: document.getElementById('pet-status-hud'),
+  getPetState: () => petState,
+  getCpuUsage: () => latestCpuUsage
+});
 
 // 🎨 啟動統一精靈圖動畫狀態機（自然眨眼、邁步走路、啄食雙幀、AI 思考、說話與動態陰影）
 const spriteAnimatorModule = require('./modules/sprite_animator');

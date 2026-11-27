@@ -69,22 +69,43 @@
       </div>
     </div>
     <div id="laser-dot" style="display: none; position: fixed; width: 16px; height: 16px; border-radius: 50%; background: #ff1744; box-shadow: 0 0 12px #ff1744, 0 0 24px #ff5252; pointer-events: none; z-index: 9999; transform: translate(-50%, -50%); animation: laserPulse 0.6s infinite alternate;"></div>
-    <div id="kiwi-wrapper" style="position: relative; display: inline-block;">
-      <div id="kiwi-zzz" style="display: none; position: absolute; top: -15px; right: -20px; font-size: 24px; font-weight: bold; color: #78909c; font-family: var(--theme-font-main); pointer-events: none; z-index: 10; text-shadow: 1px 1px 2px white; animation: floatZzz 2s infinite ease-in-out;">Zzz...</div>
-      
-      <div id="kiwi-sprite-wrapper" style="position: relative; display: flex; justify-content: center; align-items: center;">
-        <div id="kiwi-accessory" style="display: none; position: absolute; top: -30px; left: 50%; transform: translateX(-50%); font-size: 40px; pointer-events: none; animation: breathe 3s infinite ease-in-out;">⏳</div>
-        <div id="kiwi-heart" style="display: none; position: absolute; top: -20px; left: 50%; transform: translateX(-50%); font-size: 24px; pointer-events: none; z-index: 10; text-shadow: 0 0 5px red;">❤️</div>
-        <div id="kiwi-character" style="position: relative; display: inline-block;">
-          <div id="outfit-container" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5;"></div>
-          <img src="../../../assets/images/kiwi.png" alt="kiwi pet" id="kiwi-img">
+    <div id="kiwi-stage" class="kiwi-stage">
+      <div id="kiwi-wrapper" style="position: relative; display: inline-block;">
+        <div id="kiwi-zzz" style="display: none; position: absolute; top: -15px; right: -20px; font-size: 24px; font-weight: bold; color: #78909c; font-family: var(--theme-font-main); pointer-events: none; z-index: 10; text-shadow: 1px 1px 2px white; animation: floatZzz 2s infinite ease-in-out;">Zzz...</div>
+        
+        <div id="kiwi-sprite-wrapper" style="position: relative; display: flex; justify-content: center; align-items: center;">
+          <div id="kiwi-accessory" style="display: none; position: absolute; top: -30px; left: 50%; transform: translateX(-50%); font-size: 40px; pointer-events: none; animation: breathe 3s infinite ease-in-out;">⏳</div>
+          <div id="kiwi-heart" style="display: none; position: absolute; top: -20px; left: 50%; transform: translateX(-50%); font-size: 24px; pointer-events: none; z-index: 10; text-shadow: 0 0 5px red;">❤️</div>
+          <div id="kiwi-character" style="position: relative; display: inline-block;">
+            <div id="outfit-container" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5;"></div>
+            <img src="../../../assets/images/kiwi.png" alt="kiwi pet" id="kiwi-img">
+          </div>
+          <div id="kiwi-food" style="display: none; position: absolute; bottom: -2px; right: -25px; font-size: 32px; z-index: 5; pointer-events: none;">🥝</div>
         </div>
-        <div id="kiwi-food" style="display: none; position: absolute; bottom: -2px; right: -25px; font-size: 32px; z-index: 5; pointer-events: none;">🥝</div>
+
+        <!-- 動態接地陰影：隨站立／跳躍／懸空／睡覺自然縮放 -->
+        <div id="kiwi-shadow" class="kiwi-shadow shadow-idle"></div>
+        <img src="../../../assets/images/bed.png" id="kiwi-bed" style="display: none; pointer-events: none;">
       </div>
 
-      <!-- 動態接地陰影：隨站立／跳躍／懸空／睡覺自然縮放 -->
-      <div id="kiwi-shadow" class="kiwi-shadow shadow-idle"></div>
-      <img src="../../../assets/images/bed.png" id="kiwi-bed" style="display: none; pointer-events: none;">
+      <!-- 底部 RPG 風格狀態條（HP 飽食 / MP 心情 / CPU 主機負載） -->
+      <div id="pet-status-hud" class="pet-status-hud" aria-label="Wiki Wiki 狀態條">
+        <div class="hud-bar-row hud-hp" data-bar="hp" title="飽食度 (HP)">
+          <span class="hud-label">HP</span>
+          <div class="hud-track"><div id="hud-fill-hp" class="hud-fill" style="width: 100%;"></div></div>
+          <span id="hud-val-hp" class="hud-val">100</span>
+        </div>
+        <div class="hud-bar-row hud-mp" data-bar="mp" title="心情值 (MP)">
+          <span class="hud-label">MP</span>
+          <div class="hud-track"><div id="hud-fill-mp" class="hud-fill" style="width: 100%;"></div></div>
+          <span id="hud-val-mp" class="hud-val">100</span>
+        </div>
+        <div class="hud-bar-row hud-cpu" data-bar="cpu" title="主機 CPU 負載">
+          <span class="hud-label">CPU</span>
+          <div class="hud-track"><div id="hud-fill-cpu" class="hud-fill" style="width: 0%;"></div></div>
+          <span id="hud-val-cpu" class="hud-val">0%</span>
+        </div>
+      </div>
     </div>
   </div>
   <script src="renderer.js"></script>

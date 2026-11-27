@@ -88,6 +88,7 @@ function formatSettingsSection(state) {
     `- 對話窗自動消失：${autoHide}（滑鼠停留暫停：${s.chatAutoHidePauseOnHover !== false ? '開啟' : '關閉'}）`,
     `- 自言自語：${s.enableMonologue !== false ? `開啟（${freqMap[s.monologueFrequency] || freqMap.normal}）` : '關閉'}｜睡覺夢話：${s.monologueSleepDream !== false ? '開啟' : '關閉'}`,
     `- 角色外觀：大小 ${s.petScale || 180}px｜接地陰影：${s.enablePetShadow !== false ? '開啟' : '關閉'}｜表情動作幀：${s.enableSpriteAnim !== false ? '開啟' : '關閉'}`,
+    `- 狀態條與生理機制：底部狀態條 ${s.showStatusBars !== false ? '顯示' : '隱藏'}｜飢餓與心情系統 ${s.enableHungerSystem !== false ? '開啟' : '關閉'}｜高 CPU 流汗反應 ${s.enableCpuSweat !== false ? '開啟' : '關閉'}`,
     `- 隱私權限：讀取剪貼簿 ${s.enableClipboard ? '已開啟' : '關閉'}｜剪貼簿主動感知 ${s.enableClipboardSmartWatch ? '已開啟' : '關閉'}`,
     `- 召喚快捷鍵：${(s.summonShortcut || 'Ctrl+Shift+K').replace(/CommandOrControl/g, 'Ctrl')}`
   ].join('\n');

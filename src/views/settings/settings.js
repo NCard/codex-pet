@@ -21,6 +21,9 @@ const defaultSettings = {
   petScale: 180,
   enablePetShadow: true,
   enableSpriteAnim: true,
+  showStatusBars: true,
+  enableHungerSystem: true,
+  enableCpuSweat: true,
   animSpeed: 1.0,
   chatSizeMode: 'auto',
   chatWidth: 350,
@@ -76,6 +79,9 @@ const els = {
   petScale: document.getElementById('setting-petScale'),
   enablePetShadow: document.getElementById('setting-enablePetShadow'),
   enableSpriteAnim: document.getElementById('setting-enableSpriteAnim'),
+  showStatusBars: document.getElementById('setting-showStatusBars'),
+  enableHungerSystem: document.getElementById('setting-enableHungerSystem'),
+  enableCpuSweat: document.getElementById('setting-enableCpuSweat'),
   animSpeed: document.getElementById('anim-speed'),
   chatSizeMode: document.getElementById('setting-chatSizeMode'),
   chatWidth: document.getElementById('setting-chatWidth'),
@@ -299,6 +305,15 @@ function initUI() {
   }
   if (els.enableSpriteAnim) {
     els.enableSpriteAnim.checked = s.enableSpriteAnim !== undefined ? Boolean(s.enableSpriteAnim) : defaultSettings.enableSpriteAnim;
+  }
+  if (els.showStatusBars) {
+    els.showStatusBars.checked = s.showStatusBars !== undefined ? Boolean(s.showStatusBars) : defaultSettings.showStatusBars;
+  }
+  if (els.enableHungerSystem) {
+    els.enableHungerSystem.checked = s.enableHungerSystem !== undefined ? Boolean(s.enableHungerSystem) : defaultSettings.enableHungerSystem;
+  }
+  if (els.enableCpuSweat) {
+    els.enableCpuSweat.checked = s.enableCpuSweat !== undefined ? Boolean(s.enableCpuSweat) : defaultSettings.enableCpuSweat;
   }
   els.animSpeed.value = s.animSpeed ?? defaultSettings.animSpeed;
 
@@ -1195,6 +1210,9 @@ function checkDirty() {
     current.petScale !== (s.petScale ?? defaultSettings.petScale) ||
     current.enablePetShadow !== (s.enablePetShadow ?? defaultSettings.enablePetShadow) ||
     current.enableSpriteAnim !== (s.enableSpriteAnim ?? defaultSettings.enableSpriteAnim) ||
+    current.showStatusBars !== (s.showStatusBars ?? defaultSettings.showStatusBars) ||
+    current.enableHungerSystem !== (s.enableHungerSystem ?? defaultSettings.enableHungerSystem) ||
+    current.enableCpuSweat !== (s.enableCpuSweat ?? defaultSettings.enableCpuSweat) ||
     current.animSpeed !== (s.animSpeed ?? defaultSettings.animSpeed) ||
     current.chatSizeMode !== (s.chatSizeMode ?? defaultSettings.chatSizeMode) ||
     (current.chatSizeMode === 'manual' && (
@@ -1242,6 +1260,9 @@ function getFormValues() {
     petScale: els.petScale ? parseInt(els.petScale.value, 10) : defaultSettings.petScale,
     enablePetShadow: els.enablePetShadow ? Boolean(els.enablePetShadow.checked) : defaultSettings.enablePetShadow,
     enableSpriteAnim: els.enableSpriteAnim ? Boolean(els.enableSpriteAnim.checked) : defaultSettings.enableSpriteAnim,
+    showStatusBars: els.showStatusBars ? Boolean(els.showStatusBars.checked) : defaultSettings.showStatusBars,
+    enableHungerSystem: els.enableHungerSystem ? Boolean(els.enableHungerSystem.checked) : defaultSettings.enableHungerSystem,
+    enableCpuSweat: els.enableCpuSweat ? Boolean(els.enableCpuSweat.checked) : defaultSettings.enableCpuSweat,
     animSpeed: parseFloat(els.animSpeed.value),
     chatSizeMode: els.chatSizeMode ? els.chatSizeMode.value : 'auto',
     chatWidth: els.chatWidth ? parseInt(els.chatWidth.value, 10) : defaultSettings.chatWidth,
@@ -1560,6 +1581,21 @@ els.enablePetShadow?.addEventListener('change', () => {
 });
 
 els.enableSpriteAnim?.addEventListener('change', () => {
+  checkDirty();
+  previewBroadcast();
+});
+
+els.showStatusBars?.addEventListener('change', () => {
+  checkDirty();
+  previewBroadcast();
+});
+
+els.enableHungerSystem?.addEventListener('change', () => {
+  checkDirty();
+  previewBroadcast();
+});
+
+els.enableCpuSweat?.addEventListener('change', () => {
   checkDirty();
   previewBroadcast();
 });

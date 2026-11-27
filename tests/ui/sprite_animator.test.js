@@ -224,4 +224,20 @@ describe('Sprite Animator & Japanese Picture-Book Assets UI Tests', () => {
     expect(controller.getCurrentState()).toBe('idle');
     expect(kiwiImg.classList.contains('kiwi-tired')).toBe(false);
   });
+
+  test('respects enableHungerSystem and enableCpuSweat settings toggles', () => {
+    petState.settings.enableHungerSystem = false;
+    petState.settings.enableCpuSweat = false;
+    petState.hunger = 0;
+    cpuUsage = 99;
+    controller.tick(true);
+
+    expect(controller.getCurrentState()).toBe('idle');
+    expect(kiwiImg.classList.contains('kiwi-tired')).toBe(false);
+
+    // Turning CPU sweat back on allows CPU trigger while hunger stays ignored
+    petState.settings.enableCpuSweat = true;
+    controller.tick(true);
+    expect(controller.getCurrentState()).toBe('tired');
+  });
 });

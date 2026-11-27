@@ -12,11 +12,156 @@ body, html {
   flex-direction: column;
   align-items: center;
   justify-content: flex-end;
-  gap: 25px;
+  gap: 22px;
   height: 100%;
   position: relative;
   box-sizing: border-box;
-  padding: 10px 0 30px 0;
+  padding: 10px 0 12px 0;
+}
+
+.kiwi-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  position: relative;
+}
+
+/* 底部 RPG 風格狀態條（HP 飽食 / MP 心情 / CPU 負載） */
+.pet-status-hud {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: clamp(122px, calc(var(--pet-scale, 180px) * 0.74), 168px);
+  padding: 5px 8px;
+  border-radius: 10px;
+  background: rgba(34, 26, 20, 0.72);
+  border: 1.5px solid rgba(255, 245, 220, 0.52);
+  box-shadow: 0 3px 10px rgba(24, 16, 10, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  pointer-events: none;
+  user-select: none;
+  box-sizing: border-box;
+  z-index: 8;
+}
+
+.hud-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  line-height: 1;
+}
+
+.hud-label {
+  width: 24px;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  text-align: left;
+  font-family: 'Segoe UI', 'Microsoft JhengHei', sans-serif;
+  flex-shrink: 0;
+}
+
+.hud-hp .hud-label {
+  color: #86efac;
+}
+
+.hud-hp.is-warn .hud-label {
+  color: #fde047;
+}
+
+.hud-hp.is-danger .hud-label {
+  color: #fca5a5;
+}
+
+.hud-mp .hud-label {
+  color: #7dd3fc;
+}
+
+.hud-mp.is-low .hud-label {
+  color: #d8b4fe;
+}
+
+.hud-cpu .hud-label {
+  color: #fcd34d;
+}
+
+.hud-cpu.is-danger .hud-label {
+  color: #fca5a5;
+}
+
+.hud-track {
+  flex: 1;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  overflow: hidden;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.42);
+}
+
+.hud-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.45s cubic-bezier(0.22, 1, 0.36, 1), background 0.35s ease;
+}
+
+.hud-hp .hud-fill {
+  background: linear-gradient(90deg, #22c55e, #4ade80);
+  box-shadow: 0 0 6px rgba(74, 222, 128, 0.45);
+}
+
+.hud-hp.is-warn .hud-fill {
+  background: linear-gradient(90deg, #f59e0b, #fbbf24);
+  box-shadow: 0 0 6px rgba(251, 191, 36, 0.45);
+}
+
+.hud-hp.is-danger .hud-fill {
+  background: linear-gradient(90deg, #ef4444, #f87171);
+  box-shadow: 0 0 8px rgba(248, 113, 113, 0.65);
+  animation: hudDangerPulse 1.4s ease-in-out infinite;
+}
+
+.hud-mp .hud-fill {
+  background: linear-gradient(90deg, #38bdf8, #60a5fa);
+  box-shadow: 0 0 6px rgba(96, 165, 250, 0.45);
+}
+
+.hud-mp.is-low .hud-fill {
+  background: linear-gradient(90deg, #a855f7, #c084fc);
+  box-shadow: 0 0 6px rgba(192, 132, 252, 0.45);
+}
+
+.hud-cpu .hud-fill {
+  background: linear-gradient(90deg, #2dd4bf, #34d399);
+  box-shadow: 0 0 6px rgba(52, 211, 153, 0.4);
+}
+
+.hud-cpu.is-warn .hud-fill {
+  background: linear-gradient(90deg, #f59e0b, #fbbf24);
+  box-shadow: 0 0 6px rgba(251, 191, 36, 0.45);
+}
+
+.hud-cpu.is-danger .hud-fill {
+  background: linear-gradient(90deg, #ef4444, #fb7185);
+  box-shadow: 0 0 8px rgba(248, 113, 113, 0.65);
+  animation: hudDangerPulse 1.2s ease-in-out infinite;
+}
+
+.hud-val {
+  width: 26px;
+  font-size: 9px;
+  font-weight: 700;
+  color: rgba(255, 250, 240, 0.92);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-family: 'Segoe UI', 'Microsoft JhengHei', sans-serif;
+  flex-shrink: 0;
+}
+
+@keyframes hudDangerPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.62; }
 }
 
 #kiwi-wrapper {

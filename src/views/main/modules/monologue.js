@@ -104,15 +104,17 @@ function init({
     const state = typeof getPetState === 'function' ? getPetState() : {};
     const settings = state?.settings || {};
     const action = typeof getCurrentAction === 'function' ? getCurrentAction() : 'idle';
+    const hungerEnabled = settings.enableHungerSystem !== false;
+    const cpuSweatEnabled = settings.enableCpuSweat !== false;
     return {
       now: new Date(),
       personality: settings.aiPersonality || 'default',
       customPrompt: settings.aiCustomPrompt || '',
       scenario: settings.aiScenario || 'general',
       isSleeping: action === 'sleeping',
-      hunger: typeof state.hunger === 'number' ? state.hunger : 100,
-      mood: typeof state.mood === 'number' ? state.mood : 100,
-      cpuUsage: typeof getCpuUsage === 'function' ? getCpuUsage() : 0,
+      hunger: hungerEnabled && typeof state.hunger === 'number' ? state.hunger : 100,
+      mood: hungerEnabled && typeof state.mood === 'number' ? state.mood : 100,
+      cpuUsage: cpuSweatEnabled && typeof getCpuUsage === 'function' ? getCpuUsage() : 0,
       todos: Array.isArray(state.todos) ? state.todos : [],
       outfits: Array.isArray(state.outfits) ? state.outfits : [],
       recentTexts: picker.getRecentTexts(5)

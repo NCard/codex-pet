@@ -153,9 +153,12 @@ function init({
     }
 
     const state = typeof getPetState === 'function' ? getPetState() : {};
+    const settings = state?.settings || {};
+    const hungerEnabled = settings.enableHungerSystem !== false;
+    const cpuSweatEnabled = settings.enableCpuSweat !== false;
     const hunger = typeof state.hunger === 'number' ? state.hunger : 100;
     const cpu = typeof getCpuUsage === 'function' ? getCpuUsage() : 0;
-    const isStressed = hunger <= 20 || cpu > CPU_HIGH_THRESHOLD;
+    const isStressed = (hungerEnabled && hunger <= 20) || (cpuSweatEnabled && cpu > CPU_HIGH_THRESHOLD);
 
     if (isStressed) {
       if (now < dialogueGraceUntil) {
