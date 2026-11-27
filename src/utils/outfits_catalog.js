@@ -13,14 +13,14 @@ const OUTFIT_SLOTS = {
 };
 
 const OUTFIT_ITEMS = [
-  // === 8 件精選日系繪本透明 PNG 飾品（已針對新版 512x512 繪本奇異鳥逐件實測校準） ===
+  // === 8 件精選日系繪本透明 PNG 飾品（已依實際桌面微調結果設為預設） ===
   {
     id: '🎩',
     name: '紳士小禮帽',
     slot: 'head',
     asset: 'top_hat.png',
     featured: true,
-    defaultConfig: { x: 49, y: 16, scale: 35, rotate: -5, coordVersion: COORD_VERSION }
+    defaultConfig: { x: 52, y: 9, scale: 35, rotate: -5, coordVersion: COORD_VERSION }
   },
   {
     id: '👑',
@@ -28,7 +28,7 @@ const OUTFIT_ITEMS = [
     slot: 'head',
     asset: 'crown.png',
     featured: true,
-    defaultConfig: { x: 50, y: 17, scale: 27, rotate: -3, coordVersion: COORD_VERSION }
+    defaultConfig: { x: 50, y: 10, scale: 27, rotate: -3, coordVersion: COORD_VERSION }
   },
   {
     id: '🌸',
@@ -36,7 +36,7 @@ const OUTFIT_ITEMS = [
     slot: 'head',
     asset: 'sakura.png',
     featured: true,
-    defaultConfig: { x: 41, y: 21, scale: 20, rotate: -10, coordVersion: COORD_VERSION }
+    defaultConfig: { x: 42, y: 21, scale: 20, rotate: -10, coordVersion: COORD_VERSION }
   },
   {
     id: '🧢',
@@ -44,7 +44,7 @@ const OUTFIT_ITEMS = [
     slot: 'head',
     asset: 'cap.png',
     featured: true,
-    defaultConfig: { x: 52, y: 18, scale: 40, rotate: -3, coordVersion: COORD_VERSION }
+    defaultConfig: { x: 60, y: 17, scale: 40, rotate: -3, coordVersion: COORD_VERSION }
   },
   {
     id: '🎧',
@@ -52,7 +52,7 @@ const OUTFIT_ITEMS = [
     slot: 'head',
     asset: 'headphones.png',
     featured: true,
-    defaultConfig: { x: 44, y: 33, scale: 50, rotate: -8, coordVersion: COORD_VERSION }
+    defaultConfig: { x: 54, y: 1, scale: 50, rotate: -8, coordVersion: COORD_VERSION }
   },
   {
     id: '🕶️',
@@ -60,7 +60,7 @@ const OUTFIT_ITEMS = [
     slot: 'face',
     asset: 'sunglasses.png',
     featured: true,
-    defaultConfig: { x: 58, y: 35, scale: 31, rotate: 4, coordVersion: COORD_VERSION }
+    defaultConfig: { x: 63, y: 31, scale: 31, rotate: 4, coordVersion: COORD_VERSION }
   },
   {
     id: '👓',
@@ -68,7 +68,7 @@ const OUTFIT_ITEMS = [
     slot: 'face',
     asset: 'glasses.png',
     featured: true,
-    defaultConfig: { x: 57, y: 35, scale: 33, rotate: 6, coordVersion: COORD_VERSION }
+    defaultConfig: { x: 61, y: 33, scale: 33, rotate: 6, coordVersion: COORD_VERSION }
   },
   {
     id: '🎀',
@@ -76,7 +76,7 @@ const OUTFIT_ITEMS = [
     slot: 'body',
     asset: 'ribbon.png',
     featured: true,
-    defaultConfig: { x: 56, y: 55, scale: 25, rotate: 2, coordVersion: COORD_VERSION }
+    defaultConfig: { x: 62, y: 58, scale: 25, rotate: 2, coordVersion: COORD_VERSION }
   },
 
   // === 經典 Emoji 保留款（向下相容舊存檔與 MCP 指令） ===
