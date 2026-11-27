@@ -1,5 +1,7 @@
 const { getDialogue } = require('../../../utils/dialogues');
 
+const FULL_HUNGER_THRESHOLD = 95;
+
 function init({
   kiwi, customMenu, ipcRenderer, petState, savePetState, 
   getCurrentAction, setCurrentAction, showTempBubble, kiwiAccessory, getIsWorking,
@@ -26,29 +28,35 @@ function init({
   menuFeed.addEventListener('click', () => {
     const currentAction = getCurrentAction();
     if (currentAction !== 'idle' && currentAction !== 'moving') return; // 只有閒置或走動時可以餵食
-    
+
     customMenu.style.display = 'none';
-    petState.hunger = Math.min(100, petState.hunger + 30);
+
+    const hungerEnabled = petState.settings?.enableHungerSystem !== false;
+    const currentHunger = typeof petState.hunger === 'number' ? petState.hunger : 100;
+    if (hungerEnabled && currentHunger >= FULL_HUNGER_THRESHOLD) {
+      showTempBubble(getDialogue('interactions', 'feedFull'));
+      kiwi.classList.add('jumping');
+      setTimeout(() => { kiwi.classList.remove('jumping'); }, 420);
+      return;
+    }
+
+    petState.hunger = Math.min(100, currentHunger + 30);
     savePetState();
     
     setCurrentAction('eating'); // 進入吃飯狀態
     
     const character = document.getElementById('kiwi-character');
-    const food = document.getElementById('kiwi-food');
-    
     character.classList.add('kiwi-pecking');
-    food.style.display = 'block';
     
     setTimeout(() => {
       character.classList.remove('kiwi-pecking');
-      food.style.display = 'none';
       showTempBubble(getDialogue('interactions', 'feed'));
       kiwi.classList.add('jumping');
       setTimeout(() => { 
         kiwi.classList.remove('jumping'); 
         if (getCurrentAction() === 'eating') setCurrentAction('idle'); // 恢復閒置
       }, 500);
-    }, 2000);
+    }, 2400);
   });
 
   menuPet.addEventListener('click', () => {
@@ -59,7 +67,7 @@ function init({
       interaction.startPettingMode();
       showTempBubble(getDialogue('interactions', 'petReady'));
     } else {
-      petState.mood = Math.min(100, petState.mood + 20);
+      petState.mood = Math.min(100, petState.mood + 35);
       savePetState();
       showTempBubble(getDialogue('interactions', 'petComfort'));
       kiwiAccessory.innerText = '❤️';
@@ -94,8 +102,8 @@ function init({
     kiwi.classList.add('sleeping');
     const zzz = document.getElementById('kiwi-zzz');
     if (zzz) zzz.style.display = 'block';
-    document.getElementById('kiwi-img').src = '../../../assets/images/kiwi_sleep.png';
-    document.getElementById('kiwi-bed').style.display = 'block';
+    const kiwiImg = document.getElementById('kiwi-img');
+    if (kiwiImg) kiwiImg.src = '../../../assets/images/kiwi_sleep.png';
     if (outfitContainer) outfitContainer.style.display = 'none';
     
     showTempBubble(getDialogue('interactions', 'sleep'));
@@ -128,4 +136,4 @@ function init({
   }
 }
 
-module.exports = { init };
+module.exports = { init, FULL_HUNGER_THRESHOLD };

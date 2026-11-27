@@ -3,9 +3,29 @@ const fs = require('fs');
 let snoozedAlarms = [];
 let triggeredAlarms = {};
 
+function formatLocalDate(dateObj) {
+  const year = dateObj.getFullYear();
+  const month = (dateObj.getMonth() + 1).toString().padStart(2, '0');
+  const day = dateObj.getDate().toString().padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function getAlarmDates(alarm) {
+  if (Array.isArray(alarm.dates) && alarm.dates.length > 0) {
+    return Array.from(new Set(alarm.dates.filter(d => typeof d === 'string' && d.trim()))).sort();
+  }
+  if (typeof alarm.date === 'string' && alarm.date.trim()) {
+    return [alarm.date.trim()];
+  }
+  return [];
+}
+
 function init({
   alarmsPath, laser, resetIdle, showAlarmBubble, kiwi, ipcRenderer, alarmStalker, triggerWalk, _walkToCorner, setSnoozing
 }) {
+  snoozedAlarms = [];
+  triggeredAlarms = {};
+
   function triggerAlarm(alarm, alarmKey) {
     if (!triggeredAlarms[alarmKey]) {
       triggeredAlarms[alarmKey] = true;
@@ -59,17 +79,28 @@ function init({
         const data = fs.readFileSync(alarmsPath, 'utf8');
         const alarms = JSON.parse(data);
         const now = new Date();
+        const todayStr = formatLocalDate(now);
+        const currentHHMM = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+        let shouldPersist = false;
+
         alarms.forEach(alarm => {
           if (!alarm.enabled) return;
-
-          const currentHHMM = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
           if (alarm.time !== currentHHMM) return;
 
           let shouldTrigger = false;
-          if (alarm.type === 'date') {
-            const todayStr = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
-            if (alarm.date === todayStr) {
+          let disableAfterTrigger = false;
+
+          if (alarm.type === 'once') {
+            if (!alarm.targetDate || todayStr >= alarm.targetDate) {
               shouldTrigger = true;
+              disableAfterTrigger = true;
+            }
+          } else if (alarm.type === 'date') {
+            const targetDates = getAlarmDates(alarm);
+            if (targetDates.includes(todayStr)) {
+              shouldTrigger = true;
+              const hasRemainingFutureDates = targetDates.some(d => d > todayStr);
+              disableAfterTrigger = !hasRemainingFutureDates;
             }
           } else {
             // weekly or legacy
@@ -83,15 +114,19 @@ function init({
             const alarmKey = alarm.id + '-' + now.toDateString() + '-' + currentHHMM;
             triggerAlarm(alarm, alarmKey);
 
-            if (alarm.type === 'date') {
+            if (disableAfterTrigger) {
               alarm.enabled = false;
-              try {
-                fs.writeFileSync(alarmsPath, JSON.stringify(alarms, null, 2), 'utf8');
-                ipcRenderer.send('reload-data');
-              } catch (e) { }
+              shouldPersist = true;
             }
           }
         });
+
+        if (shouldPersist) {
+          try {
+            fs.writeFileSync(alarmsPath, JSON.stringify(alarms, null, 2), 'utf8');
+            ipcRenderer.send('reload-data');
+          } catch { /* ignore persist error */ }
+        }
       } catch (e) {
         console.error('Failed to parse alarms:', e);
       }

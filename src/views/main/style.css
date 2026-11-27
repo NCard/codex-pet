@@ -12,11 +12,144 @@ body, html {
   flex-direction: column;
   align-items: center;
   justify-content: flex-end;
-  gap: 25px;
+  gap: 22px;
   height: 100%;
   position: relative;
   box-sizing: border-box;
-  padding: 10px 0 30px 0;
+  padding: 10px 0 12px 0;
+}
+
+.kiwi-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  position: relative;
+}
+
+/* 底部 RPG 風格狀態條（HP 飽食 / MP 心情 / CPU 負載） */
+.pet-status-hud {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: clamp(122px, calc(var(--pet-scale, 180px) * 0.74), 168px);
+  padding: 5px 8px;
+  border-radius: 10px;
+  background: rgba(34, 26, 20, 0.72);
+  border: 1.5px solid rgba(255, 245, 220, 0.52);
+  box-shadow: 0 3px 10px rgba(24, 16, 10, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  pointer-events: none;
+  user-select: none;
+  box-sizing: border-box;
+  z-index: 8;
+}
+
+.hud-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  line-height: 1;
+}
+
+.hud-label {
+  width: 20px;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  text-align: left;
+  font-family: 'Segoe UI', 'Microsoft JhengHei', sans-serif;
+  flex-shrink: 0;
+}
+
+.hud-hp .hud-label {
+  color: #86efac;
+}
+
+.hud-mp .hud-label {
+  color: #7dd3fc;
+}
+
+.hud-sp .hud-label {
+  color: #fde047;
+}
+
+.pet-status-hud.hide-numbers .hud-val {
+  display: none;
+}
+
+.hud-track {
+  flex: 1;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  overflow: hidden;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.42);
+}
+
+.hud-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.45s cubic-bezier(0.22, 1, 0.36, 1), background 0.35s ease;
+}
+
+.hud-hp .hud-fill {
+  background: linear-gradient(90deg, #22c55e, #4ade80);
+  box-shadow: 0 0 6px rgba(74, 222, 128, 0.45);
+}
+
+.hud-hp.is-warn .hud-fill {
+  background: linear-gradient(90deg, #f59e0b, #fbbf24);
+  box-shadow: 0 0 6px rgba(251, 191, 36, 0.45);
+}
+
+.hud-hp.is-danger .hud-fill {
+  background: linear-gradient(90deg, #ef4444, #f87171);
+  box-shadow: 0 0 8px rgba(248, 113, 113, 0.65);
+  animation: hudDangerPulse 1.4s ease-in-out infinite;
+}
+
+.hud-mp .hud-fill {
+  background: linear-gradient(90deg, #38bdf8, #60a5fa);
+  box-shadow: 0 0 6px rgba(96, 165, 250, 0.45);
+}
+
+.hud-mp.is-low .hud-fill {
+  background: linear-gradient(90deg, #a855f7, #c084fc);
+  box-shadow: 0 0 6px rgba(192, 132, 252, 0.45);
+}
+
+.hud-sp .hud-fill {
+  background: linear-gradient(90deg, #eab308, #fde047);
+  box-shadow: 0 0 6px rgba(250, 204, 21, 0.45);
+}
+
+.hud-sp.is-warn .hud-fill {
+  background: linear-gradient(90deg, #f97316, #fb923c);
+  box-shadow: 0 0 6px rgba(251, 146, 60, 0.45);
+}
+
+.hud-sp.is-danger .hud-fill {
+  background: linear-gradient(90deg, #ef4444, #fb7185);
+  box-shadow: 0 0 8px rgba(248, 113, 113, 0.65);
+  animation: hudDangerPulse 1.2s ease-in-out infinite;
+}
+
+.hud-val {
+  width: 22px;
+  font-size: 9px;
+  font-weight: 700;
+  color: rgba(255, 250, 240, 0.92);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-family: 'Segoe UI', 'Microsoft JhengHei', sans-serif;
+  flex-shrink: 0;
+}
+
+@keyframes hudDangerPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.62; }
 }
 
 #kiwi-wrapper {
@@ -38,11 +171,52 @@ body, html {
 }
 
 #kiwi-img {
-  width: 180px;
+  width: var(--pet-scale, 180px);
   height: auto;
   user-select: none;
   -webkit-user-drag: none; /* 防止圖片被原生拖曳 */
-  transition: filter 0.5s ease;
+  transition: filter 0.35s ease;
+  filter: drop-shadow(0 2px 4px rgba(74, 48, 28, 0.14));
+}
+
+/* 動態接地陰影：讓日系繪本奇異鳥自然「站在」桌面上 */
+.kiwi-shadow {
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  width: calc(var(--pet-scale, 180px) * 0.62);
+  height: 15px;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(62, 39, 25, 0.28) 0%, rgba(62, 39, 25, 0.1) 55%, transparent 75%);
+  pointer-events: none;
+  z-index: -1;
+  transition: width 0.22s ease, opacity 0.22s ease, transform 0.22s ease;
+}
+
+.kiwi-shadow.shadow-idle {
+  opacity: 0.9;
+}
+
+.kiwi-shadow.shadow-walking {
+  width: calc(var(--pet-scale, 180px) * 0.56);
+  opacity: 0.78;
+}
+
+.kiwi-shadow.shadow-jumping {
+  width: calc(var(--pet-scale, 180px) * 0.42);
+  opacity: 0.45;
+}
+
+.kiwi-shadow.shadow-dangling {
+  width: calc(var(--pet-scale, 180px) * 0.3);
+  opacity: 0.15;
+}
+
+.kiwi-shadow.shadow-sleeping {
+  width: calc(var(--pet-scale, 180px) * 0.84);
+  height: 18px;
+  opacity: 0.88;
 }
 
 .kiwi-tired {
@@ -55,23 +229,24 @@ body, html {
 }
 
 @keyframes peck-eat {
-  0%, 100% { transform: rotate(0deg) translateY(0); }
-  25%, 75% { transform: rotate(25deg) translateY(12px) translateX(10px); }
-  50% { transform: rotate(35deg) translateY(18px) translateX(15px) scaleY(0.95); }
+  0%, 100% { transform: translateY(0) scale(1, 1); }
+  50% { transform: translateY(3px) scale(1.03, 0.97); }
 }
 
 .kiwi-pecking {
-  animation: peck-eat 0.5s ease-in-out infinite;
-  transform-origin: 60% 80%;
+  animation: peck-eat 0.72s ease-in-out infinite;
+  transform-origin: 50% 90%;
 }
 
 #kiwi-sprite-wrapper.kiwi-petting {
-  animation: happy-jump 0.4s ease-in-out infinite;
+  animation: happy-jump 0.48s ease-in-out infinite;
+  transform-origin: 50% 90%;
 }
 
 @keyframes happy-jump {
-  0%, 100% { transform: scale(1) translateY(0); }
-  50% { transform: scale(1.05, 0.95) translateY(-5px); }
+  0%, 100% { transform: scale(1, 1) translateY(0); }
+  35% { transform: scale(1.06, 0.94) translateY(2px); }
+  65% { transform: scale(0.96, 1.05) translateY(-7px); }
 }
 
 @keyframes floatHeart {
@@ -530,34 +705,34 @@ body, html {
   width: 0;
 }
 
-/* 動畫 keyframes */
+/* 動畫 keyframes（日系繪本 Q 彈果凍壓扁回彈 Squash & Stretch） */
 @keyframes breathe {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.05) translateY(-5px); }
-  100% { transform: scale(1); }
+  0%, 100% { transform: scale(1, 1) translateY(0); }
+  50% { transform: scale(1.03, 0.985) translateY(-2.5px); }
 }
 
 @keyframes shock {
   0% { transform: scale(1); }
-  20% { transform: scale(1.2) rotate(15deg); }
-  40% { transform: scale(1.2) rotate(-15deg); }
-  60% { transform: scale(1.2) rotate(15deg); }
-  80% { transform: scale(1.2) rotate(-15deg); }
+  20% { transform: scale(1.12) rotate(12deg); }
+  40% { transform: scale(1.12) rotate(-12deg); }
+  60% { transform: scale(1.12) rotate(10deg); }
+  80% { transform: scale(1.12) rotate(-10deg); }
   100% { transform: scale(1); }
 }
 
 @keyframes jump {
-  0% { transform: translateY(0); }
-  50% { transform: translateY(-20px); }
-  100% { transform: translateY(0); }
+  0% { transform: translateY(0) scale(1, 1); }
+  18% { transform: translateY(3px) scale(1.08, 0.91); }
+  48% { transform: translateY(-22px) scale(0.94, 1.08); }
+  80% { transform: translateY(2px) scale(1.06, 0.94); }
+  100% { transform: translateY(0) scale(1, 1); }
 }
 
 @keyframes walk {
-  0% { transform: rotate(0deg); }
-  25% { transform: rotate(5deg) translateY(-2px); }
-  50% { transform: rotate(0deg); }
-  75% { transform: rotate(-5deg) translateY(-2px); }
-  100% { transform: rotate(0deg); }
+  0%, 100% { transform: rotate(0deg) translateY(0); }
+  25% { transform: rotate(2.6deg) translateY(-3.5px); }
+  50% { transform: rotate(0deg) translateY(0.5px); }
+  75% { transform: rotate(-2.4deg) translateY(-3px); }
 }
 
 @keyframes float {

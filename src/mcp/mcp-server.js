@@ -19,6 +19,7 @@ const server = new Server(
 
 // Helper functions for reading/writing states
 const { petStatePath, alarmsPath } = require('../utils/paths');
+const { applyOutfitSelection } = require('../utils/outfits_catalog');
 
 function getPetState() {
   if (fs.existsSync(petStatePath)) {
@@ -82,7 +83,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           properties: {
             outfit: {
               type: "string",
-              description: "服飾的 emoji，支援 '🎩', '🕶️', '🎀', '👑', '🌸', '🎓', '🎃', '🎉', '🥽'。若要脫下所有服飾，請傳入空字串 ''"
+              description: "服飾的 emoji，支援 '🎩', '🕶️', '🎀', '👑', '🌸', '🎓', '🎃', '🎉', '🥽', '👓', '🎒', '👒', '🧢', '🎧'。若要脫下所有服飾，請傳入空字串 ''"
             },
             mode: {
               type: "string",
@@ -128,6 +129,20 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             }
           },
           required: ["text"]
+        }
+      },
+      {
+        name: "get_app_info",
+        description: "查詢 Wiki Wiki 應用程式自身的版本號、目前啟用的設定摘要（自動遮罩金鑰）、使用方法、快捷鍵、內建斜線指令、功能介紹與資料檔位置。當主人詢問版本、怎麼用、有哪些功能／指令／快捷鍵，或詢問目前設定狀態時，務必優先呼叫本工具以取得真實準確資訊。",
+        inputSchema: {
+          type: "object",
+          properties: {
+            topic: {
+              type: "string",
+              enum: ["all", "version", "settings", "usage", "shortcuts", "commands", "features", "paths"],
+              description: "查詢主題：'version'(版本)、'settings'(目前設定摘要)、'usage'(基本操作教學)、'shortcuts'(快捷鍵)、'commands'(斜線指令)、'features'(功能介紹)、'paths'(本地資料位置)、'all'(完整總覽，預設)。"
+            }
+          }
         }
       }
     ],
@@ -180,9 +195,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       state.outfits = [];
       state.outfit = '';
     } else if (mode === 'add') {
-      if (!state.outfits.includes(targetOutfit)) {
-        state.outfits.push(targetOutfit);
-      }
+      const freeStack = Boolean(state.settings && state.settings.outfitFreeStack);
+      state.outfits = applyOutfitSelection(state.outfits, targetOutfit, { freeStack });
       state.outfit = targetOutfit;
     } else if (mode === 'remove') {
       state.outfits = state.outfits.filter(o => o !== targetOutfit);
@@ -276,6 +290,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         content: [{ type: "text", text: `計算失敗: ${err.message}` }]
       };
     }
+  }
+
+  if (name === "get_app_info") {
+    const { getAppInfo } = require("../utils/app_info");
+    const topic = (args && args.topic) ? String(args.topic) : "all";
+    return {
+      content: [{ type: "text", text: getAppInfo(topic) }]
+    };
   }
 
   throw new Error(`Unknown tool: ${name}`);

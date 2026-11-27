@@ -775,6 +775,46 @@ input[type="range"] {
   transform: translateY(-1px);
 }
 
+/* 🎬 日系繪本動作預覽格線 */
+.pose-preview-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.pose-preview-btn {
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1.5px solid #e2e8f0;
+  background: rgba(255, 255, 255, 0.88);
+  color: #334155;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.16s ease;
+}
+
+.pose-preview-btn:hover {
+  border-color: var(--theme-primary, #4caf50);
+  background: #ffffff;
+  color: var(--theme-primary, #2e7d32);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.06);
+}
+
+.pose-preview-btn.active {
+  border-color: var(--theme-primary, #2e7d32);
+  background: #e8f5e9;
+  color: #1b5e20;
+}
+
+.pose-preview-reset {
+  grid-column: 1 / -1;
+  background: #f8fafc;
+  border-style: dashed;
+}
+
 /* 關於卡片 */
 .about-card {
   display: flex;

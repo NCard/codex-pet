@@ -9,6 +9,7 @@ ipcRenderer.on('reload-data', () => {
 });
 
 const { petStatePath: statePath, alarmsPath } = require('../../utils/paths');
+const { mountMultiDateCalendar } = require('../../utils/multi_date_calendar');
 let petState = { todos: [] };
 let alarms = [];
 
@@ -59,19 +60,53 @@ function saveTodos() {
   }
 }
 
+let todoFormCounter = 0;
+
+function formatTodoDateLocal(dateObj) {
+  const year = dateObj.getFullYear();
+  const month = (dateObj.getMonth() + 1).toString().padStart(2, '0');
+  const day = dateObj.getDate().toString().padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function normalizeTodoAlarmDates(alarm) {
+  const raw = [];
+  if (alarm && Array.isArray(alarm.dates)) {
+    raw.push(...alarm.dates);
+  }
+  if (alarm && typeof alarm.date === 'string' && alarm.date.trim()) {
+    raw.push(alarm.date.trim());
+  }
+  return Array.from(new Set(raw.map(d => (typeof d === 'string' ? d.trim() : '')).filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d)))).sort();
+}
+
 function createTodoInlineForm(initialTodo, initialAlarm, isDraft, onSave, onCancel) {
   const formCard = document.createElement('div');
   formCard.className = 'inline-form-card';
 
+  const now = new Date();
+  const todayStr = formatTodoDateLocal(now);
+  const tomorrowStr = formatTodoDateLocal(new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1));
+  const currentTimeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+  const radioGroupName = `todo-inline-alarm-type-${++todoFormCounter}`;
+
   const todoText = initialTodo ? initialTodo.text : '';
   const hasAlarm = Boolean(initialAlarm);
-  const alarmData = initialAlarm || {
-    type: 'date',
-    date: new Date().toISOString().split('T')[0],
-    time: `${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`,
+  const alarmData = initialAlarm ? { ...initialAlarm } : {
+    type: 'once',
+    targetDate: todayStr,
+    date: todayStr,
+    dates: [todayStr],
+    time: currentTimeStr,
     days: [0, 1, 2, 3, 4, 5, 6],
     snoozeInterval: 5
   };
+  if (!['once', 'weekly', 'date'].includes(alarmData.type)) {
+    alarmData.type = 'weekly';
+  }
+  let selectedDates = alarmData.type === 'date'
+    ? normalizeTodoAlarmDates(alarmData).filter(d => d >= todayStr)
+    : [];
 
   const [initH, initM] = (alarmData.time || '12:00').split(':');
 
@@ -87,13 +122,14 @@ function createTodoInlineForm(initialTodo, initialAlarm, isDraft, onSave, onCanc
     </div>
 
     <div class="inline-alarm-settings" style="display: ${hasAlarm ? 'flex' : 'none'}; flex-direction: column; gap: 8px; width: 100%; background: #f9fbf7; padding: 10px 12px; border-radius: 12px; border: 1px solid #c5e1a5; box-sizing: border-box;">
-      <div class="inline-form-row" style="gap: 15px; font-size: 12px; font-weight: bold;">
-        <label style="cursor: pointer;"><input type="radio" class="inline-alarm-type" name="inline-alarm-type-${Math.random()}" value="date" ${alarmData.type === 'date' ? 'checked' : ''}> 📅 特定日期</label>
-        <label style="cursor: pointer;"><input type="radio" class="inline-alarm-type" name="inline-alarm-type-${Math.random()}" value="weekly" ${alarmData.type === 'weekly' ? 'checked' : ''}> 🔁 每週重複</label>
+      <div class="inline-form-row" style="gap: 12px; font-size: 12px; font-weight: bold; flex-wrap: wrap;">
+        <label style="cursor: pointer;"><input type="radio" class="inline-alarm-type" name="${radioGroupName}" value="once" ${alarmData.type === 'once' ? 'checked' : ''}> ⚡ 一次性</label>
+        <label style="cursor: pointer;"><input type="radio" class="inline-alarm-type" name="${radioGroupName}" value="weekly" ${alarmData.type === 'weekly' ? 'checked' : ''}> 🔁 每週重複</label>
+        <label style="cursor: pointer;"><input type="radio" class="inline-alarm-type" name="${radioGroupName}" value="date" ${alarmData.type === 'date' ? 'checked' : ''}> 📅 特定日期</label>
       </div>
 
-      <div class="inline-date-group" style="display: ${alarmData.type === 'date' ? 'block' : 'none'};">
-        <input type="date" class="inline-date-input" value="${alarmData.date || new Date().toISOString().split('T')[0]}" style="width: 100%; box-sizing: border-box; padding: 4px 8px; border: 1.5px solid #c5e1a5; border-radius: 8px; outline: none; font-family: inherit; font-size: 12px;">
+      <div class="inline-once-group" style="display: ${alarmData.type === 'once' ? 'block' : 'none'};">
+        <div class="inline-once-hint">⚡ 將於下一次指定時間提醒一次並自動關閉</div>
       </div>
 
       <div class="inline-weekly-group" style="display: ${alarmData.type === 'weekly' ? 'block' : 'none'};">
@@ -105,6 +141,10 @@ function createTodoInlineForm(initialTodo, initialAlarm, isDraft, onSave, onCanc
             </label>
           `).join('')}
         </div>
+      </div>
+
+      <div class="inline-date-group" style="display: ${alarmData.type === 'date' ? 'block' : 'none'};">
+        <div class="inline-calendar-mount"></div>
       </div>
 
       <div class="inline-form-row space-between" style="font-size: 12px;">
@@ -160,17 +200,27 @@ function createTodoInlineForm(initialTodo, initialAlarm, isDraft, onSave, onCanc
   });
 
   const radios = formCard.querySelectorAll('.inline-alarm-type');
+  const onceGroup = formCard.querySelector('.inline-once-group');
   const dateGroup = formCard.querySelector('.inline-date-group');
   const weeklyGroup = formCard.querySelector('.inline-weekly-group');
+  const calendarMount = formCard.querySelector('.inline-calendar-mount');
+
+  const todoCalendar = mountMultiDateCalendar(calendarMount, {
+    initialDates: selectedDates,
+    minDate: todayStr,
+    showQuickButtons: true,
+    compact: true,
+    onChange: (nextDates) => {
+      selectedDates = nextDates;
+    },
+    onInvalidDate: (msg) => showError(msg)
+  });
 
   radios.forEach(r => r.addEventListener('change', () => {
-    if (r.value === 'date') {
-      dateGroup.style.display = 'block';
-      weeklyGroup.style.display = 'none';
-    } else {
-      dateGroup.style.display = 'none';
-      weeklyGroup.style.display = 'block';
-    }
+    if (!r.checked) return;
+    onceGroup.style.display = r.value === 'once' ? 'block' : 'none';
+    weeklyGroup.style.display = r.value === 'weekly' ? 'block' : 'none';
+    dateGroup.style.display = r.value === 'date' ? 'block' : 'none';
   }));
 
   formCard.querySelector('.btn-confirm').onclick = () => {
@@ -182,13 +232,19 @@ function createTodoInlineForm(initialTodo, initialAlarm, isDraft, onSave, onCanc
 
     let alarmDataOut = null;
     if (hasAlarmCb.checked) {
-      const type = formCard.querySelector('.inline-alarm-type:checked').value;
+      const checkedRadio = formCard.querySelector('.inline-alarm-type:checked');
+      const type = checkedRadio ? checkedRadio.value : 'once';
       const time = `${hourSelect.value}:${minSelect.value}`;
       const snooze = parseInt(formCard.querySelector('.inline-snooze-input').value, 10) || 5;
-      const dateVal = formCard.querySelector('.inline-date-input').value;
 
       let days = [];
-      if (type === 'weekly') {
+      let finalDates = [];
+      let finalDate = '';
+      let targetDate = '';
+
+      if (type === 'once') {
+        targetDate = time < currentTimeStr ? tomorrowStr : todayStr;
+      } else if (type === 'weekly') {
         formCard.querySelectorAll('.inline-day-cb').forEach(cb => {
           if (cb.checked) days.push(parseInt(cb.value, 10));
         });
@@ -197,16 +253,21 @@ function createTodoInlineForm(initialTodo, initialAlarm, isDraft, onSave, onCanc
           return;
         }
       } else {
-        if (!dateVal) {
-          showError('請選擇特定日期！');
+        finalDates = todoCalendar.getDates();
+        if (finalDates.length === 0) {
+          showError('請在日曆上至少點選一個特定日期！');
           return;
         }
+        finalDates.sort();
+        finalDate = finalDates[0];
       }
 
       alarmDataOut = {
         type: type,
         time: time,
-        date: dateVal,
+        targetDate: targetDate,
+        date: finalDate,
+        dates: finalDates,
         days: days,
         snoozeInterval: snooze
       };

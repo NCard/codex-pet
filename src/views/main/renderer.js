@@ -87,16 +87,18 @@ function applyChatSize(settings) {
   return resolved;
 }
 
+let statusHudRef = null;
+let spriteAnimatorRef = null;
+
 // 載入設定檔套用 CSS 變數
 function applySettings(settings) {
   if (!settings) return;
   const root = document.documentElement;
-  if (settings.bedX !== undefined) root.style.setProperty('--bed-x', `${settings.bedX}px`);
-  if (settings.bedY !== undefined) root.style.setProperty('--bed-y', `${settings.bedY}px`);
-  if (settings.bedScale !== undefined) root.style.setProperty('--bed-scale', `${settings.bedScale}px`);
-  if (settings.bedZ !== undefined) root.style.setProperty('--bed-z', settings.bedZ);
   if (settings.animSpeed !== undefined) root.style.setProperty('--anim-speed', settings.animSpeed);
+  if (settings.petScale !== undefined) root.style.setProperty('--pet-scale', `${settings.petScale}px`);
   applyChatSize(settings);
+  if (statusHudRef) statusHudRef.update();
+  if (spriteAnimatorRef) spriteAnimatorRef.tick(true);
 }
 
 // 初始化 MCP Client
@@ -139,8 +141,14 @@ let petState = stateManager.petState;
 stateManager.loadPetState();
 
 // 為了相容原本直接呼叫這幾個函式的地方，建立 alias
-const loadPetState = () => stateManager.loadPetState();
-const savePetState = () => stateManager.savePetState();
+const loadPetState = () => {
+  stateManager.loadPetState();
+  if (statusHudRef) statusHudRef.update();
+};
+const savePetState = () => {
+  stateManager.savePetState();
+  if (statusHudRef) statusHudRef.update();
+};
 const saveChatHistory = (role, message) => stateManager.saveChatHistory(role, message);
 const clearChatHistory = () => stateManager.clearChatHistory();
 applySettings(petState.settings);
@@ -231,6 +239,7 @@ ipcRenderer.on('update-settings', (event, newSettings) => {
   initAI();
   if (typeof refreshChatAutoHide === 'function') refreshChatAutoHide();
   if (typeof refreshMonologueSchedule === 'function') refreshMonologueSchedule();
+  if (spriteAnimatorRef) spriteAnimatorRef.tick(true);
 });
 
 ipcRenderer.on('preview-settings', (event, newSettings) => {
@@ -239,6 +248,7 @@ ipcRenderer.on('preview-settings', (event, newSettings) => {
   initAI();
   if (typeof refreshChatAutoHide === 'function') refreshChatAutoHide();
   if (typeof refreshMonologueSchedule === 'function') refreshMonologueSchedule();
+  if (spriteAnimatorRef) spriteAnimatorRef.tick(true);
 });
 
 
@@ -369,15 +379,15 @@ window.addEventListener('keydown', resetIdle);
 // 閒置檢查計時器 (每秒執行)
 setInterval(() => {
   idleTime++;
-  // 如果 60 秒沒有互動，就睡覺
+  // 如果 60 秒沒有互動，就進入一體化毛絨小窩睡覺
   if (idleTime > 60 && currentAction === 'idle' && !kiwi.classList.contains('sleeping') && !isWorking && !physics.getIsDragging()) {
     currentAction = 'sleeping'; // 進入睡覺狀態
     kiwi.classList.add('sleeping');
     const zzz = document.getElementById('kiwi-zzz');
     if (zzz) zzz.style.display = 'block';
     document.getElementById('kiwi-img').src = '../../../assets/images/kiwi_sleep.png';
-    document.getElementById('kiwi-bed').style.display = 'block';
     if (typeof outfitContainer !== 'undefined' && outfitContainer) outfitContainer.style.display = 'none';
+    if (spriteAnimatorRef) spriteAnimatorRef.tick(true);
   }
 }, 1000);
 
@@ -386,11 +396,12 @@ setInterval(() => {
 const wandering = require('./modules/wandering');
 const outfit = require('./modules/outfit');
 
-const { applyOutfitPos } = outfit.init({
+const outfitController = outfit.init({
   outfitContainer, kiwi,
   petState, savePetState, loadPetState,
   ipcRenderer
 });
+const { applyOutfitPos } = outfitController;
 wandering.init({
   laser, getCurrentAction: () => currentAction, setCurrentAction: (action) => currentAction = action,
   kiwi, getIsWorking: () => isWorking, chatBubble, chatInput, getRealWindowPos, getResolutionScale,
@@ -399,6 +410,9 @@ wandering.init({
 // CPU 監控與狀態隨時間遞減
 let lastCpu = os.cpus();
 let latestCpuUsage = 0;
+let lastStatDecayAt = Date.now();
+const STAT_DECAY_INTERVAL_MS = 3 * 60 * 1000; // 每 3 分鐘才扣 1 點飢餓與心情（100→20 約 4 小時）
+
 setInterval(() => {
   const currentCpu = os.cpus();
   let idle = 0, total = 0;
@@ -412,39 +426,46 @@ setInterval(() => {
   latestCpuUsage = usage;
   lastCpu = currentCpu;
 
-  // 隨時間降低飢餓與心情 (不會小於 0)
-  petState.hunger = Math.max(0, petState.hunger - 1);
-  petState.mood = Math.max(0, petState.mood - 1);
+  // 每 3 分鐘隨時間緩慢降低飢餓與心情 (若在設定中啟用飢餓系統)
+  const now = Date.now();
+  const hungerEnabled = petState.settings?.enableHungerSystem !== false;
+  if (now - lastStatDecayAt >= STAT_DECAY_INTERVAL_MS) {
+    lastStatDecayAt = now;
+    if (hungerEnabled) {
+      const prevHunger = typeof petState.hunger === 'number' ? petState.hunger : 100;
+      petState.mood = Math.max(0, petState.mood - 1);
 
-  const isExcludedState = currentAction === 'sleeping' || kiwi.classList.contains('sleeping') || currentAction === 'grabbed' || physics.getIsDragging();
-
-  if (usage > 70) {
-    if (!isWorking && kiwiAccessory.style.display === 'none' && !isExcludedState) {
-      kiwiAccessory.innerText = '💦';
-      kiwiAccessory.style.display = 'block';
-    }
-    if (!isExcludedState) {
-      const img = document.getElementById('kiwi-img');
-      if (!img.src.includes('kiwi_tired.png')) {
-        img.src = '../../../assets/images/kiwi_tired.png';
+      if (prevHunger <= 1) {
+        petState.hunger = 1;
+        // HP 見底 (<= 1) 且仍嘗試下降時，極低機率自己偷吃一口私藏點心
+        const alarmActive = typeof getIsAlarmActive === 'function' && getIsAlarmActive();
+        if (
+          typeof triggerAutoSelfFeed === 'function' &&
+          statusHudModule.shouldAutoSelfFeed({
+            hunger: prevHunger,
+            hungerEnabled,
+            action: currentAction,
+            isWorking,
+            isDragging: physics.getIsDragging(),
+            isAlarmActive: alarmActive
+          })
+        ) {
+          triggerAutoSelfFeed();
+        } else {
+          savePetState();
+        }
+      } else {
+        petState.hunger = Math.max(1, prevHunger - 1);
+        savePetState();
       }
-      img.classList.add('kiwi-tired');
-    }
-  } else {
-    if (!isWorking && kiwiAccessory.innerText === '💦') {
-      kiwiAccessory.style.display = 'none';
-    }
-    if (!isExcludedState) {
-      const img = document.getElementById('kiwi-img');
-      if (!img.src.includes('kiwi_sleep.png') && img.src.includes('kiwi_tired.png')) {
-        img.src = '../../../assets/images/kiwi.png';
-      }
-      img.classList.remove('kiwi-tired');
     }
   }
 
-  // 定期自動存檔
-  if (Math.random() < 0.2) savePetState();
+  // 更新底部 RPG 狀態條（HP / MP / CPU）
+  if (statusHudRef) statusHudRef.update();
+
+  // 由 sprite_animator 統一管理疲勞／高 CPU 間歇流汗節奏、對話保護期與 .kiwi-tired 視覺狀態
+  if (spriteAnimatorRef) spriteAnimatorRef.tick(false);
 }, 10000);
 
 // 強制切換一次穿透狀態，打破 Electron 內部快取，修復 Windows 熱重載失效的 Bug
@@ -505,12 +526,82 @@ const { showTempBubble, showAlarmBubble, updateAlarmDialogue, openChat, openChat
   crypto,
   saveChatHistory: (role, message) => stateManager.saveChatHistory(role, message),
   clearChatHistory: () => stateManager.clearChatHistory(),
-  resetIdle, ipcRenderer
+  resetIdle, ipcRenderer,
+  onThinkingChange: (val) => { if (spriteAnimatorRef) spriteAnimatorRef.setThinking(val); },
+  onSpeakBurst: (ms) => { if (spriteAnimatorRef) spriteAnimatorRef.triggerSpeakBurst(ms); }
 });
 refreshChatAutoHide = refreshAutoHideTimer;
 physicsCtx.openChat = openChat;
 physicsCtx.getIsAlarmActive = getIsAlarmActive;
 physicsCtx.dismissAlarm = dismissAlarm;
+
+// 📊 啟動底部 RPG 風格狀態條（HP 飽食 / MP 心情 / SP 剩餘 CPU 耐力）
+const statusHudModule = require('./modules/status_hud');
+statusHudRef = statusHudModule.init({
+  hudEl: document.getElementById('pet-status-hud'),
+  getPetState: () => petState,
+  getCpuUsage: () => latestCpuUsage
+});
+
+const SELF_FEED_LINES = [
+  '咕嚕…實在太餓了，偷偷啃了一口私藏的奇異果乾！(嚼嚼) 🥝',
+  '肚子快抗議啦～自己翻出一小塊點心補充體力！(啄啄) 🍎',
+  '趁你不注意偷偷加餐一口，元氣稍微回來一點了！✨'
+];
+
+function triggerAutoSelfFeed() {
+  petState.hunger = Math.min(100, Math.max(1, petState.hunger) + statusHudModule.AUTO_SELF_FEED_RESTORE);
+  savePetState();
+  currentAction = 'eating';
+  const character = document.getElementById('kiwi-character');
+  if (character) character.classList.add('kiwi-pecking');
+  if (spriteAnimatorRef) spriteAnimatorRef.tick(true);
+
+  setTimeout(() => {
+    if (character) character.classList.remove('kiwi-pecking');
+    const line = SELF_FEED_LINES[Math.floor(Math.random() * SELF_FEED_LINES.length)];
+    showTempBubble(line, 4000);
+    if (kiwi) kiwi.classList.add('jumping');
+    setTimeout(() => {
+      if (kiwi) kiwi.classList.remove('jumping');
+      if (currentAction === 'eating') currentAction = 'idle';
+      if (spriteAnimatorRef) spriteAnimatorRef.tick(true);
+    }, 500);
+  }, 2400);
+}
+
+// 🎨 啟動統一精靈圖動畫狀態機（自然眨眼、邁步走路、啄食雙幀、AI 思考、說話與動態陰影）
+const spriteAnimatorModule = require('./modules/sprite_animator');
+spriteAnimatorRef = spriteAnimatorModule.init({
+  kiwiImg: document.getElementById('kiwi-img'),
+  kiwiWrapper: kiwi,
+  kiwiShadow: document.getElementById('kiwi-shadow'),
+  getCurrentAction: () => currentAction,
+  getPetState: () => petState,
+  getCpuUsage: () => latestCpuUsage,
+  getIsAlarmActive,
+  getIsDragging: () => physics.getIsDragging(),
+  getIsDialogueActive: () => {
+    const chatOpen = Boolean(chatBubble && chatBubble.style.display !== 'none');
+    const inputOpen = Boolean(chatInput && chatInput.style.display !== 'none');
+    const monologueOpen = Boolean(
+      monologueBubble &&
+      (monologueBubble.classList.contains('visible') || (monologueBubble.style.display && monologueBubble.style.display !== 'none'))
+    );
+    return chatOpen || inputOpen || monologueOpen;
+  },
+  onSpriteChange: (spriteKey) => {
+    if (outfitController && typeof outfitController.setActivePose === 'function') {
+      outfitController.setActivePose(spriteKey);
+    }
+  }
+});
+
+ipcRenderer.on('preview-pet-pose', (_event, poseKey) => {
+  if (!spriteAnimatorRef) return;
+  const duration = poseKey === 'sleep' ? 5000 : 3200;
+  spriteAnimatorRef.triggerPosePreview(poseKey, duration);
+});
 
 // 💭 啟動 Wiki Wiki 自言自語模組
 const monologueModule = require('./modules/monologue');
@@ -530,7 +621,8 @@ const monologueController = monologueModule.init({
   getIsDragging: () => physics.getIsDragging() || outfit.getIsDraggingOutfit() || isDraggingBed || isResizingChat,
   getIsLaserActive: () => laser.getIsLaserGameActive(),
   getAI: () => ai,
-  onClickContinueChat: (seedText) => openChatWithSeed(seedText)
+  onClickContinueChat: (seedText) => openChatWithSeed(seedText),
+  onSpeakBurst: (ms) => { if (spriteAnimatorRef) spriteAnimatorRef.triggerSpeakBurst(ms); }
 });
 refreshMonologueSchedule = monologueController.refreshSchedule;
 
@@ -545,8 +637,18 @@ ipcRenderer.on('alarm-enabled-notify', (event, alarm) => {
   }
 
   let timeDesc = '';
-  if (alarm && alarm.type === 'date') {
-    timeDesc = `${alarm.date} ${alarm.time}`;
+  if (alarm && alarm.type === 'once') {
+    const targetPrefix = alarm.targetDate ? `${alarm.targetDate} ` : '一次性 ';
+    timeDesc = `${targetPrefix}${alarm.time}`;
+  } else if (alarm && alarm.type === 'date') {
+    const datesList = Array.isArray(alarm.dates) && alarm.dates.length > 0
+      ? alarm.dates
+      : (alarm.date ? [alarm.date] : []);
+    if (datesList.length > 1) {
+      timeDesc = `${datesList[0]} 等 ${datesList.length} 天 ${alarm.time}`;
+    } else {
+      timeDesc = `${datesList[0] || ''} ${alarm.time}`.trim();
+    }
   } else if (alarm) {
     if (alarm.days && alarm.days.length === 7) {
       timeDesc = `每天 ${alarm.time}`;

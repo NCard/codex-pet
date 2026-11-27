@@ -18,10 +18,13 @@ const { AIProviderFactory } = require('../../services/ai_provider');
 
 // 預設設定
 const defaultSettings = {
-  bedX: -4,
-  bedY: -15,
-  bedScale: 170,
-  bedZ: -1,
+  petScale: 180,
+  enablePetShadow: true,
+  enableSpriteAnim: true,
+  showStatusBars: true,
+  showStatusBarNumbers: true,
+  enableHungerSystem: true,
+  enableCpuSweat: true,
   animSpeed: 1.0,
   chatSizeMode: 'auto',
   chatWidth: 350,
@@ -74,10 +77,13 @@ if (!petState.settings) {
 }
 
 const els = {
-  bedX: document.getElementById('bed-x'),
-  bedY: document.getElementById('bed-y'),
-  bedScale: document.getElementById('bed-scale'),
-  bedZ: document.getElementById('bed-z'),
+  petScale: document.getElementById('setting-petScale'),
+  enablePetShadow: document.getElementById('setting-enablePetShadow'),
+  enableSpriteAnim: document.getElementById('setting-enableSpriteAnim'),
+  showStatusBars: document.getElementById('setting-showStatusBars'),
+  showStatusBarNumbers: document.getElementById('setting-showStatusBarNumbers'),
+  enableHungerSystem: document.getElementById('setting-enableHungerSystem'),
+  enableCpuSweat: document.getElementById('setting-enableCpuSweat'),
   animSpeed: document.getElementById('anim-speed'),
   chatSizeMode: document.getElementById('setting-chatSizeMode'),
   chatWidth: document.getElementById('setting-chatWidth'),
@@ -108,9 +114,7 @@ const els = {
 };
 
 const vals = {
-  bedX: document.getElementById('val-bed-x'),
-  bedY: document.getElementById('val-bed-y'),
-  bedScale: document.getElementById('val-bed-scale'),
+  petScale: document.getElementById('val-pet-scale'),
   animSpeed: document.getElementById('val-anim-speed'),
   chatWidth: document.getElementById('val-chat-width'),
   chatHeight: document.getElementById('val-chat-height')
@@ -297,10 +301,25 @@ function applyProviderUI(providerId, { loadSavedValues = true } = {}) {
 // 2. 初始化介面
 function initUI() {
   const s = petState.settings;
-  els.bedX.value = s.bedX ?? defaultSettings.bedX;
-  els.bedY.value = s.bedY ?? defaultSettings.bedY;
-  els.bedScale.value = s.bedScale ?? defaultSettings.bedScale;
-  els.bedZ.value = s.bedZ ?? defaultSettings.bedZ;
+  if (els.petScale) els.petScale.value = s.petScale ?? defaultSettings.petScale;
+  if (els.enablePetShadow) {
+    els.enablePetShadow.checked = s.enablePetShadow !== undefined ? Boolean(s.enablePetShadow) : defaultSettings.enablePetShadow;
+  }
+  if (els.enableSpriteAnim) {
+    els.enableSpriteAnim.checked = s.enableSpriteAnim !== undefined ? Boolean(s.enableSpriteAnim) : defaultSettings.enableSpriteAnim;
+  }
+  if (els.showStatusBars) {
+    els.showStatusBars.checked = s.showStatusBars !== undefined ? Boolean(s.showStatusBars) : defaultSettings.showStatusBars;
+  }
+  if (els.showStatusBarNumbers) {
+    els.showStatusBarNumbers.checked = s.showStatusBarNumbers !== undefined ? Boolean(s.showStatusBarNumbers) : defaultSettings.showStatusBarNumbers;
+  }
+  if (els.enableHungerSystem) {
+    els.enableHungerSystem.checked = s.enableHungerSystem !== undefined ? Boolean(s.enableHungerSystem) : defaultSettings.enableHungerSystem;
+  }
+  if (els.enableCpuSweat) {
+    els.enableCpuSweat.checked = s.enableCpuSweat !== undefined ? Boolean(s.enableCpuSweat) : defaultSettings.enableCpuSweat;
+  }
   els.animSpeed.value = s.animSpeed ?? defaultSettings.animSpeed;
 
   const detectedDisplay = getDetectedDisplaySize();
@@ -1183,9 +1202,7 @@ document.getElementById('btn-open-aistudio')?.addEventListener('click', () => {
 });
 
 function updateLabels() {
-  vals.bedX.innerText = els.bedX.value + 'px';
-  vals.bedY.innerText = els.bedY.value + 'px';
-  vals.bedScale.innerText = els.bedScale.value + 'px';
+  if (vals.petScale && els.petScale) vals.petScale.innerText = els.petScale.value + 'px';
   vals.animSpeed.innerText = parseFloat(els.animSpeed.value).toFixed(1) + 'x';
   if (vals.chatWidth && els.chatWidth) vals.chatWidth.innerText = els.chatWidth.value + 'px';
   if (vals.chatHeight && els.chatHeight) vals.chatHeight.innerText = els.chatHeight.value + 'px';
@@ -1195,10 +1212,13 @@ function checkDirty() {
   const s = petState.settings;
   const current = getFormValues();
   const hasChanged = (
-    current.bedX !== (s.bedX ?? defaultSettings.bedX) ||
-    current.bedY !== (s.bedY ?? defaultSettings.bedY) ||
-    current.bedScale !== (s.bedScale ?? defaultSettings.bedScale) ||
-    current.bedZ !== (s.bedZ ?? defaultSettings.bedZ) ||
+    current.petScale !== (s.petScale ?? defaultSettings.petScale) ||
+    current.enablePetShadow !== (s.enablePetShadow ?? defaultSettings.enablePetShadow) ||
+    current.enableSpriteAnim !== (s.enableSpriteAnim ?? defaultSettings.enableSpriteAnim) ||
+    current.showStatusBars !== (s.showStatusBars ?? defaultSettings.showStatusBars) ||
+    current.showStatusBarNumbers !== (s.showStatusBarNumbers ?? defaultSettings.showStatusBarNumbers) ||
+    current.enableHungerSystem !== (s.enableHungerSystem ?? defaultSettings.enableHungerSystem) ||
+    current.enableCpuSweat !== (s.enableCpuSweat ?? defaultSettings.enableCpuSweat) ||
     current.animSpeed !== (s.animSpeed ?? defaultSettings.animSpeed) ||
     current.chatSizeMode !== (s.chatSizeMode ?? defaultSettings.chatSizeMode) ||
     (current.chatSizeMode === 'manual' && (
@@ -1243,10 +1263,13 @@ function getFormValues() {
   const providerId = getActiveProviderId();
   snapshotCurrentProviderInputs(providerId);
   return {
-    bedX: parseInt(els.bedX.value),
-    bedY: parseInt(els.bedY.value),
-    bedScale: parseInt(els.bedScale.value),
-    bedZ: parseInt(els.bedZ.value),
+    petScale: els.petScale ? parseInt(els.petScale.value, 10) : defaultSettings.petScale,
+    enablePetShadow: els.enablePetShadow ? Boolean(els.enablePetShadow.checked) : defaultSettings.enablePetShadow,
+    enableSpriteAnim: els.enableSpriteAnim ? Boolean(els.enableSpriteAnim.checked) : defaultSettings.enableSpriteAnim,
+    showStatusBars: els.showStatusBars ? Boolean(els.showStatusBars.checked) : defaultSettings.showStatusBars,
+    showStatusBarNumbers: els.showStatusBarNumbers ? Boolean(els.showStatusBarNumbers.checked) : defaultSettings.showStatusBarNumbers,
+    enableHungerSystem: els.enableHungerSystem ? Boolean(els.enableHungerSystem.checked) : defaultSettings.enableHungerSystem,
+    enableCpuSweat: els.enableCpuSweat ? Boolean(els.enableCpuSweat.checked) : defaultSettings.enableCpuSweat,
     animSpeed: parseFloat(els.animSpeed.value),
     chatSizeMode: els.chatSizeMode ? els.chatSizeMode.value : 'auto',
     chatWidth: els.chatWidth ? parseInt(els.chatWidth.value, 10) : defaultSettings.chatWidth,
@@ -1559,36 +1582,49 @@ document.getElementById('btn-reset-shortcut').addEventListener('click', () => {
   previewBroadcast();
 });
 
-// 3. 床鋪編輯模式開關
-const btnToggleBedEdit = document.getElementById('btn-toggle-bed-edit');
-const bedEditTip = document.getElementById('bed-edit-tip');
+els.enablePetShadow?.addEventListener('change', () => {
+  checkDirty();
+  previewBroadcast();
+});
 
-btnToggleBedEdit.addEventListener('click', () => {
-  isBedEditing = !isBedEditing;
-  updateBedEditUI();
-  ipcRenderer.send('toggle-bed-edit', isBedEditing);
+els.enableSpriteAnim?.addEventListener('change', () => {
+  checkDirty();
+  previewBroadcast();
+});
+
+els.showStatusBars?.addEventListener('change', () => {
+  checkDirty();
+  previewBroadcast();
+});
+
+els.showStatusBarNumbers?.addEventListener('change', () => {
+  checkDirty();
+  previewBroadcast();
+});
+
+els.enableHungerSystem?.addEventListener('change', () => {
+  checkDirty();
+  previewBroadcast();
+});
+
+els.enableCpuSweat?.addEventListener('change', () => {
+  checkDirty();
+  previewBroadcast();
+});
+
+// 3. 角色動作與一體化睡姿展演預覽
+const posePreviewBtns = document.querySelectorAll('.pose-preview-btn');
+posePreviewBtns.forEach((btn) => {
+  btn.addEventListener('click', () => {
+    const pose = btn.getAttribute('data-pose') || 'clear';
+    posePreviewBtns.forEach((b) => b.classList.remove('active'));
+    if (pose !== 'clear') btn.classList.add('active');
+    ipcRenderer.send('preview-pet-pose', pose);
+  });
 });
 
 function updateBedEditUI() {
-  const bedLockTip = document.getElementById('bed-lock-tip');
-  const disabled = !isBedEditing;
-  
-  els.bedX.disabled = disabled;
-  els.bedY.disabled = disabled;
-  els.bedScale.disabled = disabled;
-  els.bedZ.disabled = disabled;
-
-  if (isBedEditing) {
-    btnToggleBedEdit.innerText = '⏹️ 結束床鋪編輯模式';
-    btnToggleBedEdit.classList.add('active');
-    bedEditTip.style.display = 'block';
-    if (bedLockTip) bedLockTip.style.display = 'none';
-  } else {
-    btnToggleBedEdit.innerText = '✏️ 開啟床鋪編輯模式 (小鳥坐床)';
-    btnToggleBedEdit.classList.remove('active');
-    bedEditTip.style.display = 'none';
-    if (bedLockTip) bedLockTip.style.display = 'block';
-  }
+  // 一體化睡姿圖已取代舊版手動床鋪對齊，保留空函式以確保向下相容
 }
 
 document.getElementById('btn-reset-chat-size')?.addEventListener('click', () => {
@@ -1603,11 +1639,8 @@ document.getElementById('btn-reset-chat-size')?.addEventListener('click', () => 
   previewBroadcast();
 });
 
-// 拖曳床鋪或桌面對話框縮放時收到的廣播
+// 桌面對話框縮放時收到的廣播
 ipcRenderer.on('update-settings-ui', (event, data) => {
-  if (data.bedX !== undefined) els.bedX.value = data.bedX;
-  if (data.bedY !== undefined) els.bedY.value = data.bedY;
-  if (data.bedScale !== undefined) els.bedScale.value = data.bedScale;
   if (data.chatSizeMode !== undefined && els.chatSizeMode) {
     els.chatSizeMode.value = data.chatSizeMode;
     petState.settings.chatSizeMode = data.chatSizeMode;

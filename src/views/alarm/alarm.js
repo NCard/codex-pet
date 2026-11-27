@@ -9,6 +9,7 @@ ipcRenderer.on('reload-data', () => {
 });
 
 const { alarmsPath, petStatePath } = require('../../utils/paths');
+const { mountMultiDateCalendar } = require('../../utils/multi_date_calendar');
 let alarms = [];
 let todos = [];
 
@@ -17,20 +18,49 @@ const alarmList = document.getElementById('alarm-list');
 
 let isCreatingDraft = false;
 let activeEditId = null;
+let inlineFormSeq = 0;
+
+function formatLocalDate(dateObj) {
+  const year = dateObj.getFullYear();
+  const month = (dateObj.getMonth() + 1).toString().padStart(2, '0');
+  const day = dateObj.getDate().toString().padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
 
 function getNowLocal() {
   const now = new Date();
-  const year = now.getFullYear();
-  const month = (now.getMonth() + 1).toString().padStart(2, '0');
-  const day = now.getDate().toString().padStart(2, '0');
+  const tomorrow = new Date(now);
+  tomorrow.setDate(tomorrow.getDate() + 1);
   const hours = now.getHours().toString().padStart(2, '0');
   const minutes = now.getMinutes().toString().padStart(2, '0');
   return {
-    todayStr: `${year}-${month}-${day}`,
+    todayStr: formatLocalDate(now),
+    tomorrowStr: formatLocalDate(tomorrow),
     currentTimeStr: `${hours}:${minutes}`,
     currentH: hours,
     currentM: minutes
   };
+}
+
+function normalizeAlarmDates(alarm) {
+  const raw = [];
+  if (alarm && Array.isArray(alarm.dates)) {
+    raw.push(...alarm.dates);
+  }
+  if (alarm && typeof alarm.date === 'string' && alarm.date.trim()) {
+    raw.push(alarm.date.trim());
+  }
+  const validSet = new Set(
+    raw
+      .map(d => (typeof d === 'string' ? d.trim() : ''))
+      .filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d))
+  );
+  return Array.from(validSet).sort();
+}
+
+function computeOnceTargetDate(timeStr, nowInfo = getNowLocal()) {
+  if (!timeStr) return nowInfo.todayStr;
+  return timeStr < nowInfo.currentTimeStr ? nowInfo.tomorrowStr : nowInfo.todayStr;
 }
 
 function parseTimeString(str) {
@@ -61,11 +91,14 @@ function parseTimeString(str) {
 }
 
 function notifyAlarmEnabled(alarm) {
+  const dates = normalizeAlarmDates(alarm);
   ipcRenderer.send('alarm-enabled-notify', {
     id: alarm.id,
     type: alarm.type,
     time: alarm.time,
-    date: alarm.date,
+    targetDate: alarm.targetDate || '',
+    date: dates[0] || alarm.date || '',
+    dates: dates,
     days: alarm.days,
     message: alarm.message
   });
@@ -80,6 +113,10 @@ function loadAlarms() {
         if (!a.type) {
           a.type = 'weekly';
           a.days = [0, 1, 2, 3, 4, 5, 6];
+        } else if (a.type === 'date') {
+          const normalizedDates = normalizeAlarmDates(a);
+          a.dates = normalizedDates;
+          a.date = normalizedDates[0] || '';
         }
       });
     } catch (e) {
@@ -347,35 +384,51 @@ function createAlarmInlineForm(initialData, isDraft, onSave, onCancel) {
   formCard.className = 'inline-form-card';
 
   const { todayStr, currentTimeStr } = getNowLocal();
+  const radioGroupName = `inline-alarm-type-${++inlineFormSeq}`;
 
   const data = initialData ? { ...initialData } : {
-    type: 'date',
+    type: 'once',
     date: todayStr,
+    dates: [],
     time: currentTimeStr,
     days: [0, 1, 2, 3, 4, 5, 6],
     message: '',
     snoozeInterval: 5
   };
 
-  // 需求 4：若編輯時原本是過去時間，自動預設為當下時間
+  if (!['once', 'weekly', 'date'].includes(data.type)) {
+    data.type = 'weekly';
+  }
+
+  let selectedDates = [];
   if (data.type === 'date') {
-    const isPast = (data.date < todayStr) || (data.date === todayStr && (data.time || '') < currentTimeStr);
-    if (isPast) {
+    const existingDates = normalizeAlarmDates(data);
+    const nonPastDates = existingDates.filter(d => d >= todayStr);
+    if (nonPastDates.length === 0) {
+      // 需求 4：若編輯時原本全都是過去日期，自動預設為今天與當下時間
+      selectedDates = [todayStr];
       data.date = todayStr;
       data.time = currentTimeStr;
+    } else {
+      selectedDates = nonPastDates;
+      data.date = selectedDates[0];
+      if (selectedDates.includes(todayStr) && (data.time || '') < currentTimeStr) {
+        data.time = currentTimeStr;
+      }
     }
   }
 
   const [initH, initM] = (data.time || currentTimeStr).split(':');
 
   formCard.innerHTML = `
-    <div class="inline-form-row" style="gap: 20px; font-size: 13px; font-weight: bold;">
-      <label style="cursor: pointer;"><input type="radio" class="inline-type-radio" value="date" ${data.type === 'date' ? 'checked' : ''}> 📅 特定日期</label>
-      <label style="cursor: pointer;"><input type="radio" class="inline-type-radio" value="weekly" ${data.type === 'weekly' ? 'checked' : ''}> 🔁 每週重複</label>
+    <div class="inline-form-row inline-type-row">
+      <label class="inline-type-option"><input type="radio" class="inline-type-radio" name="${radioGroupName}" value="once" ${data.type === 'once' ? 'checked' : ''}> ⚡ 一次性</label>
+      <label class="inline-type-option"><input type="radio" class="inline-type-radio" name="${radioGroupName}" value="weekly" ${data.type === 'weekly' ? 'checked' : ''}> 🔁 每週重複</label>
+      <label class="inline-type-option"><input type="radio" class="inline-type-radio" name="${radioGroupName}" value="date" ${data.type === 'date' ? 'checked' : ''}> 📅 特定日期</label>
     </div>
 
-    <div class="inline-date-group" style="display: ${data.type === 'date' ? 'block' : 'none'};">
-      <input type="date" class="inline-date-input" min="${todayStr}" value="${data.date || todayStr}" style="width: 100%; box-sizing: border-box; padding: 6px 10px; border: 1.5px solid #c5e1a5; border-radius: 10px; outline: none; font-family: inherit; font-size: 13px;">
+    <div class="inline-once-group" style="display: ${data.type === 'once' ? 'block' : 'none'};">
+      <div class="inline-once-hint"></div>
     </div>
 
     <div class="inline-weekly-group" style="display: ${data.type === 'weekly' ? 'block' : 'none'};">
@@ -387,6 +440,10 @@ function createAlarmInlineForm(initialData, isDraft, onSave, onCancel) {
           </label>
         `).join('')}
       </div>
+    </div>
+
+    <div class="inline-date-group" style="display: ${data.type === 'date' ? 'block' : 'none'};">
+      <div class="inline-calendar-mount"></div>
     </div>
 
     <div class="inline-form-row space-between" style="font-size: 13px; flex-wrap: wrap; gap: 8px;">
@@ -465,7 +522,15 @@ function createAlarmInlineForm(initialData, isDraft, onSave, onCancel) {
   const hourSelect = formCard.querySelector('.inline-hour-select');
   const minSelect = formCard.querySelector('.inline-minute-select');
   const timeInput = formCard.querySelector('.inline-time-input');
-  const dateInput = formCard.querySelector('.inline-date-input');
+  const calendarMount = formCard.querySelector('.inline-calendar-mount');
+  const onceHint = formCard.querySelector('.inline-once-hint');
+  const errorTip = formCard.querySelector('.inline-error-tip');
+
+  const showError = (msg) => {
+    errorTip.textContent = `⚠️ ${msg}`;
+    errorTip.style.display = 'block';
+    setTimeout(() => { errorTip.style.display = 'none'; }, 3000);
+  };
 
   for (let i = 0; i < 24; i++) {
     const val = i.toString().padStart(2, '0');
@@ -484,6 +549,30 @@ function createAlarmInlineForm(initialData, isDraft, onSave, onCancel) {
   const comboboxField = formCard.querySelector('.time-combobox-field');
   const btnToggleDropdown = formCard.querySelector('.btn-time-dropdown');
   const timePopover = formCard.querySelector('.time-dropdown-popover');
+
+  function updateOnceHint() {
+    if (!onceHint) return;
+    const currentNow = getNowLocal();
+    const selectedTime = `${hourSelect.value}:${minSelect.value}`;
+    const targetDate = computeOnceTargetDate(selectedTime, currentNow);
+    const dayLabel = targetDate === currentNow.todayStr ? '今天' : '明天';
+    onceHint.textContent = `⚡ 將於${dayLabel} (${targetDate}) ${selectedTime} 提醒一次並自動關閉`;
+  }
+
+  let isRestrictionsReady = false;
+  const multiCalendar = mountMultiDateCalendar(calendarMount, {
+    initialDates: selectedDates,
+    minDate: todayStr,
+    showQuickButtons: true,
+    onChange: (nextDates) => {
+      selectedDates = nextDates;
+      if (isRestrictionsReady) {
+        updateTimeRestrictions(false);
+      }
+    },
+    onInvalidDate: (msg) => showError(msg)
+  });
+  const dateInput = multiCalendar.getDateInput();
 
   if (comboboxField) {
     comboboxField.addEventListener('click', (e) => {
@@ -560,15 +649,20 @@ function createAlarmInlineForm(initialData, isDraft, onSave, onCancel) {
 
   function updateTimeRestrictions(skipTimeInputSync = false) {
     const currentNow = getNowLocal();
-    const selectedType = formCard.querySelector('.inline-type-radio:checked').value;
+    const checkedRadio = formCard.querySelector('.inline-type-radio:checked');
+    const selectedType = checkedRadio ? checkedRadio.value : 'once';
     const isDateMode = selectedType === 'date';
 
+    multiCalendar.setMinDate(currentNow.todayStr);
     dateInput.min = currentNow.todayStr;
-    if (isDateMode && dateInput.value < currentNow.todayStr) {
+    if (isDateMode && dateInput.value && dateInput.value < currentNow.todayStr) {
       dateInput.value = currentNow.todayStr;
     }
 
-    const isToday = isDateMode && (dateInput.value === currentNow.todayStr);
+    const includesToday = selectedDates.length > 0
+      ? selectedDates.includes(currentNow.todayStr)
+      : (dateInput.value === currentNow.todayStr);
+    const isToday = isDateMode && includesToday;
     const curHInt = parseInt(currentNow.currentH, 10);
     const curMInt = parseInt(currentNow.currentM, 10);
 
@@ -598,36 +692,29 @@ function createAlarmInlineForm(initialData, isDraft, onSave, onCancel) {
     if (timeWheelPicker) {
       timeWheelPicker.updateRestrictions(isToday, curHInt, curMInt, selectedHInt);
     }
+    updateOnceHint();
   }
 
+  isRestrictionsReady = true;
   // 套用初始時間限制
   updateTimeRestrictions(false);
 
   const radios = formCard.querySelectorAll('.inline-type-radio');
+  const onceGroup = formCard.querySelector('.inline-once-group');
   const dateGroup = formCard.querySelector('.inline-date-group');
   const weeklyGroup = formCard.querySelector('.inline-weekly-group');
-  const errorTip = formCard.querySelector('.inline-error-tip');
 
-  const showError = (msg) => {
-    errorTip.textContent = `⚠️ ${msg}`;
-    errorTip.style.display = 'block';
-    setTimeout(() => { errorTip.style.display = 'none'; }, 3000);
-  };
+  function syncTypeGroups(typeVal) {
+    onceGroup.style.display = typeVal === 'once' ? 'block' : 'none';
+    weeklyGroup.style.display = typeVal === 'weekly' ? 'block' : 'none';
+    dateGroup.style.display = typeVal === 'date' ? 'block' : 'none';
+    updateTimeRestrictions(false);
+  }
 
   radios.forEach(r => r.addEventListener('change', () => {
-    if (r.value === 'date') {
-      dateGroup.style.display = 'block';
-      weeklyGroup.style.display = 'none';
-    } else {
-      dateGroup.style.display = 'none';
-      weeklyGroup.style.display = 'block';
-    }
-    updateTimeRestrictions(false);
+    if (!r.checked) return;
+    syncTypeGroups(r.value);
   }));
-
-  dateInput.addEventListener('change', () => {
-    updateTimeRestrictions(false);
-  });
 
   hourSelect.addEventListener('change', () => {
     updateTimeRestrictions(false);
@@ -635,6 +722,7 @@ function createAlarmInlineForm(initialData, isDraft, onSave, onCancel) {
 
   minSelect.addEventListener('change', () => {
     timeInput.value = `${hourSelect.value}:${minSelect.value}`;
+    updateOnceHint();
   });
 
   // 需求 3：手動輸入時間即時連動
@@ -683,10 +771,16 @@ function createAlarmInlineForm(initialData, isDraft, onSave, onCancel) {
 
     const msg = formCard.querySelector('.inline-msg-input').value.trim();
     const snooze = parseInt(formCard.querySelector('.inline-snooze-input').value, 10) || 5;
-    const dateVal = dateInput.value;
+    const currentNow = getNowLocal();
 
     let days = [];
-    if (selectedType === 'weekly') {
+    let finalDates = [];
+    let finalDate = '';
+    let targetDate = '';
+
+    if (selectedType === 'once') {
+      targetDate = computeOnceTargetDate(time, currentNow);
+    } else if (selectedType === 'weekly') {
       formCard.querySelectorAll('.inline-day-cb').forEach(cb => {
         if (cb.checked) days.push(parseInt(cb.value, 10));
       });
@@ -695,21 +789,23 @@ function createAlarmInlineForm(initialData, isDraft, onSave, onCancel) {
         return;
       }
     } else {
-      if (!dateVal) {
-        showError('請選擇特定日期！');
+      finalDates = multiCalendar.getDates();
+      if (finalDates.length === 0) {
+        showError('請在日曆上至少點選一個特定日期！');
         return;
       }
 
       // 需求 4 檢核：不可選擇過去日期或當日過去時間
-      const currentNow = getNowLocal();
-      if (dateVal < currentNow.todayStr) {
+      if (finalDates.some(d => d < currentNow.todayStr)) {
         showError('特定日期不能選擇過去的日期！');
         return;
       }
-      if (dateVal === currentNow.todayStr && time < currentNow.currentTimeStr) {
-        showError('特定日期的鬧鐘時間不能早於當下時間！');
+      if (finalDates.includes(currentNow.todayStr) && time < currentNow.currentTimeStr) {
+        showError('特定日期包含今天時，鬧鐘時間不能早於當下時間！');
         return;
       }
+      finalDates = [...new Set(finalDates)].sort();
+      finalDate = finalDates[0];
     }
 
     if (!msg) {
@@ -724,7 +820,9 @@ function createAlarmInlineForm(initialData, isDraft, onSave, onCancel) {
     onSave({
       type: selectedType,
       time: time,
-      date: dateVal,
+      targetDate: targetDate,
+      date: finalDate,
+      dates: finalDates,
       days: days,
       message: msg,
       snoozeInterval: snooze
@@ -817,14 +915,39 @@ function renderAlarms() {
     msgDiv.className = 'alarm-msg';
     
     let typeText = '';
-    if (alarm.type === 'date') {
-      typeText = `📅 ${alarm.date}`;
+    let typeTitle = '';
+    if (alarm.type === 'once') {
+      const currentNow = getNowLocal();
+      if (alarm.enabled && alarm.targetDate) {
+        if (alarm.targetDate === currentNow.todayStr) {
+          typeText = '⚡ 一次性（今天）';
+        } else if (alarm.targetDate === currentNow.tomorrowStr) {
+          typeText = '⚡ 一次性（明天）';
+        } else {
+          typeText = `⚡ 一次性（${alarm.targetDate}）`;
+        }
+        typeTitle = `預計提醒日期：${alarm.targetDate}`;
+      } else {
+        typeText = '⚡ 一次性';
+      }
+    } else if (alarm.type === 'date') {
+      const datesList = normalizeAlarmDates(alarm);
+      if (datesList.length <= 1) {
+        typeText = `📅 ${datesList[0] || alarm.date || ''}`;
+      } else if (datesList.length === 2) {
+        typeText = `📅 ${datesList[0]}、${datesList[1].slice(5)}`;
+        typeTitle = datesList.join('、');
+      } else {
+        typeText = `📅 ${datesList[0]} 等 ${datesList.length} 天`;
+        typeTitle = datesList.join('、');
+      }
     } else {
-      if (alarm.days.length === 7) {
+      const alarmDays = Array.isArray(alarm.days) ? alarm.days : [0, 1, 2, 3, 4, 5, 6];
+      if (alarmDays.length === 7) {
         typeText = '🔁 每天';
       } else {
         const dayMap = ['日','一','二','三','四','五','六'];
-        typeText = '🔁 每週 ' + alarm.days.map(d => dayMap[d]).join(', ');
+        typeText = '🔁 每週 ' + alarmDays.map(d => dayMap[d]).join(', ');
       }
     }
     
@@ -842,7 +965,7 @@ function renderAlarms() {
 
     msgDiv.innerHTML = `
       <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #00796b; font-weight: bold;">
-        <span>${typeText}</span>
+        <span${typeTitle ? ` title="${typeTitle}"` : ''}>${typeText}</span>
         ${linkedTodoHtml}
       </div>
       <div style="font-size: 13px; color: var(--theme-text-body); margin-top: 3px; line-height: 1.3;">${displayMsg}</div>
@@ -871,13 +994,22 @@ function renderAlarms() {
     switchInput.onchange = () => {
       const willEnable = switchInput.checked;
       if (willEnable) {
-        // 若特定日期為過去時間，自動更新為當下時間
-        if (alarm.type === 'date') {
-          const currentNow = getNowLocal();
-          const isPast = (alarm.date < currentNow.todayStr) || (alarm.date === currentNow.todayStr && alarm.time < currentNow.currentTimeStr);
-          if (isPast) {
+        const currentNow = getNowLocal();
+        if (alarm.type === 'once') {
+          alarm.targetDate = computeOnceTargetDate(alarm.time, currentNow);
+        } else if (alarm.type === 'date') {
+          // 若特定日期皆為過去時間，自動更新為當下時間；若部分已過期則僅保留未來日期
+          const datesList = normalizeAlarmDates(alarm);
+          const upcomingDates = datesList.filter(
+            d => d > currentNow.todayStr || (d === currentNow.todayStr && alarm.time >= currentNow.currentTimeStr)
+          );
+          if (upcomingDates.length === 0) {
+            alarm.dates = [currentNow.todayStr];
             alarm.date = currentNow.todayStr;
             alarm.time = currentNow.currentTimeStr;
+          } else {
+            alarm.dates = upcomingDates;
+            alarm.date = upcomingDates[0];
           }
         }
         alarm.enabled = true;

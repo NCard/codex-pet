@@ -608,8 +608,8 @@ app.whenReady().then(() => {
     }
     outfitWin = new BrowserWindow({
       icon: path.join(__dirname, '../../assets/images/kiwi.png'),
-      width: 400,
-      height: 550,
+      width: 430,
+      height: 640,
       title: 'Wiki Wiki 的衣櫥',
       show: false,
       webPreferences: {
@@ -784,6 +784,12 @@ app.whenReady().then(() => {
   ipcMain.on('trigger-monologue-now', () => {
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.webContents.send('trigger-monologue-now');
+    }
+  });
+
+  ipcMain.on('preview-pet-pose', (_event, poseKey) => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('preview-pet-pose', poseKey);
     }
   });
 

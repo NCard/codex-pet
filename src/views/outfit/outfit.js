@@ -2,32 +2,137 @@ require('../../utils/logger');
 const { ipcRenderer } = require('electron');
 const fs = require('fs');
 const { petStatePath: statePath } = require('../../utils/paths');
-let petState = {};
+const {
+  COORD_VERSION,
+  getFeaturedOutfits,
+  getLegacyOutfits,
+  getOutfitItem,
+  getDefaultOutfitConfig,
+  resolveOutfitConfig,
+  getOutfitAssetUrl,
+  applyOutfitSelection
+} = require('../../utils/outfits_catalog');
 
-const outfitBtns = document.querySelectorAll('.outfit-btn');
+let petState = {};
+let currentOutfits = [];
+let editingOutfit = '';
+let activeSlotFilter = 'all';
+let freeStackMode = false;
+
+const featuredWardrobe = document.getElementById('featured-wardrobe');
+const legacyWardrobe = document.getElementById('legacy-wardrobe');
+const slotTabs = document.querySelectorAll('.slot-tab');
+const toggleFreeStack = document.getElementById('toggle-free-stack');
+
 const controls = document.getElementById('controls');
+const controlsTitle = document.getElementById('controls-title');
 const posX = document.getElementById('pos-x');
 const posY = document.getElementById('pos-y');
 const scale = document.getElementById('scale');
+const rotate = document.getElementById('rotate');
 const valX = document.getElementById('val-x');
 const valY = document.getElementById('val-y');
 const valScale = document.getElementById('val-scale');
+const valRotate = document.getElementById('val-rotate');
 const btnReset = document.getElementById('btn-reset');
 
-const defaultOutfitConfigs = {
-  '🎩': { x: 62, y: -31, scale: 60 },
-  '🕶️': { x: 76, y: 17, scale: 51 },
-  '🎀': { x: 79, y: 75, scale: 40 },
-  '👑': { x: 59, y: -38, scale: 60 },
-  '🌸': { x: 80, y: -18, scale: 20 },
-  '🎓': { x: 60, y: -34, scale: 60 },
-  '🎃': { x: 60, y: -32, scale: 44 },
-  '🎉': { x: 60, y: -35, scale: 55 },
-  '🥽': { x: 76, y: 15, scale: 45 }
-};
+function saveSettingsPreference() {
+  try {
+    if (!petState.settings) petState.settings = {};
+    petState.settings.outfitFreeStack = freeStackMode;
+    fs.writeFileSync(statePath, JSON.stringify(petState, null, 2), 'utf8');
+  } catch (e) {
+    console.error('Failed to save outfit preference:', e);
+  }
+}
 
-let currentOutfits = [];
-let editingOutfit = '';
+function createClearButton() {
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'outfit-btn outfit-clear-btn';
+  btn.dataset.outfit = '';
+  btn.innerHTML = `
+    <span class="outfit-thumb-emoji">✨</span>
+    <span class="outfit-name">全部脫下</span>
+  `;
+  btn.addEventListener('click', () => {
+    currentOutfits = [];
+    editingOutfit = '';
+    petState.outfits = [];
+    updateUI();
+    ipcRenderer.send('update-outfit', currentOutfits);
+  });
+  return btn;
+}
+
+function createOutfitCard(item) {
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'outfit-btn';
+  btn.dataset.outfit = item.id;
+  btn.dataset.slot = item.slot;
+  btn.title = `${item.name}（點擊穿戴／選中調整，點右上角 ✕ 卸下）`;
+
+  const assetUrl = getOutfitAssetUrl(item.id, '../../../assets/images/outfits/');
+  const visualHtml = assetUrl
+    ? `<img class="outfit-thumb-img" src="${assetUrl}" alt="${item.name}" draggable="false">`
+    : `<span class="outfit-thumb-emoji">${item.id}</span>`;
+
+  btn.innerHTML = `
+    ${visualHtml}
+    <span class="outfit-name">${item.name}</span>
+    <span class="remove-badge" title="卸下 ${item.name}">✕</span>
+  `;
+
+  btn.addEventListener('click', (e) => {
+    const isBadgeClick = e.target.classList.contains('remove-badge');
+    if (isBadgeClick) {
+      currentOutfits = currentOutfits.filter(o => o !== item.id);
+      if (editingOutfit === item.id) {
+        editingOutfit = currentOutfits.length > 0 ? currentOutfits[currentOutfits.length - 1] : '';
+      }
+    } else if (currentOutfits.includes(item.id)) {
+      if (editingOutfit === item.id) {
+        // 再次點擊已選中調整中的飾品：直接卸下更順手
+        currentOutfits = currentOutfits.filter(o => o !== item.id);
+        editingOutfit = currentOutfits.length > 0 ? currentOutfits[currentOutfits.length - 1] : '';
+      } else {
+        // 切換微調焦點至此飾品
+        editingOutfit = item.id;
+      }
+    } else {
+      currentOutfits = applyOutfitSelection(currentOutfits, item.id, { freeStack: freeStackMode });
+      editingOutfit = item.id;
+    }
+
+    petState.outfits = currentOutfits;
+    updateUI();
+    ipcRenderer.send('update-outfit', currentOutfits);
+  });
+
+  return btn;
+}
+
+function renderWardrobeGrids() {
+  if (featuredWardrobe) {
+    featuredWardrobe.innerHTML = '';
+    if (activeSlotFilter === 'all') {
+      featuredWardrobe.appendChild(createClearButton());
+    }
+    const featured = getFeaturedOutfits().filter(
+      item => activeSlotFilter === 'all' || item.slot === activeSlotFilter
+    );
+    featured.forEach(item => featuredWardrobe.appendChild(createOutfitCard(item)));
+  }
+
+  if (legacyWardrobe) {
+    legacyWardrobe.innerHTML = '';
+    const legacy = getLegacyOutfits().filter(
+      item => activeSlotFilter === 'all' || item.slot === activeSlotFilter
+    );
+    legacy.forEach(item => legacyWardrobe.appendChild(createOutfitCard(item)));
+  }
+}
 
 function loadState() {
   if (fs.existsSync(statePath)) {
@@ -41,123 +146,122 @@ function loadState() {
       } else {
         currentOutfits = [];
       }
+      freeStackMode = Boolean(petState.settings && petState.settings.outfitFreeStack);
+      if (toggleFreeStack) toggleFreeStack.checked = freeStackMode;
       if (currentOutfits.length > 0) {
         editingOutfit = currentOutfits[currentOutfits.length - 1];
       }
-      updateUI();
     } catch (e) {
       console.error('Failed to load state:', e);
     }
   }
+  renderWardrobeGrids();
+  updateUI();
 }
 
 function updateUI() {
-  outfitBtns.forEach(btn => {
+  const allBtns = document.querySelectorAll('.outfit-btn');
+  allBtns.forEach(btn => {
     const outfit = btn.dataset.outfit;
     if (outfit === '') {
-      if (currentOutfits.length === 0) btn.classList.add('active');
-      else btn.classList.remove('active');
+      btn.classList.toggle('active', currentOutfits.length === 0);
+      btn.classList.remove('is-editing');
     } else {
-      if (currentOutfits.includes(outfit)) {
-        btn.classList.add('active');
-        // Give special visual indication to the one currently being edited
-        if (outfit === editingOutfit) {
-          btn.style.boxShadow = '0 0 8px 2px #ff9800';
-        } else {
-          btn.style.boxShadow = '';
-        }
-      } else {
-        btn.classList.remove('active');
-        btn.style.boxShadow = '';
-      }
+      const isWorn = currentOutfits.includes(outfit);
+      btn.classList.toggle('active', isWorn);
+      btn.classList.toggle('is-editing', isWorn && outfit === editingOutfit);
     }
   });
 
   if (editingOutfit && currentOutfits.includes(editingOutfit)) {
     controls.style.display = 'block';
-    const config = (petState.outfitConfigs && petState.outfitConfigs[editingOutfit]) 
-                   || defaultOutfitConfigs[editingOutfit]
-                   || { x: 45, y: -10, scale: 60 };
-    
-    document.querySelector('.controls-container h3').innerHTML = `精準微調 (${editingOutfit}) <span class="tip">(或拖曳飾品)</span>`;
-    
+    const item = getOutfitItem(editingOutfit);
+    const labelName = item ? `${item.id} ${item.name}` : editingOutfit;
+    const config = resolveOutfitConfig(editingOutfit, petState.outfitConfigs);
+
+    if (controlsTitle) {
+      controlsTitle.innerHTML = `精準微調 (${labelName}) <span class="tip">(或直接拖曳)</span>`;
+    }
+
     posX.value = config.x;
     valX.textContent = config.x;
     posY.value = config.y;
     valY.textContent = config.y;
     scale.value = config.scale;
     valScale.textContent = config.scale;
+    rotate.value = config.rotate || 0;
+    valRotate.textContent = `${config.rotate || 0}°`;
   } else {
     controls.style.display = 'none';
   }
 }
 
-outfitBtns.forEach(btn => {
-  btn.addEventListener('click', (e) => {
-    const clickedOutfit = btn.dataset.outfit;
-    const isBadgeClick = e.target.classList.contains('remove-badge');
-    
-    if (clickedOutfit === '') {
-      currentOutfits = [];
-      editingOutfit = '';
-    } else {
-      if (isBadgeClick) {
-        // 點擊叉叉時才移除該飾品
-        currentOutfits = currentOutfits.filter(o => o !== clickedOutfit);
-        editingOutfit = currentOutfits.length > 0 ? currentOutfits[currentOutfits.length - 1] : '';
-      } else {
-        // 點擊飾品按鈕：切換選擇/裝備該飾品
-        if (!currentOutfits.includes(clickedOutfit)) {
-          currentOutfits.push(clickedOutfit);
-        }
-        editingOutfit = clickedOutfit;
-      }
-    }
-    
-    petState.outfits = currentOutfits;
+slotTabs.forEach(tab => {
+  tab.addEventListener('click', () => {
+    activeSlotFilter = tab.dataset.slot || 'all';
+    slotTabs.forEach(t => t.classList.toggle('active', t === tab));
+    renderWardrobeGrids();
     updateUI();
-    ipcRenderer.send('update-outfit', currentOutfits);
   });
 });
 
+if (toggleFreeStack) {
+  toggleFreeStack.addEventListener('change', () => {
+    freeStackMode = Boolean(toggleFreeStack.checked);
+    saveSettingsPreference();
+  });
+}
+
 btnReset.addEventListener('click', () => {
   if (!editingOutfit) return;
-  const config = defaultOutfitConfigs[editingOutfit] || { x: 45, y: -10, scale: 60 };
+  const config = getDefaultOutfitConfig(editingOutfit);
   posX.value = config.x;
   posY.value = config.y;
   scale.value = config.scale;
+  rotate.value = config.rotate || 0;
   sendPosUpdate();
 });
 
 function sendPosUpdate() {
   if (!editingOutfit) return;
-  const x = parseInt(posX.value);
-  const y = parseInt(posY.value);
-  const s = parseInt(scale.value);
-  
+  const x = parseInt(posX.value, 10);
+  const y = parseInt(posY.value, 10);
+  const s = parseInt(scale.value, 10);
+  const r = parseInt(rotate.value, 10) || 0;
+
   valX.textContent = x;
   valY.textContent = y;
   valScale.textContent = s;
-  
+  valRotate.textContent = `${r}°`;
+
   if (!petState.outfitConfigs) petState.outfitConfigs = {};
-  if (!petState.outfitConfigs[editingOutfit]) petState.outfitConfigs[editingOutfit] = {};
-  petState.outfitConfigs[editingOutfit].x = x;
-  petState.outfitConfigs[editingOutfit].y = y;
-  petState.outfitConfigs[editingOutfit].scale = s;
-  
-  ipcRenderer.send('update-outfit-pos', { outfit: editingOutfit, x, y, scale: s });
+  petState.outfitConfigs[editingOutfit] = {
+    x,
+    y,
+    scale: s,
+    rotate: r,
+    coordVersion: COORD_VERSION
+  };
+
+  ipcRenderer.send('update-outfit-pos', { outfit: editingOutfit, x, y, scale: s, rotate: r });
 }
 
 posX.addEventListener('input', sendPosUpdate);
 posY.addEventListener('input', sendPosUpdate);
 scale.addEventListener('input', sendPosUpdate);
+rotate.addEventListener('input', sendPosUpdate);
 
-// Receive live position updates from main renderer (when user drags on pet)
-ipcRenderer.on('outfit-pos-updated', (event, { outfit, x, y, scale: s }) => {
+// Receive live position updates from main renderer (when user drags or wheel-zooms on pet)
+ipcRenderer.on('outfit-pos-updated', (event, { outfit, x, y, scale: s, rotate: r }) => {
   if (!petState.outfitConfigs) petState.outfitConfigs = {};
-  if (!petState.outfitConfigs[outfit]) petState.outfitConfigs[outfit] = {};
+  const existing = resolveOutfitConfig(outfit, petState.outfitConfigs);
+  const next = { ...existing, coordVersion: COORD_VERSION };
+  if (x !== undefined) next.x = x;
+  if (y !== undefined) next.y = y;
+  if (s !== undefined) next.scale = s;
+  if (r !== undefined) next.rotate = r;
+  petState.outfitConfigs[outfit] = next;
 
-  // 只更新當前正在編輯的飾品控制面板（如果它就是正在被拖曳的）
   if (outfit === editingOutfit) {
     if (x !== undefined) {
       posX.value = x;
@@ -171,12 +275,11 @@ ipcRenderer.on('outfit-pos-updated', (event, { outfit, x, y, scale: s }) => {
       scale.value = s;
       valScale.textContent = s;
     }
+    if (r !== undefined) {
+      rotate.value = r;
+      valRotate.textContent = `${r}°`;
+    }
   }
-
-  // 但永遠要在狀態中更新它
-  if (x !== undefined) petState.outfitConfigs[outfit].x = x;
-  if (y !== undefined) petState.outfitConfigs[outfit].y = y;
-  if (s !== undefined) petState.outfitConfigs[outfit].scale = s;
 });
 
 // Initial load

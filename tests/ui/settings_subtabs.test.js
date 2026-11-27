@@ -42,7 +42,7 @@ describe('Settings Sub-tabs & Model Info Card UI Tests', () => {
     const appSubtabTargets = appButtons.map(b => b.getAttribute('data-subtab'));
     expect(appSubtabTargets).toEqual([
       'subtab-chat-ui',
-      'subtab-bed',
+      'subtab-pet-visual',
       'subtab-controls'
     ]);
 
@@ -59,9 +59,15 @@ describe('Settings Sub-tabs & Model Info Card UI Tests', () => {
     expect(container.querySelector('#subtab-chat-ui #setting-monologueSleepDream')).not.toBeNull();
     expect(container.querySelector('#subtab-chat-ui #setting-monologueUseAI')).not.toBeNull();
     expect(container.querySelector('#subtab-chat-ui #btn-test-monologue')).not.toBeNull();
-    expect(container.querySelector('#subtab-chat-ui #anim-speed')).not.toBeNull();
-    expect(container.querySelector('#subtab-bed #btn-toggle-bed-edit')).not.toBeNull();
-    expect(container.querySelector('#subtab-bed #bed-x')).not.toBeNull();
+    expect(container.querySelector('#subtab-pet-visual #setting-petScale')).not.toBeNull();
+    expect(container.querySelector('#subtab-pet-visual #anim-speed')).not.toBeNull();
+    expect(container.querySelector('#subtab-pet-visual #setting-enablePetShadow')).not.toBeNull();
+    expect(container.querySelector('#subtab-pet-visual #setting-enableSpriteAnim')).not.toBeNull();
+    expect(container.querySelector('#subtab-pet-visual #setting-showStatusBars')).not.toBeNull();
+    expect(container.querySelector('#subtab-pet-visual #setting-showStatusBarNumbers')).not.toBeNull();
+    expect(container.querySelector('#subtab-pet-visual #setting-enableHungerSystem')).not.toBeNull();
+    expect(container.querySelector('#subtab-pet-visual #setting-enableCpuSweat')).not.toBeNull();
+    expect(container.querySelectorAll('#subtab-pet-visual .pose-preview-btn').length).toBeGreaterThanOrEqual(8);
     expect(container.querySelector('#subtab-controls #setting-shortcut')).not.toBeNull();
     expect(container.querySelector('#subtab-controls #setting-enableAlarmStalking')).not.toBeNull();
   });
@@ -228,9 +234,9 @@ describe('Settings Sub-tabs & Model Info Card UI Tests', () => {
     expect(container.querySelector('#subtab-chat-ui').classList.contains('active')).toBe(true);
 
     // Switching appearance subtab should not disturb AI tab's active subtab
-    const bedBtn = container.querySelector('[data-subtab="subtab-bed"]');
-    bedBtn.click();
-    expect(container.querySelector('#subtab-bed').classList.contains('active')).toBe(true);
+    const petVisualBtn = container.querySelector('[data-subtab="subtab-pet-visual"]');
+    petVisualBtn.click();
+    expect(container.querySelector('#subtab-pet-visual').classList.contains('active')).toBe(true);
     expect(container.querySelector('#subtab-chat-ui').classList.contains('active')).toBe(false);
     expect(container.querySelector('#subtab-quota').classList.contains('active')).toBe(true);
   });
