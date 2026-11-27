@@ -416,7 +416,7 @@ setInterval(() => {
   petState.hunger = Math.max(0, petState.hunger - 1);
   petState.mood = Math.max(0, petState.mood - 1);
 
-  // 由 sprite_animator 統一管理高 CPU 間歇流汗節奏、對話保護期與 💦 / .kiwi-tired 視覺狀態
+  // 由 sprite_animator 統一管理高 CPU 間歇流汗節奏、對話保護期與 .kiwi-tired 視覺狀態
   if (spriteAnimatorRef) spriteAnimatorRef.tick(false);
 
   // 定期自動存檔
@@ -509,18 +509,6 @@ spriteAnimatorRef = spriteAnimatorModule.init({
       (monologueBubble.classList.contains('visible') || (monologueBubble.style.display && monologueBubble.style.display !== 'none'))
     );
     return chatOpen || inputOpen || monologueOpen;
-  },
-  onTiredStateChange: (isTired) => {
-    if (!kiwiAccessory) return;
-    const alarmActive = typeof getIsAlarmActive === 'function' && getIsAlarmActive();
-    if (isTired) {
-      if (!isWorking && !alarmActive && kiwiAccessory.style.display === 'none') {
-        kiwiAccessory.innerText = '💦';
-        kiwiAccessory.style.display = 'block';
-      }
-    } else if (!isWorking && !alarmActive && kiwiAccessory.innerText === '💦') {
-      kiwiAccessory.style.display = 'none';
-    }
   }
 });
 
