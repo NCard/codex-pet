@@ -329,7 +329,7 @@ describe('Alarm View UI Enhancements Unit Tests', () => {
     expect(document.getElementById('alarm-list').textContent).toContain('⚡ 一次性');
   });
 
-  test('Multi-date selection allows adding, deduplicating, removing dates and persists sorted dates array', () => {
+  test('Multi-date calendar allows tapping calendar days across months, toggling off, and persists sorted dates array', () => {
     require('../../src/views/alarm/alarm');
 
     document.getElementById('btn-open-add').click();
@@ -337,28 +337,47 @@ describe('Alarm View UI Enhancements Unit Tests', () => {
     const dateRadio = document.querySelector('.inline-type-radio[value="date"]');
     dateRadio.click();
 
-    const dateInput = document.querySelector('.inline-date-input');
-    const btnAddDate = document.querySelector('.btn-add-date');
+    // Navigate forward to next month so all days are strictly in the future and selectable
+    const nextMonthBtn = document.querySelector('.cal-next-month');
+    expect(nextMonthBtn).not.toBeNull();
+    nextMonthBtn.click();
 
-    // Add 3 future dates out of order + 1 duplicate
-    dateInput.value = '2099-12-10';
-    dateInput.dispatchEvent(new Event('change'));
-    dateInput.value = '2099-12-02';
-    dateInput.dispatchEvent(new Event('change'));
-    dateInput.value = '2099-12-05';
-    btnAddDate.click();
-    dateInput.value = '2099-12-05';
-    dateInput.dispatchEvent(new Event('change')); // duplicate ignored
+    const dayBtns = Array.from(document.querySelectorAll('.cal-day-btn:not(:disabled)'));
+    expect(dayBtns.length).toBeGreaterThanOrEqual(15);
+
+    const d10 = dayBtns[9].dataset.date;
+    const d02 = dayBtns[1].dataset.date;
+    const d05 = dayBtns[4].dataset.date;
+
+    // Tap days directly on calendar (Android style) out of order
+    dayBtns[9].click();
+    dayBtns[1].click();
+    dayBtns[4].click();
 
     let chips = Array.from(document.querySelectorAll('.date-tag-chip'));
-    expect(chips.map(c => c.dataset.date)).toEqual(['2099-12-02', '2099-12-05', '2099-12-10']);
+    expect(chips.map(c => c.dataset.date)).toEqual([d02, d05, d10]);
+    expect(document.querySelector(`.cal-day-btn[data-date="${d05}"]`).classList.contains('is-selected')).toBe(true);
 
-    // Remove middle date
-    const removeBtn = document.querySelector('.date-tag-remove[data-date="2099-12-05"]');
-    removeBtn.click();
+    // Tapping an already-selected day on the calendar toggles it off
+    document.querySelector(`.cal-day-btn[data-date="${d05}"]`).click();
+    expect(document.querySelector(`.cal-day-btn[data-date="${d05}"]`).classList.contains('is-selected')).toBe(false);
 
     chips = Array.from(document.querySelectorAll('.date-tag-chip'));
-    expect(chips.map(c => c.dataset.date)).toEqual(['2099-12-02', '2099-12-10']);
+    expect(chips.map(c => c.dataset.date)).toEqual([d02, d10]);
+
+    // Also navigate one more month forward and pick another date (cross-month multi-select)
+    nextMonthBtn.click();
+    const nextMonthFirstDay = document.querySelector('.cal-day-btn:not(:disabled)');
+    const crossMonthDate = nextMonthFirstDay.dataset.date;
+    nextMonthFirstDay.click();
+
+    chips = Array.from(document.querySelectorAll('.date-tag-chip'));
+    expect(chips.map(c => c.dataset.date)).toEqual([d02, d10, crossMonthDate]);
+
+    // Remove via chip ✕ button
+    document.querySelector(`.date-tag-remove[data-date="${crossMonthDate}"]`).click();
+    chips = Array.from(document.querySelectorAll('.date-tag-chip'));
+    expect(chips.map(c => c.dataset.date)).toEqual([d02, d10]);
 
     const msgInput = document.querySelector('.inline-msg-input');
     msgInput.value = '多日會議提醒';
@@ -371,13 +390,13 @@ describe('Alarm View UI Enhancements Unit Tests', () => {
     const saved = mockAlarmsData.find(a => a.message === '多日會議提醒');
     expect(saved).toBeDefined();
     expect(saved.type).toBe('date');
-    expect(saved.dates).toEqual(['2099-12-02', '2099-12-10']);
-    expect(saved.date).toBe('2099-12-02');
+    expect(saved.dates).toEqual([d02, d10]);
+    expect(saved.date).toBe(d02);
     expect(mockIpcRenderer.send).toHaveBeenCalledWith(
       'alarm-enabled-notify',
       expect.objectContaining({
         type: 'date',
-        dates: ['2099-12-02', '2099-12-10'],
+        dates: [d02, d10],
         message: '多日會議提醒'
       })
     );

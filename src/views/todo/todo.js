@@ -9,6 +9,7 @@ ipcRenderer.on('reload-data', () => {
 });
 
 const { petStatePath: statePath, alarmsPath } = require('../../utils/paths');
+const { mountMultiDateCalendar } = require('../../utils/multi_date_calendar');
 let petState = { todos: [] };
 let alarms = [];
 
@@ -103,10 +104,9 @@ function createTodoInlineForm(initialTodo, initialAlarm, isDraft, onSave, onCanc
   if (!['once', 'weekly', 'date'].includes(alarmData.type)) {
     alarmData.type = 'weekly';
   }
-  let selectedDates = normalizeTodoAlarmDates(alarmData);
-  if (selectedDates.length === 0) {
-    selectedDates = [todayStr];
-  }
+  let selectedDates = alarmData.type === 'date'
+    ? normalizeTodoAlarmDates(alarmData).filter(d => d >= todayStr)
+    : [];
 
   const [initH, initM] = (alarmData.time || '12:00').split(':');
 
@@ -144,11 +144,7 @@ function createTodoInlineForm(initialTodo, initialAlarm, isDraft, onSave, onCanc
       </div>
 
       <div class="inline-date-group" style="display: ${alarmData.type === 'date' ? 'block' : 'none'};">
-        <div class="date-picker-row">
-          <input type="date" class="inline-date-input" min="${todayStr}" value="${selectedDates[0] || todayStr}" style="flex: 1; min-width: 0; box-sizing: border-box; padding: 4px 8px; border: 1.5px solid #c5e1a5; border-radius: 8px; outline: none; font-family: inherit; font-size: 12px;">
-          <button type="button" class="btn-add-date">➕ 加入</button>
-        </div>
-        <div class="selected-dates-list"></div>
+        <div class="inline-calendar-mount"></div>
       </div>
 
       <div class="inline-form-row space-between" style="font-size: 12px;">
@@ -207,46 +203,18 @@ function createTodoInlineForm(initialTodo, initialAlarm, isDraft, onSave, onCanc
   const onceGroup = formCard.querySelector('.inline-once-group');
   const dateGroup = formCard.querySelector('.inline-date-group');
   const weeklyGroup = formCard.querySelector('.inline-weekly-group');
-  const dateInput = formCard.querySelector('.inline-date-input');
-  const btnAddDate = formCard.querySelector('.btn-add-date');
-  const selectedDatesList = formCard.querySelector('.selected-dates-list');
+  const calendarMount = formCard.querySelector('.inline-calendar-mount');
 
-  function renderTodoSelectedDates() {
-    selectedDates.sort();
-    selectedDatesList.innerHTML = '';
-    if (selectedDates.length === 0) {
-      selectedDatesList.innerHTML = '<span style="font-size: 11px; color: #888;">請選擇並加入日期（可多選）</span>';
-      return;
-    }
-    selectedDates.forEach(d => {
-      const chip = document.createElement('span');
-      chip.className = 'date-tag-chip';
-      chip.innerHTML = `<span>${d}</span><button type="button" class="date-tag-remove" title="移除 ${d}">✕</button>`;
-      chip.querySelector('.date-tag-remove').addEventListener('click', () => {
-        selectedDates = selectedDates.filter(item => item !== d);
-        renderTodoSelectedDates();
-      });
-      selectedDatesList.appendChild(chip);
-    });
-  }
-
-  function addTodoDate(val) {
-    if (!val || !/^\d{4}-\d{2}-\d{2}$/.test(val)) return;
-    if (val < todayStr) {
-      showError('特定日期不能選擇過去的日期！');
-      return;
-    }
-    if (!selectedDates.includes(val)) {
-      selectedDates.push(val);
-      selectedDates.sort();
-    }
-    renderTodoSelectedDates();
-  }
-
-  renderTodoSelectedDates();
-
-  dateInput.addEventListener('change', () => addTodoDate(dateInput.value));
-  btnAddDate.addEventListener('click', () => addTodoDate(dateInput.value));
+  const todoCalendar = mountMultiDateCalendar(calendarMount, {
+    initialDates: selectedDates,
+    minDate: todayStr,
+    showQuickButtons: true,
+    compact: true,
+    onChange: (nextDates) => {
+      selectedDates = nextDates;
+    },
+    onInvalidDate: (msg) => showError(msg)
+  });
 
   radios.forEach(r => r.addEventListener('change', () => {
     if (!r.checked) return;
@@ -285,12 +253,9 @@ function createTodoInlineForm(initialTodo, initialAlarm, isDraft, onSave, onCanc
           return;
         }
       } else {
-        finalDates = [...selectedDates];
-        if (finalDates.length === 0 && dateInput.value) {
-          finalDates = [dateInput.value];
-        }
+        finalDates = todoCalendar.getDates();
         if (finalDates.length === 0) {
-          showError('請至少選擇一個特定日期！');
+          showError('請在日曆上至少點選一個特定日期！');
           return;
         }
         finalDates.sort();

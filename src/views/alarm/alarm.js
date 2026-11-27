@@ -9,6 +9,7 @@ ipcRenderer.on('reload-data', () => {
 });
 
 const { alarmsPath, petStatePath } = require('../../utils/paths');
+const { mountMultiDateCalendar } = require('../../utils/multi_date_calendar');
 let alarms = [];
 let todos = [];
 
@@ -39,20 +40,6 @@ function getNowLocal() {
     currentH: hours,
     currentM: minutes
   };
-}
-
-function addDaysLocal(offsetDays) {
-  const now = new Date();
-  const target = new Date(now.getFullYear(), now.getMonth(), now.getDate() + offsetDays);
-  return formatLocalDate(target);
-}
-
-function formatDateChipLabel(dateStr) {
-  const parts = dateStr.split('-').map(Number);
-  if (parts.length !== 3 || parts.some(Number.isNaN)) return dateStr;
-  const d = new Date(parts[0], parts[1] - 1, parts[2]);
-  const dayNames = ['日', '一', '二', '三', '四', '五', '六'];
-  return `${dateStr} (${dayNames[d.getDay()]})`;
 }
 
 function normalizeAlarmDates(alarm) {
@@ -456,17 +443,7 @@ function createAlarmInlineForm(initialData, isDraft, onSave, onCancel) {
     </div>
 
     <div class="inline-date-group" style="display: ${data.type === 'date' ? 'block' : 'none'};">
-      <div class="date-picker-row">
-        <input type="date" class="inline-date-input" min="${todayStr}" value="${selectedDates[0] || todayStr}">
-        <button type="button" class="btn-add-date" title="將目前選取的日期加入清單">➕ 加入</button>
-      </div>
-      <div class="date-quick-row">
-        <button type="button" class="btn-quick-date" data-offset-days="0">今天</button>
-        <button type="button" class="btn-quick-date" data-offset-days="1">明天</button>
-        <button type="button" class="btn-quick-date" data-offset-days="2">後天</button>
-        <span class="date-count-hint"></span>
-      </div>
-      <div class="selected-dates-list"></div>
+      <div class="inline-calendar-mount"></div>
     </div>
 
     <div class="inline-form-row space-between" style="font-size: 13px; flex-wrap: wrap; gap: 8px;">
@@ -545,11 +522,7 @@ function createAlarmInlineForm(initialData, isDraft, onSave, onCancel) {
   const hourSelect = formCard.querySelector('.inline-hour-select');
   const minSelect = formCard.querySelector('.inline-minute-select');
   const timeInput = formCard.querySelector('.inline-time-input');
-  const dateInput = formCard.querySelector('.inline-date-input');
-  const btnAddDate = formCard.querySelector('.btn-add-date');
-  const quickDateBtns = formCard.querySelectorAll('.btn-quick-date');
-  const dateCountHint = formCard.querySelector('.date-count-hint');
-  const selectedDatesList = formCard.querySelector('.selected-dates-list');
+  const calendarMount = formCard.querySelector('.inline-calendar-mount');
   const onceHint = formCard.querySelector('.inline-once-hint');
   const errorTip = formCard.querySelector('.inline-error-tip');
 
@@ -586,78 +559,20 @@ function createAlarmInlineForm(initialData, isDraft, onSave, onCancel) {
     onceHint.textContent = `⚡ 將於${dayLabel} (${targetDate}) ${selectedTime} 提醒一次並自動關閉`;
   }
 
-  function renderSelectedDates() {
-    selectedDates.sort();
-    if (dateCountHint) {
-      dateCountHint.textContent = selectedDates.length > 0 ? `已選 ${selectedDates.length} 天` : '尚未加入日期';
-    }
-    quickDateBtns.forEach(btn => {
-      const offset = parseInt(btn.dataset.offsetDays, 10) || 0;
-      const targetStr = addDaysLocal(offset);
-      btn.classList.toggle('active', selectedDates.includes(targetStr));
-    });
-
-    if (!selectedDatesList) return;
-    selectedDatesList.innerHTML = '';
-    if (selectedDates.length === 0) {
-      const hint = document.createElement('span');
-      hint.className = 'selected-dates-empty';
-      hint.textContent = '選擇日期會自動加入，可多選多天';
-      selectedDatesList.appendChild(hint);
-      return;
-    }
-
-    selectedDates.forEach(d => {
-      const chip = document.createElement('span');
-      chip.className = 'date-tag-chip';
-      chip.dataset.date = d;
-
-      const label = document.createElement('span');
-      label.textContent = formatDateChipLabel(d);
-
-      const removeBtn = document.createElement('button');
-      removeBtn.type = 'button';
-      removeBtn.className = 'date-tag-remove';
-      removeBtn.dataset.date = d;
-      removeBtn.title = `移除 ${d}`;
-      removeBtn.textContent = '✕';
-      removeBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        selectedDates = selectedDates.filter(item => item !== d);
-        if (selectedDates.length > 0) {
-          dateInput.value = selectedDates[0];
-        }
-        renderSelectedDates();
+  let isRestrictionsReady = false;
+  const multiCalendar = mountMultiDateCalendar(calendarMount, {
+    initialDates: selectedDates,
+    minDate: todayStr,
+    showQuickButtons: true,
+    onChange: (nextDates) => {
+      selectedDates = nextDates;
+      if (isRestrictionsReady) {
         updateTimeRestrictions(false);
-      });
-
-      chip.appendChild(label);
-      chip.appendChild(removeBtn);
-      selectedDatesList.appendChild(chip);
-    });
-  }
-
-  function addDateToSelection(dateStr, { silentDuplicate = false } = {}) {
-    const currentNow = getNowLocal();
-    if (!dateStr) {
-      showError('請先選擇一個日期！');
-      return false;
-    }
-    if (dateStr < currentNow.todayStr) {
-      showError('特定日期不能選擇過去的日期！');
-      return false;
-    }
-    if (selectedDates.includes(dateStr)) {
-      if (!silentDuplicate) {
-        showError(`日期 ${dateStr} 已經在清單中囉！`);
       }
-      return false;
-    }
-    selectedDates = [...selectedDates, dateStr].sort();
-    renderSelectedDates();
-    updateTimeRestrictions(false);
-    return true;
-  }
+    },
+    onInvalidDate: (msg) => showError(msg)
+  });
+  const dateInput = multiCalendar.getDateInput();
 
   if (comboboxField) {
     comboboxField.addEventListener('click', (e) => {
@@ -738,6 +653,7 @@ function createAlarmInlineForm(initialData, isDraft, onSave, onCancel) {
     const selectedType = checkedRadio ? checkedRadio.value : 'once';
     const isDateMode = selectedType === 'date';
 
+    multiCalendar.setMinDate(currentNow.todayStr);
     dateInput.min = currentNow.todayStr;
     if (isDateMode && dateInput.value && dateInput.value < currentNow.todayStr) {
       dateInput.value = currentNow.todayStr;
@@ -779,7 +695,7 @@ function createAlarmInlineForm(initialData, isDraft, onSave, onCancel) {
     updateOnceHint();
   }
 
-  renderSelectedDates();
+  isRestrictionsReady = true;
   // 套用初始時間限制
   updateTimeRestrictions(false);
 
@@ -799,35 +715,6 @@ function createAlarmInlineForm(initialData, isDraft, onSave, onCancel) {
     if (!r.checked) return;
     syncTypeGroups(r.value);
   }));
-
-  dateInput.addEventListener('change', () => {
-    if (dateInput.value) {
-      addDateToSelection(dateInput.value, { silentDuplicate: true });
-    } else {
-      updateTimeRestrictions(false);
-    }
-  });
-
-  btnAddDate.addEventListener('click', (e) => {
-    e.stopPropagation();
-    addDateToSelection(dateInput.value, { silentDuplicate: false });
-  });
-
-  quickDateBtns.forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const offset = parseInt(btn.dataset.offsetDays, 10) || 0;
-      const targetStr = addDaysLocal(offset);
-      if (selectedDates.includes(targetStr)) {
-        selectedDates = selectedDates.filter(d => d !== targetStr);
-        renderSelectedDates();
-        updateTimeRestrictions(false);
-      } else {
-        dateInput.value = targetStr;
-        addDateToSelection(targetStr, { silentDuplicate: true });
-      }
-    });
-  });
 
   hourSelect.addEventListener('change', () => {
     updateTimeRestrictions(false);
@@ -902,11 +789,9 @@ function createAlarmInlineForm(initialData, isDraft, onSave, onCancel) {
         return;
       }
     } else {
-      finalDates = selectedDates.length > 0
-        ? [...selectedDates]
-        : (dateInput.value ? [dateInput.value] : []);
+      finalDates = multiCalendar.getDates();
       if (finalDates.length === 0) {
-        showError('請至少選擇一個特定日期！');
+        showError('請在日曆上至少點選一個特定日期！');
         return;
       }
 
