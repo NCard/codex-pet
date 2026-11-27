@@ -1,12 +1,13 @@
 /**
  * Wiki Wiki 底部 RPG 風格狀態條模組 (status_hud.js)
- * 顯示 HP（飽食度）、MP（心情值）、CPU（主機負載），並依設定動態開關與變色。
+ * HP（飽食度，最低保留 1）、MP（心情值）、SP（剩餘 CPU 耐力 100 - CPU%），
+ * 全部以純數值顯示（不加 % 符號），並依設定動態開關與變色。
  */
 
-function clampPercent(value, fallback = 0) {
+function clampPercent(value, fallback = 0, min = 0) {
   const num = Number(value);
   if (!Number.isFinite(num)) return fallback;
-  return Math.max(0, Math.min(100, Math.round(num)));
+  return Math.max(min, Math.min(100, Math.round(num)));
 }
 
 function init({ hudEl, getPetState, getCpuUsage }) {
@@ -18,15 +19,15 @@ function init({ hudEl, getPetState, getCpuUsage }) {
 
   const hpRow = hudEl.querySelector('[data-bar="hp"]');
   const mpRow = hudEl.querySelector('[data-bar="mp"]');
-  const cpuRow = hudEl.querySelector('[data-bar="cpu"]');
+  const spRow = hudEl.querySelector('[data-bar="sp"]');
 
   const hpFill = hudEl.querySelector('#hud-fill-hp');
   const mpFill = hudEl.querySelector('#hud-fill-mp');
-  const cpuFill = hudEl.querySelector('#hud-fill-cpu');
+  const spFill = hudEl.querySelector('#hud-fill-sp');
 
   const hpVal = hudEl.querySelector('#hud-val-hp');
   const mpVal = hudEl.querySelector('#hud-val-mp');
-  const cpuVal = hudEl.querySelector('#hud-val-cpu');
+  const spVal = hudEl.querySelector('#hud-val-sp');
 
   function update() {
     const state = typeof getPetState === 'function' ? (getPetState() || {}) : {};
@@ -42,32 +43,34 @@ function init({ hudEl, getPetState, getCpuUsage }) {
 
     hudEl.style.display = 'flex';
 
-    const hunger = clampPercent(state.hunger, 100);
-    const mood = clampPercent(state.mood, 100);
-    const cpu = clampPercent(typeof getCpuUsage === 'function' ? getCpuUsage() : 0, 0);
+    // HP 至少保留 1，不會掉到 0
+    const hp = clampPercent(state.hunger, 100, 1);
+    const mp = clampPercent(state.mood, 100, 0);
+    const cpuUsage = clampPercent(typeof getCpuUsage === 'function' ? getCpuUsage() : 0, 0, 0);
+    const sp = 100 - cpuUsage;
 
     if (hpRow) {
       hpRow.style.display = hungerEnabled ? 'flex' : 'none';
-      hpRow.classList.toggle('is-warn', hunger > 20 && hunger <= 50);
-      hpRow.classList.toggle('is-danger', hunger <= 20);
+      hpRow.classList.toggle('is-warn', hp > 20 && hp <= 50);
+      hpRow.classList.toggle('is-danger', hp <= 20);
     }
-    if (hpFill) hpFill.style.width = `${hunger}%`;
-    if (hpVal) hpVal.textContent = `${hunger}`;
+    if (hpFill) hpFill.style.width = `${hp}%`;
+    if (hpVal) hpVal.textContent = `${hp}`;
 
     if (mpRow) {
       mpRow.style.display = hungerEnabled ? 'flex' : 'none';
-      mpRow.classList.toggle('is-low', mood <= 30);
+      mpRow.classList.toggle('is-low', mp <= 30);
     }
-    if (mpFill) mpFill.style.width = `${mood}%`;
-    if (mpVal) mpVal.textContent = `${mood}`;
+    if (mpFill) mpFill.style.width = `${mp}%`;
+    if (mpVal) mpVal.textContent = `${mp}`;
 
-    if (cpuRow) {
-      cpuRow.style.display = 'flex';
-      cpuRow.classList.toggle('is-warn', cpu > 50 && cpu <= 75);
-      cpuRow.classList.toggle('is-danger', cpu > 75);
+    if (spRow) {
+      spRow.style.display = 'flex';
+      spRow.classList.toggle('is-warn', sp >= 25 && sp < 50);
+      spRow.classList.toggle('is-danger', sp < 25);
     }
-    if (cpuFill) cpuFill.style.width = `${cpu}%`;
-    if (cpuVal) cpuVal.textContent = `${cpu}%`;
+    if (spFill) spFill.style.width = `${sp}%`;
+    if (spVal) spVal.textContent = `${sp}`;
   }
 
   update();

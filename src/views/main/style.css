@@ -54,7 +54,7 @@ body, html {
 }
 
 .hud-label {
-  width: 24px;
+  width: 20px;
   font-size: 9px;
   font-weight: 800;
   letter-spacing: 0.3px;
@@ -83,11 +83,15 @@ body, html {
   color: #d8b4fe;
 }
 
-.hud-cpu .hud-label {
-  color: #fcd34d;
+.hud-sp .hud-label {
+  color: #fde047;
 }
 
-.hud-cpu.is-danger .hud-label {
+.hud-sp.is-warn .hud-label {
+  color: #fdba74;
+}
+
+.hud-sp.is-danger .hud-label {
   color: #fca5a5;
 }
 
@@ -132,24 +136,24 @@ body, html {
   box-shadow: 0 0 6px rgba(192, 132, 252, 0.45);
 }
 
-.hud-cpu .hud-fill {
-  background: linear-gradient(90deg, #2dd4bf, #34d399);
-  box-shadow: 0 0 6px rgba(52, 211, 153, 0.4);
+.hud-sp .hud-fill {
+  background: linear-gradient(90deg, #eab308, #fde047);
+  box-shadow: 0 0 6px rgba(250, 204, 21, 0.45);
 }
 
-.hud-cpu.is-warn .hud-fill {
-  background: linear-gradient(90deg, #f59e0b, #fbbf24);
-  box-shadow: 0 0 6px rgba(251, 191, 36, 0.45);
+.hud-sp.is-warn .hud-fill {
+  background: linear-gradient(90deg, #f97316, #fb923c);
+  box-shadow: 0 0 6px rgba(251, 146, 60, 0.45);
 }
 
-.hud-cpu.is-danger .hud-fill {
+.hud-sp.is-danger .hud-fill {
   background: linear-gradient(90deg, #ef4444, #fb7185);
   box-shadow: 0 0 8px rgba(248, 113, 113, 0.65);
   animation: hudDangerPulse 1.2s ease-in-out infinite;
 }
 
 .hud-val {
-  width: 26px;
+  width: 22px;
   font-size: 9px;
   font-weight: 700;
   color: rgba(255, 250, 240, 0.92);

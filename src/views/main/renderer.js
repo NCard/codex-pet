@@ -431,7 +431,7 @@ setInterval(() => {
   if (now - lastStatDecayAt >= STAT_DECAY_INTERVAL_MS) {
     lastStatDecayAt = now;
     if (hungerEnabled) {
-      petState.hunger = Math.max(0, petState.hunger - 1);
+      petState.hunger = Math.max(1, petState.hunger - 1);
       petState.mood = Math.max(0, petState.mood - 1);
       savePetState();
     }

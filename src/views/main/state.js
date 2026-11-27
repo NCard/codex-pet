@@ -34,6 +34,9 @@ class StateManager {
         
         if (!this.petState.outfits) this.petState.outfits = [];
         if (!this.petState.outfitConfigs) this.petState.outfitConfigs = {};
+        if (typeof this.petState.hunger === 'number' && this.petState.hunger < 1) {
+          this.petState.hunger = 1;
+        }
         
         // Migrate obsolete AI models to the lowest cost model (gemini-3.5-flash-lite)
         if (this.petState.settings && this.petState.settings.aiModel) {

@@ -46,6 +46,10 @@ function init({ kiwi, getCurrentAction, setCurrentAction, physics, getIsDragging
       heart.offsetHeight; // trigger reflow
       heart.style.animation = 'floatHeart 1s ease-out forwards';
       
+      // 每摸一下都即時回復 15 點心情（MP），讓狀態條立刻有感回升
+      petState.mood = Math.min(100, (typeof petState.mood === 'number' ? petState.mood : 100) + 15);
+      if (savePetState) savePetState();
+
       // 每次摸摸都跳一下
       kiwi.classList.add('jumping');
       setTimeout(() => { kiwi.classList.remove('jumping'); }, 500);
@@ -62,10 +66,6 @@ function init({ kiwi, getCurrentAction, setCurrentAction, physics, getIsDragging
         if (petCount >= 3) {
           isWaitingForPet = false;
           petCount = 0;
-          
-          // 增加心情
-          petState.mood = Math.min(100, petState.mood + 20);
-          if (savePetState) savePetState();
           
           // 隨機抽選對話
           const text = getDialogue('interactions', 'petComfort');

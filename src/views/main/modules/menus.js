@@ -55,7 +55,7 @@ function init({
       interaction.startPettingMode();
       showTempBubble(getDialogue('interactions', 'petReady'));
     } else {
-      petState.mood = Math.min(100, petState.mood + 20);
+      petState.mood = Math.min(100, petState.mood + 35);
       savePetState();
       showTempBubble(getDialogue('interactions', 'petComfort'));
       kiwiAccessory.innerText = '❤️';
