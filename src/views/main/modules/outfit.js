@@ -1,33 +1,59 @@
+const {
+  COORD_VERSION,
+  resolveOutfitConfig,
+  getOutfitAssetUrl
+} = require('../../../utils/outfits_catalog');
+
 let isOutfitEditMode = false;
 let isDraggingOutfit = false;
 let activeDraggingOutfit = null;
 let activeDraggingElement = null;
 let outfitDragStartX = 0;
 let outfitDragStartY = 0;
-let outfitStartLeft = 0;
-let outfitStartTop = 0;
+let outfitStartXPercent = 50;
+let outfitStartYPercent = 30;
+let outfitContainerWidth = 180;
+let outfitContainerHeight = 180;
+
+function clamp(val, min, max) {
+  return Math.max(min, Math.min(max, val));
+}
 
 function init({
   outfitContainer, kiwi,
-  petState, savePetState, loadPetState,
+  petState, savePetState, _loadPetState,
   ipcRenderer
 }) {
-  const defaultOutfitConfigs = {
-    '🎩': { x: 62, y: -31, scale: 60 },
-    '🕶️': { x: 76, y: 17, scale: 51 },
-    '🎀': { x: 79, y: 75, scale: 40 },
-    '👑': { x: 59, y: -38, scale: 60 },
-    '🌸': { x: 80, y: -18, scale: 20 },
-    '🎓': { x: 60, y: -34, scale: 60 },
-    '🎃': { x: 60, y: -32, scale: 44 },
-    '🎉': { x: 60, y: -35, scale: 55 },
-    '🥽': { x: 76, y: 15, scale: 45 },
-    '👓': { x: 76, y: 17, scale: 51 },
-    '🎒': { x: 79, y: 75, scale: 40 },
-    '👒': { x: 60, y: -34, scale: 60 },
-    '🧢': { x: 60, y: -32, scale: 44 },
-    '🎧': { x: 76, y: 15, scale: 45 }
-  };
+  function getConfig(outfit) {
+    return resolveOutfitConfig(outfit, petState.outfitConfigs);
+  }
+
+  function persistConfig(outfit, patch) {
+    if (!petState.outfitConfigs) petState.outfitConfigs = {};
+    const base = getConfig(outfit);
+    petState.outfitConfigs[outfit] = {
+      ...base,
+      ...patch,
+      coordVersion: COORD_VERSION
+    };
+    savePetState();
+    return petState.outfitConfigs[outfit];
+  }
+
+  function applyElementTransform(el, cfg, isImage) {
+    el.style.left = `${cfg.x}%`;
+    el.style.top = `${cfg.y}%`;
+    el.style.transform = `translate(-50%, -50%) rotate(${cfg.rotate || 0}deg)`;
+    if (isImage) {
+      el.style.width = `${cfg.scale}%`;
+    } else {
+      el.style.fontSize = `calc(var(--pet-scale, 180px) * ${(cfg.scale / 100).toFixed(4)})`;
+    }
+    el.dataset.x = String(cfg.x);
+    el.dataset.y = String(cfg.y);
+    el.dataset.scale = String(cfg.scale);
+    el.dataset.rotate = String(cfg.rotate || 0);
+  }
 
   function applyOutfitPos() {
     if (!outfitContainer) return;
@@ -35,19 +61,37 @@ function init({
     if (!petState.outfits) petState.outfits = [];
 
     petState.outfits.forEach(outfit => {
-      const config = (petState.outfitConfigs && petState.outfitConfigs[outfit])
-        || defaultOutfitConfigs[outfit]
-        || { x: 45, y: -10, scale: 60 };
+      const config = getConfig(outfit);
+      const assetUrl = getOutfitAssetUrl(outfit, '../../../assets/images/outfits/');
 
       const div = document.createElement('div');
-      div.innerText = outfit;
+      div.className = 'outfit-layer-item';
+      div.dataset.outfit = outfit;
       div.style.position = 'absolute';
-      div.style.left = `${config.x}px`;
-      div.style.top = `${config.y}px`;
-      div.style.fontSize = `${config.scale}px`;
+      div.style.transformOrigin = 'center center';
       div.style.pointerEvents = isOutfitEditMode ? 'auto' : 'none';
       div.style.cursor = isOutfitEditMode ? 'grab' : 'default';
       div.style.zIndex = '5';
+      div.style.userSelect = 'none';
+
+      if (assetUrl) {
+        const img = document.createElement('img');
+        img.src = assetUrl;
+        img.alt = outfit;
+        img.draggable = false;
+        img.style.width = '100%';
+        img.style.height = 'auto';
+        img.style.display = 'block';
+        img.style.pointerEvents = 'none';
+        img.style.userSelect = 'none';
+        img.style.filter = 'drop-shadow(0 1px 2px rgba(74, 48, 28, 0.22))';
+        div.appendChild(img);
+      } else {
+        div.textContent = outfit;
+        div.style.lineHeight = '1';
+      }
+
+      applyElementTransform(div, config, Boolean(assetUrl));
 
       div.addEventListener('mousedown', (e) => {
         if (!isOutfitEditMode) return;
@@ -60,9 +104,10 @@ function init({
         div.style.cursor = 'grabbing';
 
         const rect = outfitContainer.getBoundingClientRect();
-        const outfitRect = div.getBoundingClientRect();
-        outfitStartLeft = outfitRect.left - rect.left;
-        outfitStartTop = outfitRect.top - rect.top;
+        outfitContainerWidth = rect.width || 180;
+        outfitContainerHeight = rect.height || 180;
+        outfitStartXPercent = parseFloat(div.dataset.x) || config.x;
+        outfitStartYPercent = parseFloat(div.dataset.y) || config.y;
 
         e.preventDefault();
         e.stopPropagation();
@@ -71,23 +116,20 @@ function init({
       div.addEventListener('wheel', (e) => {
         if (!isOutfitEditMode) return;
         e.preventDefault();
-        let currentScale = parseInt(div.style.fontSize || 60);
-        if (e.deltaY < 0) {
-          currentScale += 2;
+        const curScale = parseInt(div.dataset.scale, 10) || config.scale;
+        const curRotate = parseInt(div.dataset.rotate, 10) || 0;
+
+        if (e.shiftKey) {
+          const nextRotate = clamp(curRotate + (e.deltaY < 0 ? 3 : -3), -45, 45);
+          const updated = persistConfig(outfit, { rotate: nextRotate });
+          applyElementTransform(div, updated, Boolean(assetUrl));
+          ipcRenderer.send('outfit-pos-updated', { outfit, rotate: nextRotate });
         } else {
-          currentScale -= 2;
+          const nextScale = clamp(curScale + (e.deltaY < 0 ? 2 : -2), 10, 90);
+          const updated = persistConfig(outfit, { scale: nextScale });
+          applyElementTransform(div, updated, Boolean(assetUrl));
+          ipcRenderer.send('outfit-pos-updated', { outfit, scale: nextScale });
         }
-        if (currentScale < 10) currentScale = 10;
-        if (currentScale > 150) currentScale = 150;
-
-        div.style.fontSize = `${currentScale}px`;
-
-        if (!petState.outfitConfigs) petState.outfitConfigs = {};
-        if (!petState.outfitConfigs[outfit]) petState.outfitConfigs[outfit] = {};
-        petState.outfitConfigs[outfit].scale = currentScale;
-        savePetState();
-
-        ipcRenderer.send('outfit-pos-updated', { outfit, scale: currentScale });
       });
 
       outfitContainer.appendChild(div);
@@ -97,34 +139,38 @@ function init({
   // Event listeners for global dragging
   window.addEventListener('mousemove', (e) => {
     if (isDraggingOutfit && activeDraggingElement) {
-      const flip = parseInt(document.getElementById('kiwi-wrapper').style.getPropertyValue('--flip')) || 1;
-      const dx = (e.clientX - outfitDragStartX) * flip;
-      const dy = (e.clientY - outfitDragStartY);
-      let newLeft = outfitStartLeft + dx;
-      let newTop = outfitStartTop + dy;
+      const wrapper = document.getElementById('kiwi-wrapper');
+      const flip = (wrapper && parseInt(wrapper.style.getPropertyValue('--flip'), 10)) || 1;
+      const dxPx = (e.clientX - outfitDragStartX) * flip;
+      const dyPx = (e.clientY - outfitDragStartY);
 
-      activeDraggingElement.style.left = `${newLeft}px`;
-      activeDraggingElement.style.top = `${newTop}px`;
-      ipcRenderer.send('outfit-pos-updated', { outfit: activeDraggingOutfit, x: newLeft, y: newTop });
+      const newX = clamp(Math.round(outfitStartXPercent + (dxPx / outfitContainerWidth) * 100), -20, 120);
+      const newY = clamp(Math.round(outfitStartYPercent + (dyPx / outfitContainerHeight) * 100), -20, 120);
+
+      activeDraggingElement.style.left = `${newX}%`;
+      activeDraggingElement.style.top = `${newY}%`;
+      activeDraggingElement.dataset.x = String(newX);
+      activeDraggingElement.dataset.y = String(newY);
+      ipcRenderer.send('outfit-pos-updated', { outfit: activeDraggingOutfit, x: newX, y: newY });
     }
   });
 
-  window.addEventListener('mouseup', (e) => {
+  window.addEventListener('mouseup', () => {
     if (isDraggingOutfit && activeDraggingElement) {
       isDraggingOutfit = false;
       activeDraggingElement.style.cursor = 'grab';
 
-      const currentLeft = parseInt(activeDraggingElement.style.left || 0);
-      const currentTop = parseInt(activeDraggingElement.style.top || 0);
-      const currentScale = parseInt(activeDraggingElement.style.fontSize || 60);
+      const currentX = parseInt(activeDraggingElement.dataset.x, 10);
+      const currentY = parseInt(activeDraggingElement.dataset.y, 10);
+      const currentScale = parseInt(activeDraggingElement.dataset.scale, 10);
+      const currentRotate = parseInt(activeDraggingElement.dataset.rotate, 10) || 0;
 
-      if (!petState.outfitConfigs) petState.outfitConfigs = {};
-      if (!petState.outfitConfigs[activeDraggingOutfit]) petState.outfitConfigs[activeDraggingOutfit] = {};
-
-      petState.outfitConfigs[activeDraggingOutfit].x = currentLeft;
-      petState.outfitConfigs[activeDraggingOutfit].y = currentTop;
-      petState.outfitConfigs[activeDraggingOutfit].scale = currentScale;
-      savePetState();
+      persistConfig(activeDraggingOutfit, {
+        x: Number.isNaN(currentX) ? 50 : currentX,
+        y: Number.isNaN(currentY) ? 30 : currentY,
+        scale: Number.isNaN(currentScale) ? 30 : currentScale,
+        rotate: currentRotate
+      });
 
       activeDraggingElement = null;
       activeDraggingOutfit = null;
@@ -144,7 +190,7 @@ function init({
   });
 
   ipcRenderer.on('update-outfit', (event, newOutfits) => {
-    petState.outfits = newOutfits || [];
+    petState.outfits = Array.isArray(newOutfits) ? newOutfits : [];
     savePetState();
     applyOutfitPos();
     if (kiwi) {
@@ -153,16 +199,14 @@ function init({
     }
   });
 
-  ipcRenderer.on('update-outfit-pos', (event, { outfit, x, y, scale }) => {
-    if (!petState.outfitConfigs) petState.outfitConfigs = {};
-    if (!petState.outfitConfigs[outfit]) {
-      petState.outfitConfigs[outfit] = defaultOutfitConfigs[outfit] || { x: 45, y: -10, scale: 60 };
-    }
-    if (x !== undefined) petState.outfitConfigs[outfit].x = x;
-    if (y !== undefined) petState.outfitConfigs[outfit].y = y;
-    if (scale !== undefined) petState.outfitConfigs[outfit].scale = scale;
+  ipcRenderer.on('update-outfit-pos', (event, { outfit, x, y, scale, rotate }) => {
+    const patch = {};
+    if (x !== undefined) patch.x = x;
+    if (y !== undefined) patch.y = y;
+    if (scale !== undefined) patch.scale = scale;
+    if (rotate !== undefined) patch.rotate = rotate;
 
-    savePetState();
+    persistConfig(outfit, patch);
     applyOutfitPos();
   });
 

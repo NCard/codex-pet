@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
   <title>Wiki Wiki 的衣櫥</title>
@@ -8,43 +8,65 @@
 </head>
 <body>
   <div class="header">
-    <h1>👗 Wiki Wiki 的衣櫥</h1>
-    <p>挑選喜歡的飾品，並拖曳微調位置！</p>
-  </div>
-  
-  <div class="wardrobe">
-    <div class="outfit-btn" data-outfit="">無</div>
-    <div class="outfit-btn" data-outfit="🎩"><span class="emoji">🎩</span><span class="remove-badge">✕</span></div>
-    <div class="outfit-btn" data-outfit="🕶️"><span class="emoji">🕶️</span><span class="remove-badge">✕</span></div>
-    <div class="outfit-btn" data-outfit="🎀"><span class="emoji">🎀</span><span class="remove-badge">✕</span></div>
-    <div class="outfit-btn" data-outfit="👑"><span class="emoji">👑</span><span class="remove-badge">✕</span></div>
-    <div class="outfit-btn" data-outfit="🌸"><span class="emoji">🌸</span><span class="remove-badge">✕</span></div>
-    <div class="outfit-btn" data-outfit="🎓"><span class="emoji">🎓</span><span class="remove-badge">✕</span></div>
-    <div class="outfit-btn" data-outfit="🎃"><span class="emoji">🎃</span><span class="remove-badge">✕</span></div>
-    <div class="outfit-btn" data-outfit="🎉"><span class="emoji">🎉</span><span class="remove-badge">✕</span></div>
-    <div class="outfit-btn" data-outfit="🥽"><span class="emoji">🥽</span><span class="remove-badge">✕</span></div>
+    <h1>👗 Wiki Wiki 的日系繪本衣櫥</h1>
+    <p>挑選喜歡的繪本飾品，直接貼齊比例縮放，還可拖曳或旋轉斜戴！</p>
   </div>
 
+  <!-- 模式切換與分類篩選列 -->
+  <div class="toolbar-card">
+    <div class="slot-tabs" id="slot-tabs">
+      <button type="button" class="slot-tab active" data-slot="all">全部</button>
+      <button type="button" class="slot-tab" data-slot="head">🎩 頭飾</button>
+      <button type="button" class="slot-tab" data-slot="face">👓 臉飾</button>
+      <button type="button" class="slot-tab" data-slot="body">🎀 配飾</button>
+    </div>
+    <label class="freestack-toggle" title="預設同部位（如帽子）會自動替換；開啟後可自由疊加多個飾品">
+      <input type="checkbox" id="toggle-free-stack">
+      <span>自由疊加</span>
+    </label>
+  </div>
+
+  <!-- 精選 8 件日系繪本手繪 PNG 飾品網格 -->
+  <div class="wardrobe" id="featured-wardrobe"></div>
+
+  <!-- 經典 Emoji 飾品折疊區（向下相容保留） -->
+  <details class="legacy-drawer" id="legacy-drawer">
+    <summary>✨ 其他經典 Emoji 飾品（保留相容）</summary>
+    <div class="wardrobe legacy-wardrobe" id="legacy-wardrobe"></div>
+  </details>
+
+  <!-- 精準微調面板（位置 / 大小 / 旋轉角度） -->
   <div class="controls-container" id="controls" style="display: none;">
-    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-bottom: 15px;">
-      <h3 style="margin: 0; border: none; padding: 0;">精準微調 <span class="tip">(或拖曳飾品)</span></h3>
-      <button id="btn-reset" class="reset-btn">還原預設</button>
+    <div class="controls-header">
+      <h3 id="controls-title">精準微調 <span class="tip">(可拖曳或滾輪縮放)</span></h3>
+      <button type="button" id="btn-reset" class="reset-btn">↺ 還原預設</button>
     </div>
+
     <div class="control-group">
-      <label>水平位置 (左右):</label>
-      <input type="range" id="pos-x" min="-100" max="200" value="45">
-      <span class="val" id="val-x">45</span>
+      <label for="pos-x">水平位置 (左右)</label>
+      <input type="range" id="pos-x" min="-10" max="110" value="50">
+      <span class="val" id="val-x">50</span>
     </div>
+
     <div class="control-group">
-      <label>垂直高度 (上下):</label>
-      <input type="range" id="pos-y" min="-100" max="200" value="-10">
-      <span class="val" id="val-y">-10</span>
+      <label for="pos-y">垂直高度 (上下)</label>
+      <input type="range" id="pos-y" min="-10" max="110" value="20">
+      <span class="val" id="val-y">20</span>
     </div>
+
     <div class="control-group">
-      <label>飾品大小 (縮放):</label>
-      <input type="range" id="scale" min="10" max="150" value="60">
-      <span class="val" id="val-scale">60</span>
+      <label for="scale">飾品大小 (比例)</label>
+      <input type="range" id="scale" min="10" max="90" value="35">
+      <span class="val" id="val-scale">35</span>
     </div>
+
+    <div class="control-group">
+      <label for="rotate">旋轉角度 (斜戴)</label>
+      <input type="range" id="rotate" min="-45" max="45" value="0">
+      <span class="val" id="val-rotate">0°</span>
+    </div>
+
+    <div class="controls-hint">💡 提示：直接拖曳桌面上的飾品可調位置；滾輪縮放、按住 <b>Shift + 滾輪</b>可微調斜戴角度。</div>
   </div>
 
   <script src="outfit.js"></script>

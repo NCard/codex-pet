@@ -19,6 +19,7 @@ const server = new Server(
 
 // Helper functions for reading/writing states
 const { petStatePath, alarmsPath } = require('../utils/paths');
+const { applyOutfitSelection } = require('../utils/outfits_catalog');
 
 function getPetState() {
   if (fs.existsSync(petStatePath)) {
@@ -194,9 +195,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       state.outfits = [];
       state.outfit = '';
     } else if (mode === 'add') {
-      if (!state.outfits.includes(targetOutfit)) {
-        state.outfits.push(targetOutfit);
-      }
+      const freeStack = Boolean(state.settings && state.settings.outfitFreeStack);
+      state.outfits = applyOutfitSelection(state.outfits, targetOutfit, { freeStack });
       state.outfit = targetOutfit;
     } else if (mode === 'remove') {
       state.outfits = state.outfits.filter(o => o !== targetOutfit);

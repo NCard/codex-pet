@@ -608,8 +608,8 @@ app.whenReady().then(() => {
     }
     outfitWin = new BrowserWindow({
       icon: path.join(__dirname, '../../assets/images/kiwi.png'),
-      width: 400,
-      height: 550,
+      width: 430,
+      height: 640,
       title: 'Wiki Wiki 的衣櫥',
       show: false,
       webPreferences: {
