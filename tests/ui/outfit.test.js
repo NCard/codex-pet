@@ -5,7 +5,9 @@
 const fs = require('fs');
 const path = require('path');
 const outfitModule = require('../../src/views/main/modules/outfit');
+const menusModule = require('../../src/views/main/modules/menus');
 const catalog = require('../../src/utils/outfits_catalog');
+const { DIALOGUES } = require('../../src/utils/dialogues');
 
 describe('Outfit Module & Japanese Picture-Book Wardrobe Tests', () => {
   let mockOutfitContainer;
@@ -13,6 +15,7 @@ describe('Outfit Module & Japanese Picture-Book Wardrobe Tests', () => {
   let mockPetState;
   let mockIpcRenderer;
   let mockSavePetState;
+  let outfitController;
   let listeners = {};
 
   beforeEach(() => {
@@ -28,7 +31,7 @@ describe('Outfit Module & Japanese Picture-Book Wardrobe Tests', () => {
       })
     };
 
-    outfitModule.init({
+    outfitController = outfitModule.init({
       outfitContainer: mockOutfitContainer,
       kiwi: mockKiwi,
       petState: mockPetState,
@@ -119,5 +122,84 @@ describe('Outfit Module & Japanese Picture-Book Wardrobe Tests', () => {
 
     listeners['outfit-closed']();
     expect(outfitModule.getIsOutfitEditMode()).toBe(false);
+  });
+
+  test('setActivePose offsets outfits for eating1/jump, applies headphone override, and hides on sleep', () => {
+    const baseHat = catalog.getDefaultOutfitConfig('🎩');
+    const eatHeadOff = catalog.getPoseSlotOffset('eating1', 'head', '🎩');
+
+    outfitController.setActivePose('eating1');
+    const hatEl = mockOutfitContainer.querySelector('.outfit-layer-item[data-outfit="🎩"]');
+    expect(hatEl.style.left).toBe(`${baseHat.x + eatHeadOff.dx}%`);
+    expect(hatEl.style.top).toBe(`${baseHat.y + eatHeadOff.dy}%`);
+    expect(hatEl.style.transform).toContain(`rotate(${baseHat.rotate + eatHeadOff.dRotate}deg)`);
+
+    // Sleep hides outfit container cleanly; returning to idle restores display and base position
+    outfitController.setActivePose('sleep');
+    expect(mockOutfitContainer.style.display).toBe('none');
+
+    outfitController.setActivePose('idle');
+    expect(mockOutfitContainer.style.display).toBe('block');
+    expect(hatEl.style.left).toBe(`${baseHat.x}%`);
+    expect(hatEl.style.top).toBe(`${baseHat.y}%`);
+
+    // Per-item override for headphones during eating1
+    const hpOff = catalog.getPoseSlotOffset('eating1', 'head', '🎧');
+    expect(hpOff.dy).toBeGreaterThan(eatHeadOff.dy);
+  });
+
+  test('feeding refuses with full-belly dialogue when hunger >= 95 and feeds normally when hunger < 95', () => {
+    document.body.innerHTML = '<div id="kiwi-character"></div>';
+    const mkBtn = () => document.createElement('div');
+    const menuFeed = mkBtn();
+    const customMenu = document.createElement('div');
+    const showTempBubble = jest.fn();
+    const savePetState = jest.fn();
+    let currentAction = 'idle';
+    const feedState = { hunger: 96, mood: 80, settings: { enableHungerSystem: true } };
+
+    menusModule.init({
+      kiwi: mockKiwi,
+      customMenu,
+      ipcRenderer: mockIpcRenderer,
+      petState: feedState,
+      savePetState,
+      getCurrentAction: () => currentAction,
+      setCurrentAction: (a) => { currentAction = a; },
+      showTempBubble,
+      kiwiAccessory: document.createElement('div'),
+      getIsWorking: () => false,
+      setOutfitEditMode: jest.fn(),
+      setIgnoreWakeup: jest.fn(),
+      elements: {
+        menuTodo: mkBtn(),
+        menuFeed,
+        menuPet: mkBtn(),
+        menuOutfit: mkBtn(),
+        menuSettings: mkBtn(),
+        menuSleep: mkBtn(),
+        menuHistory: mkBtn(),
+        menuAlarm: mkBtn(),
+        menuClose: mkBtn(),
+        menuLaser: mkBtn(),
+        outfitContainer: mockOutfitContainer
+      },
+      laser: { toggleLaserGame: jest.fn() },
+      interaction: { startPettingMode: jest.fn() }
+    });
+
+    // At hunger 96 (>= 95): refuses with feedFull dialogue, does NOT enter eating
+    menuFeed.click();
+    expect(currentAction).toBe('idle');
+    expect(savePetState).not.toHaveBeenCalled();
+    expect(showTempBubble).toHaveBeenCalledTimes(1);
+    expect(DIALOGUES.interactions.feedFull).toContain(showTempBubble.mock.calls[0][0]);
+
+    // At hunger 80 (< 95): eats normally and restores +30 (capped at 100)
+    feedState.hunger = 80;
+    menuFeed.click();
+    expect(currentAction).toBe('eating');
+    expect(feedState.hunger).toBe(100);
+    expect(savePetState).toHaveBeenCalledTimes(1);
   });
 });

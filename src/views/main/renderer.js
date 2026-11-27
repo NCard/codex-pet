@@ -396,11 +396,12 @@ setInterval(() => {
 const wandering = require('./modules/wandering');
 const outfit = require('./modules/outfit');
 
-const { applyOutfitPos } = outfit.init({
+const outfitController = outfit.init({
   outfitContainer, kiwi,
   petState, savePetState, loadPetState,
   ipcRenderer
 });
+const { applyOutfitPos } = outfitController;
 wandering.init({
   laser, getCurrentAction: () => currentAction, setCurrentAction: (action) => currentAction = action,
   kiwi, getIsWorking: () => isWorking, chatBubble, chatInput, getRealWindowPos, getResolutionScale,
@@ -588,6 +589,11 @@ spriteAnimatorRef = spriteAnimatorModule.init({
       (monologueBubble.classList.contains('visible') || (monologueBubble.style.display && monologueBubble.style.display !== 'none'))
     );
     return chatOpen || inputOpen || monologueOpen;
+  },
+  onSpriteChange: (spriteKey) => {
+    if (outfitController && typeof outfitController.setActivePose === 'function') {
+      outfitController.setActivePose(spriteKey);
+    }
   }
 });
 

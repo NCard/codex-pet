@@ -6,6 +6,48 @@
 
 const COORD_VERSION = 2;
 
+// 各動作幀相對站姿的部位偏移量（百分比座標與旋轉角度增量）
+const POSE_SLOT_OFFSETS = {
+  eating1: {
+    head: { dx: 16, dy: 19, dRotate: 20 },
+    face: { dx: 12, dy: 21, dRotate: 18 },
+    body: { dx: -1, dy: 13, dRotate: 12 }
+  },
+  eating2: {
+    head: { dx: 1, dy: 1, dRotate: 3 },
+    face: { dx: 2, dy: 2, dRotate: 3 },
+    body: { dx: -2, dy: 1, dRotate: 2 }
+  },
+  jump: {
+    head: { dx: -3, dy: -2, dRotate: -10 },
+    face: { dx: -1, dy: -4, dRotate: -12 },
+    body: { dx: 0, dy: -2, dRotate: -4 }
+  },
+  tired: {
+    head: { dx: 1, dy: 2, dRotate: 4 },
+    face: { dx: 1, dy: 3, dRotate: 3 },
+    body: { dx: 0, dy: 1, dRotate: 0 }
+  }
+};
+
+// 特定飾品於大動作幀的個別微調（例如較大型耳機於低頭吃飯時再更貼合頭頂）
+const POSE_ITEM_OFFSETS = {
+  eating1: {
+    '🎧': { dx: 13, dy: 27, dRotate: 18 }
+  }
+};
+
+function getPoseSlotOffset(spriteKey, slot, outfitId = '') {
+  if (outfitId && POSE_ITEM_OFFSETS[spriteKey] && POSE_ITEM_OFFSETS[spriteKey][outfitId]) {
+    return { ...POSE_ITEM_OFFSETS[spriteKey][outfitId] };
+  }
+  const poseMap = POSE_SLOT_OFFSETS[spriteKey];
+  if (!poseMap || !poseMap[slot]) {
+    return { dx: 0, dy: 0, dRotate: 0 };
+  }
+  return { ...poseMap[slot] };
+}
+
 const OUTFIT_SLOTS = {
   head: { id: 'head', label: '頭飾' },
   face: { id: 'face', label: '臉飾' },
@@ -205,6 +247,7 @@ function applyOutfitSelection(currentOutfits, targetOutfit, { freeStack = false 
 
 module.exports = {
   COORD_VERSION,
+  POSE_SLOT_OFFSETS,
   OUTFIT_SLOTS,
   OUTFIT_ITEMS,
   getOutfitItem,
@@ -214,6 +257,7 @@ module.exports = {
   getDefaultOutfitConfig,
   resolveOutfitConfig,
   getOutfitSlot,
+  getPoseSlotOffset,
   getOutfitAssetUrl,
   applyOutfitSelection
 };

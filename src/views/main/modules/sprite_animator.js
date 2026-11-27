@@ -48,7 +48,8 @@ function init({
   getIsAlarmActive,
   getIsDragging,
   getIsDialogueActive,
-  onTiredStateChange
+  onTiredStateChange,
+  onSpriteChange
 }) {
   preloadSprites();
 
@@ -91,6 +92,9 @@ function init({
     if (currentSpriteKey === key) return;
     currentSpriteKey = key;
     kiwiImg.src = SPRITE_ASSETS[key];
+    if (typeof onSpriteChange === 'function') {
+      onSpriteChange(key);
+    }
   }
 
   function applyShadowState(visualState) {

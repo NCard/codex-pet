@@ -1,6 +1,8 @@
 const {
   COORD_VERSION,
   resolveOutfitConfig,
+  getOutfitSlot,
+  getPoseSlotOffset,
   getOutfitAssetUrl
 } = require('../../../utils/outfits_catalog');
 
@@ -24,6 +26,8 @@ function init({
   petState, savePetState, _loadPetState,
   ipcRenderer
 }) {
+  let currentPoseKey = 'idle';
+
   function getConfig(outfit) {
     return resolveOutfitConfig(outfit, petState.outfitConfigs);
   }
@@ -40,10 +44,22 @@ function init({
     return petState.outfitConfigs[outfit];
   }
 
-  function applyElementTransform(el, cfg, isImage) {
-    el.style.left = `${cfg.x}%`;
-    el.style.top = `${cfg.y}%`;
-    el.style.transform = `translate(-50%, -50%) rotate(${cfg.rotate || 0}deg)`;
+  function getEffectivePoseOffset(outfit) {
+    if (isOutfitEditMode || isDraggingOutfit) {
+      return { dx: 0, dy: 0, dRotate: 0 };
+    }
+    return getPoseSlotOffset(currentPoseKey, getOutfitSlot(outfit), outfit);
+  }
+
+  function applyElementTransform(el, cfg, isImage, outfit) {
+    const off = getEffectivePoseOffset(outfit);
+    const effX = cfg.x + off.dx;
+    const effY = cfg.y + off.dy;
+    const effRot = (cfg.rotate || 0) + off.dRotate;
+
+    el.style.left = `${effX}%`;
+    el.style.top = `${effY}%`;
+    el.style.transform = `translate(-50%, -50%) rotate(${effRot}deg)`;
     if (isImage) {
       el.style.width = `${cfg.scale}%`;
     } else {
@@ -53,6 +69,33 @@ function init({
     el.dataset.y = String(cfg.y);
     el.dataset.scale = String(cfg.scale);
     el.dataset.rotate = String(cfg.rotate || 0);
+  }
+
+  function refreshPoseTransforms() {
+    if (!outfitContainer) return;
+    if (currentPoseKey === 'sleep' && !isOutfitEditMode) {
+      outfitContainer.style.display = 'none';
+      return;
+    }
+    outfitContainer.style.display = 'block';
+
+    Array.from(outfitContainer.children).forEach(el => {
+      const outfit = el.dataset.outfit;
+      if (!outfit) return;
+      const cfg = getConfig(outfit);
+      const isImage = Boolean(el.querySelector('img'));
+      el.style.transition = isDraggingOutfit
+        ? 'none'
+        : 'left 0.14s ease-out, top 0.14s ease-out, transform 0.14s ease-out';
+      applyElementTransform(el, cfg, isImage, outfit);
+    });
+  }
+
+  function setActivePose(spriteKey) {
+    const nextKey = spriteKey || 'idle';
+    if (nextKey === currentPoseKey) return;
+    currentPoseKey = nextKey;
+    refreshPoseTransforms();
   }
 
   function applyOutfitPos() {
@@ -91,13 +134,14 @@ function init({
         div.style.lineHeight = '1';
       }
 
-      applyElementTransform(div, config, Boolean(assetUrl));
+      applyElementTransform(div, config, Boolean(assetUrl), outfit);
 
       div.addEventListener('mousedown', (e) => {
         if (!isOutfitEditMode) return;
         isDraggingOutfit = true;
         activeDraggingOutfit = outfit;
         activeDraggingElement = div;
+        div.style.transition = 'none';
 
         outfitDragStartX = e.clientX;
         outfitDragStartY = e.clientY;
@@ -122,12 +166,12 @@ function init({
         if (e.shiftKey) {
           const nextRotate = clamp(curRotate + (e.deltaY < 0 ? 3 : -3), -45, 45);
           const updated = persistConfig(outfit, { rotate: nextRotate });
-          applyElementTransform(div, updated, Boolean(assetUrl));
+          applyElementTransform(div, updated, Boolean(assetUrl), outfit);
           ipcRenderer.send('outfit-pos-updated', { outfit, rotate: nextRotate });
         } else {
           const nextScale = clamp(curScale + (e.deltaY < 0 ? 2 : -2), 10, 90);
           const updated = persistConfig(outfit, { scale: nextScale });
-          applyElementTransform(div, updated, Boolean(assetUrl));
+          applyElementTransform(div, updated, Boolean(assetUrl), outfit);
           ipcRenderer.send('outfit-pos-updated', { outfit, scale: nextScale });
         }
       });
@@ -187,6 +231,7 @@ function init({
       });
     }
     if (kiwi) kiwi.style.animation = ''; // 恢復呼吸動畫
+    refreshPoseTransforms();
   });
 
   ipcRenderer.on('update-outfit', (event, newOutfits) => {
@@ -216,7 +261,9 @@ function init({
   }
 
   return {
-    applyOutfitPos
+    applyOutfitPos,
+    setActivePose,
+    refreshPoseTransforms
   };
 }
 
