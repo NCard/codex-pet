@@ -761,3 +761,156 @@ input:checked + .slider {
 input:checked + .slider:before {
   transform: translateX(20px);
 }
+
+/* 鬧鐘類型切換列（一次性 / 每週重複 / 特定日期） */
+.inline-type-row {
+  gap: 12px;
+  font-size: 13px;
+  font-weight: bold;
+  flex-wrap: wrap;
+}
+
+.inline-type-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+/* 一次性提醒說明 */
+.inline-once-hint {
+  font-size: 12px;
+  color: #2e7d32;
+  background: #f1f8e9;
+  border: 1px dashed #aed581;
+  border-radius: 10px;
+  padding: 6px 10px;
+  line-height: 1.4;
+}
+
+/* 特定日期多選區 */
+.date-picker-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.date-picker-row .inline-date-input {
+  flex: 1;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 6px 10px;
+  border: 1.5px solid #c5e1a5;
+  border-radius: 10px;
+  outline: none;
+  font-family: inherit;
+  font-size: 13px;
+  background: #ffffff;
+}
+
+.date-picker-row .inline-date-input:focus {
+  border-color: var(--theme-primary);
+  box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.12);
+}
+
+.btn-add-date {
+  flex-shrink: 0;
+  padding: 6px 10px;
+  background: #f1f8e9;
+  border: 1.5px solid #aed581;
+  border-radius: 10px;
+  color: #33691e;
+  font-size: 12px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: var(--theme-transition);
+  white-space: nowrap;
+}
+
+.btn-add-date:hover {
+  background: var(--theme-primary);
+  border-color: var(--theme-primary);
+  color: #ffffff;
+}
+
+.date-quick-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+
+.btn-quick-date {
+  padding: 2px 8px;
+  background: #ffffff;
+  border: 1px solid #c5e1a5;
+  border-radius: 999px;
+  color: #558b2f;
+  font-size: 11px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: var(--theme-transition);
+}
+
+.btn-quick-date:hover,
+.btn-quick-date.active {
+  background: var(--theme-primary);
+  border-color: var(--theme-primary);
+  color: #ffffff;
+}
+
+.date-count-hint {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--theme-text-sub);
+}
+
+.selected-dates-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+  padding: 6px 8px;
+  background: #f9fbf7;
+  border: 1px solid #e0ecd3;
+  border-radius: 10px;
+  min-height: 24px;
+  align-items: center;
+}
+
+.selected-dates-empty {
+  font-size: 11px;
+  color: #888;
+}
+
+.date-tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  background: #e8f5e9;
+  border: 1px solid #a5d6a7;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: bold;
+  color: #1b5e20;
+}
+
+.date-tag-remove {
+  background: none;
+  border: none;
+  color: #558b2f;
+  cursor: pointer;
+  padding: 0 2px;
+  font-size: 11px;
+  line-height: 1;
+  font-weight: bold;
+  border-radius: 50%;
+}
+
+.date-tag-remove:hover {
+  color: #ffffff;
+  background: #e53935;
+}

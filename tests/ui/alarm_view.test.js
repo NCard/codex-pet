@@ -248,4 +248,138 @@ describe('Alarm View UI Enhancements Unit Tests', () => {
     expect(minSelect.value).toBe('45');
     expect(timeInput.value).toBe('18:45');
   });
+
+  test('Alarm type radios follow order [once, weekly, date], share the same name, and switch cleanly back and forth', () => {
+    require('../../src/views/alarm/alarm');
+
+    document.getElementById('btn-open-add').click();
+
+    const radios = Array.from(document.querySelectorAll('.inline-type-radio'));
+    expect(radios.map(r => r.value)).toEqual(['once', 'weekly', 'date']);
+
+    // All radios must share the same non-empty name attribute so clicking another unchecks the previous one
+    const sharedName = radios[0].getAttribute('name');
+    expect(sharedName).toBeTruthy();
+    expect(radios.every(r => r.getAttribute('name') === sharedName)).toBe(true);
+
+    const [onceRadio, weeklyRadio, dateRadio] = radios;
+    const onceGroup = document.querySelector('.inline-once-group');
+    const weeklyGroup = document.querySelector('.inline-weekly-group');
+    const dateGroup = document.querySelector('.inline-date-group');
+
+    // Default is once
+    expect(onceRadio.checked).toBe(true);
+    expect(weeklyRadio.checked).toBe(false);
+    expect(dateRadio.checked).toBe(false);
+    expect(onceGroup.style.display).toBe('block');
+    expect(weeklyGroup.style.display).toBe('none');
+    expect(dateGroup.style.display).toBe('none');
+
+    // Switch to weekly
+    weeklyRadio.click();
+    expect(onceRadio.checked).toBe(false);
+    expect(weeklyRadio.checked).toBe(true);
+    expect(dateRadio.checked).toBe(false);
+    expect(onceGroup.style.display).toBe('none');
+    expect(weeklyGroup.style.display).toBe('block');
+    expect(dateGroup.style.display).toBe('none');
+
+    // Switch to date
+    dateRadio.click();
+    expect(onceRadio.checked).toBe(false);
+    expect(weeklyRadio.checked).toBe(false);
+    expect(dateRadio.checked).toBe(true);
+    expect(onceGroup.style.display).toBe('none');
+    expect(weeklyGroup.style.display).toBe('none');
+    expect(dateGroup.style.display).toBe('block');
+
+    // Switch back to weekly, then back to once
+    weeklyRadio.click();
+    expect(weeklyRadio.checked).toBe(true);
+    expect(dateRadio.checked).toBe(false);
+    expect(weeklyGroup.style.display).toBe('block');
+    expect(dateGroup.style.display).toBe('none');
+
+    onceRadio.click();
+    expect(onceRadio.checked).toBe(true);
+    expect(weeklyRadio.checked).toBe(false);
+    expect(onceGroup.style.display).toBe('block');
+    expect(weeklyGroup.style.display).toBe('none');
+  });
+
+  test('Creating a once alarm saves type=once and renders once label', () => {
+    require('../../src/views/alarm/alarm');
+
+    document.getElementById('btn-open-add').click();
+
+    const msgInput = document.querySelector('.inline-msg-input');
+    msgInput.value = '只提醒這一次';
+
+    const timeInput = document.querySelector('.inline-time-input');
+    timeInput.value = '23:50';
+    timeInput.dispatchEvent(new Event('blur'));
+
+    document.querySelector('.btn-confirm').click();
+
+    const saved = mockAlarmsData.find(a => a.message === '只提醒這一次');
+    expect(saved).toBeDefined();
+    expect(saved.type).toBe('once');
+    expect(saved.time).toBe('23:50');
+    expect(saved.targetDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(document.getElementById('alarm-list').textContent).toContain('⚡ 一次性');
+  });
+
+  test('Multi-date selection allows adding, deduplicating, removing dates and persists sorted dates array', () => {
+    require('../../src/views/alarm/alarm');
+
+    document.getElementById('btn-open-add').click();
+
+    const dateRadio = document.querySelector('.inline-type-radio[value="date"]');
+    dateRadio.click();
+
+    const dateInput = document.querySelector('.inline-date-input');
+    const btnAddDate = document.querySelector('.btn-add-date');
+
+    // Add 3 future dates out of order + 1 duplicate
+    dateInput.value = '2099-12-10';
+    dateInput.dispatchEvent(new Event('change'));
+    dateInput.value = '2099-12-02';
+    dateInput.dispatchEvent(new Event('change'));
+    dateInput.value = '2099-12-05';
+    btnAddDate.click();
+    dateInput.value = '2099-12-05';
+    dateInput.dispatchEvent(new Event('change')); // duplicate ignored
+
+    let chips = Array.from(document.querySelectorAll('.date-tag-chip'));
+    expect(chips.map(c => c.dataset.date)).toEqual(['2099-12-02', '2099-12-05', '2099-12-10']);
+
+    // Remove middle date
+    const removeBtn = document.querySelector('.date-tag-remove[data-date="2099-12-05"]');
+    removeBtn.click();
+
+    chips = Array.from(document.querySelectorAll('.date-tag-chip'));
+    expect(chips.map(c => c.dataset.date)).toEqual(['2099-12-02', '2099-12-10']);
+
+    const msgInput = document.querySelector('.inline-msg-input');
+    msgInput.value = '多日會議提醒';
+    const timeInput = document.querySelector('.inline-time-input');
+    timeInput.value = '09:30';
+    timeInput.dispatchEvent(new Event('blur'));
+
+    document.querySelector('.btn-confirm').click();
+
+    const saved = mockAlarmsData.find(a => a.message === '多日會議提醒');
+    expect(saved).toBeDefined();
+    expect(saved.type).toBe('date');
+    expect(saved.dates).toEqual(['2099-12-02', '2099-12-10']);
+    expect(saved.date).toBe('2099-12-02');
+    expect(mockIpcRenderer.send).toHaveBeenCalledWith(
+      'alarm-enabled-notify',
+      expect.objectContaining({
+        type: 'date',
+        dates: ['2099-12-02', '2099-12-10'],
+        message: '多日會議提醒'
+      })
+    );
+  });
 });

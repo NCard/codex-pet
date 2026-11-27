@@ -562,8 +562,18 @@ ipcRenderer.on('alarm-enabled-notify', (event, alarm) => {
   }
 
   let timeDesc = '';
-  if (alarm && alarm.type === 'date') {
-    timeDesc = `${alarm.date} ${alarm.time}`;
+  if (alarm && alarm.type === 'once') {
+    const targetPrefix = alarm.targetDate ? `${alarm.targetDate} ` : '一次性 ';
+    timeDesc = `${targetPrefix}${alarm.time}`;
+  } else if (alarm && alarm.type === 'date') {
+    const datesList = Array.isArray(alarm.dates) && alarm.dates.length > 0
+      ? alarm.dates
+      : (alarm.date ? [alarm.date] : []);
+    if (datesList.length > 1) {
+      timeDesc = `${datesList[0]} 等 ${datesList.length} 天 ${alarm.time}`;
+    } else {
+      timeDesc = `${datesList[0] || ''} ${alarm.time}`.trim();
+    }
   } else if (alarm) {
     if (alarm.days && alarm.days.length === 7) {
       timeDesc = `每天 ${alarm.time}`;
