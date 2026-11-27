@@ -88,6 +88,7 @@ function applyChatSize(settings) {
 }
 
 let statusHudRef = null;
+let spriteAnimatorRef = null;
 
 // 載入設定檔套用 CSS 變數
 function applySettings(settings) {
@@ -229,7 +230,6 @@ ipcRenderer.on('settings-closed', () => {
 
 let refreshChatAutoHide = null;
 let refreshMonologueSchedule = null;
-let spriteAnimatorRef = null;
 
 // 監聽設定更新
 ipcRenderer.on('update-settings', (event, newSettings) => {
